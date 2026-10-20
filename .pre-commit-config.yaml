@@ -1,0 +1,7 @@
+# Git hooks. Install once with `pre-commit install`; after that every commit is scanned for
+# secrets (passwords, tokens, keys) before it is created. CI runs the same scan.
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks

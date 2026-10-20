@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+build/
+dist/
+
+# Tool caches
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Django
+web/staticfiles/
+
+# Dev stack data: secrets, problems, uploads (made by ./init.sh)
+.devdata/
+
+# Local environment files. Only the placeholder example is tracked.
+.env
+.env.*
+!.env.example
+
+# Editors and OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db

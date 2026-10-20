@@ -1,0 +1,106 @@
+# Dev stack. It mirrors production (same networks, the same image in two web roles, a worker
+# with isolate) but builds images from source and mounts the code, so edits reload.
+# Start it with ./init.sh from the repo root. Data lives in ./.devdata (gitignored).
+#
+# Differences from production, on purpose (see docs/DECISIONS.md):
+# - `dev_ports` is an extra normal network so the host can reach Postgres and both web roles on
+#   127.0.0.1 only. The worker is NOT on it: it stays on the internal judge_net.
+# - Postgres data is a named volume instead of a folder.
+# - Django runs with runserver (code reload) instead of gunicorn.
+name: grader-dev
+
+x-web: &web
+  build:
+    context: ../..
+    dockerfile: web/Dockerfile
+  # Run as the developer's own user so files in .devdata stay readable and deletable.
+  user: "${DEV_UID:-1000}:${DEV_GID:-1000}"
+  command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+  restart: unless-stopped
+  depends_on: [db]
+  healthcheck:
+    test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3)"]
+    interval: 5s
+    timeout: 5s
+    retries: 30
+
+x-web-env: &web-env
+  PUBLIC_BASE_URL: "http://127.0.0.1:8000"
+  ADMIN_BASE_URL: "http://127.0.0.1:8001"
+  GRADER_SECRETS_DIR: /run/secrets/web
+  GRADER_DB_HOST: db
+  TZ: Asia/Bangkok
+
+services:
+  db:
+    image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+    command: ["postgres", "-c", "shared_buffers=128MB", "-c", "max_connections=30", "-c", "work_mem=4MB"]
+    environment:
+      POSTGRES_USER: grader
+      POSTGRES_DB: grader
+      POSTGRES_PASSWORD_FILE: /run/secrets/db/db_password
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ../../.devdata/secrets/db:/run/secrets/db:ro
+    networks: [db_net, dev_ports]
+    ports: ["127.0.0.1:5432:5432"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "grader", "-d", "grader"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  web:
+    <<: *web
+    environment:
+      <<: *web-env
+      GRADER_ROLE: public
+    volumes:
+      - ../../web:/app/web
+      - ../../common:/app/common
+      - ../../.devdata/problems:/data/problems:ro
+      - ../../.devdata/secrets/web:/run/secrets/web:ro
+    networks: [app_net, db_net, dev_ports]
+    ports: ["127.0.0.1:8000:8000"]
+
+  web-admin:
+    <<: *web
+    environment:
+      <<: *web-env
+      GRADER_ROLE: admin
+    volumes:
+      - ../../web:/app/web
+      - ../../common:/app/common
+      - ../../.devdata/problems:/data/problems
+      - ../../.devdata/uploads:/data/uploads
+      - ../../.devdata/secrets/web:/run/secrets/web:ro
+    networks: [app_net, db_net, judge_net, dev_ports]
+    ports: ["127.0.0.1:8001:8000"]
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: judge/worker/Dockerfile
+    # Dev only for now: the narrower production profile is decided with the sandbox work.
+    privileged: true
+    cgroup: host
+    init: true
+    restart: unless-stopped
+    volumes:
+      - ../../.devdata/problems:/data/problems:ro
+    networks: [judge_net]
+    healthcheck:
+      test: ["CMD", "test", "-d", "/sys/fs/cgroup/grader-judge"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+networks:
+  app_net: {internal: true}
+  db_net: {internal: true}
+  judge_net: {internal: true}
+  dev_ports: {}
+
+volumes:
+  pgdata: {}

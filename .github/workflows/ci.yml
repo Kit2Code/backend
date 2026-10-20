@@ -1,0 +1,76 @@
+# Checks for every push to main and every pull request, on GitHub-hosted runners.
+# Third-party actions and images are pinned to exact commits/digests (the tag is in the comment).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Lint, types, tests, Django checks
+    runs-on: ubuntu-24.04
+    services:
+      db:
+        image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+        env:
+          POSTGRES_USER: grader
+          POSTGRES_DB: grader
+          # A throwaway database that lives only for this job.
+          POSTGRES_PASSWORD: ci-only-throwaway
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U grader -d grader"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      PUBLIC_BASE_URL: http://127.0.0.1:8000
+      ADMIN_BASE_URL: http://127.0.0.1:8001
+      GRADER_SECRETS_DIR: ${{ github.workspace }}/../ci-secrets
+      GRADER_DB_HOST: 127.0.0.1
+      GRADER_ROLE: admin
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: "0.13.3"
+          python-version: "3.12"
+      - name: Install dependencies
+        run: uv sync --frozen
+      - name: Write CI secret files
+        run: |
+          mkdir -p "$GRADER_SECRETS_DIR"
+          echo "ci-only-throwaway" > "$GRADER_SECRETS_DIR/db_password"
+          python3 -c 'import secrets; print(secrets.token_urlsafe(48))' > "$GRADER_SECRETS_DIR/django_secret_key"
+      - name: Ruff, mypy and pytest
+        run: ./scripts/check.sh
+      - name: Migrations are up to date
+        run: uv run python web/manage.py makemigrations --check --dry-run
+      - name: Django deploy checks, public role
+        run: uv run python web/manage.py check --deploy
+        env:
+          GRADER_ROLE: public
+      - name: Django deploy checks, admin role
+        run: uv run python web/manage.py check --deploy
+        env:
+          GRADER_ROLE: admin
+
+  gitleaks:
+    name: Secret scan (whole history)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: gitleaks
+        # The checkout belongs to the runner user, so tell git inside the container it is safe.
+        run: >-
+          docker run --rm -v "$PWD:/repo"
+          -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0=/repo
+          ghcr.io/gitleaks/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
+          git /repo --verbose --redact

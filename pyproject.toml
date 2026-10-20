@@ -1,0 +1,59 @@
+# Workspace root. It is not a package itself: it ties the three members together, holds the
+# shared dev tools, and configures ruff, mypy and pytest for the whole repo. One lockfile: uv.lock.
+[project]
+name = "grader-workspace"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = ["grader-web", "grader-worker", "grader-common"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4",
+    "pytest-django>=4.11",
+    "ruff>=0.13",
+    "mypy>=1.18",
+    "django-stubs[compatible-mypy]>=5.2",
+    "pyyaml>=6.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["web", "judge/worker", "common"]
+
+[tool.uv.sources]
+grader-web = { workspace = true }
+grader-worker = { workspace = true }
+grader-common = { workspace = true }
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+# Where our own top-level modules live (for import sorting).
+src = ["web", "judge/worker/src", "common"]
+extend-exclude = [".devdata", "**/migrations"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "DJ"]
+
+[tool.ruff.lint.per-file-ignores]
+# assert is how pytest checks things; tests use made-up passwords on purpose
+"**/tests/**" = ["S101", "S105", "S106"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+mypy_path = ["web", "judge/worker/src", "common"]
+explicit_package_bases = true
+exclude = ['^\.devdata/', '/migrations/']
+plugins = ["mypy_django_plugin.main"]
+
+[tool.django-stubs]
+django_settings_module = "config.settings"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+pythonpath = ["web"]
+testpaths = ["web/tests"]
+addopts = "--strict-markers"

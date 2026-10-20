@@ -1,0 +1,13 @@
+# The Django web app. One image, two roles (GRADER_ROLE=public | admin).
+# It is an application, not a library, so uv installs its dependencies but not the code itself.
+[project]
+name = "grader-web"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "django>=5.2,<5.3",
+    "psycopg[binary]>=3.2,<4",
+]
+
+[tool.uv]
+package = false
