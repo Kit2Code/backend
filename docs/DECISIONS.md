@@ -158,3 +158,18 @@ a subtask with no tests is an error; a test pattern that matches nothing is an e
 gives a clear message instead of a judge error later. Out-of-range outcomes can only come from a bug
 or a broken checker, and silently clamping them would hide that.
 **Alternatives:** clamping outcomes to [0, 1]; treating an empty subtask as worth 0.
+
+## 2026-10-20: How uploads are unpacked
+
+**Choice:** `common/grader_common/importer/archive.py` refuses absolute paths, `..`, backslashes, `:`,
+control characters, duplicate names, symlinks, device files, FIFOs and encrypted entries; more than
+10 000 files, more than 1 GB unpacked, or any file over 256 MB. Sizes are checked from the zip
+headers before anything is written, and counted again while writing. Files are created with
+`O_EXCL | O_NOFOLLOW` in a new folder that is deleted on any error. macOS junk (`__MACOSX/`,
+`.DS_Store`) is skipped silently, and a single wrapping folder is unwrapped.
+**Why:** an upload is untrusted input that turns into files on the server. Checking headers first
+stops zip bombs cheaply; counting again catches headers that lie. Backslashes and `:` are refused
+because Windows-made zips use them for paths and drives, and they're never needed in a problem.
+Skipping macOS junk avoids confusing errors for uploads zipped on a Mac.
+**Alternatives:** `ZipFile.extractall` (it sanitises names but follows no size limits and doesn't
+refuse links or special files).
