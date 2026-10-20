@@ -110,6 +110,29 @@ sends heartbeats and progress, and posts the result. The job carries everything 
 problem version), so the worker never touches the database. Request and response bodies are
 defined once in `common/grader_common/` and shared by both sides.
 
+## Problems: format, importer and store
+
+A problem is a folder with a `problem.yaml` plus statements, tests, and optionally a checker,
+graders and reference solutions (details for problem setters: [PROBLEM_FORMAT.md](PROBLEM_FORMAT.md)).
+
+- **Format** (`common/grader_common/problem_format.py`): pydantic models are the single definition of
+  `problem.yaml`, used by the importer now and by the web app and the worker later.
+- **Scoring** (`common/grader_common/scoring.py`): CMS's Sum and GroupMin as pure functions. The
+  worker will call `score()` with each test's outcome.
+- **Importer** (`common/grader_common/importer/`), used by the `grader-import` command now and by the
+  admin upload page later:
+  1. `archive.py` unpacks the zip (or copies the folder) into a private staging folder, refusing
+     anything unsafe (links, `..`, special files, zip bombs).
+  2. `native.py` takes our format as it is; `italy.py` converts a CMS Italian-format task into it.
+  3. `native.py` checks the result: `problem.yaml`, statements, test pairs, and that every file it
+     names exists.
+  4. `store.py` hashes the content and either finds the same version already stored or renames the
+     staging folder into place in one step.
+- **Store** (`/data/problems` in containers, `.devdata/problems` in dev): `<slug>/v<NNN>-<hash8>/`.
+  Versions never change after they are written, so a rejudge always sees the files the submission
+  was judged on, and the worker can cache by version. The public web role mounts the store
+  read-only; only web-admin writes to it.
+
 ## Code layout
 
 | Path | Contents |
@@ -117,7 +140,8 @@ defined once in `common/grader_common/` and shared by both sides.
 | `pyproject.toml`, `uv.lock` | uv workspace root: ties the three Python packages together; one lockfile; ruff, mypy and pytest settings |
 | `web/` | Django project: `config/` (settings, the two URL configurations), `accounts/`, `core/`, `tests/`, `Dockerfile` |
 | `judge/worker/` | the worker package, its `Dockerfile`, `isolate.conf` and entrypoint |
-| `common/grader_common/` | code shared by web and worker |
+| `common/grader_common/` | code shared by web and worker: problem format, scoring, importer (`grader-import`) |
+| `fixtures/` | small made-up problems for tests (native and CMS Italian format) |
 | `deploy/dev/compose.dev.yml` | the development stack (db, web, web-admin, worker) |
 | `init.sh` | creates dev secrets and starts the dev stack |
 | `scripts/` | `check.sh` (lint, types, tests) and `smoke.sh` (is the running stack healthy?) |

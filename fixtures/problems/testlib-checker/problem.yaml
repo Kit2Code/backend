@@ -1,0 +1,13 @@
+format_version: 1
+slug: testlib-checker
+title: {th: "เรียงสับเปลี่ยน", en: "Any permutation"}
+source: "Synthetic test problem"
+time_limit_ms: 1000
+memory_limit_mb: 256
+languages: [c11, cpp17, cpp20, python3]
+scoring: {type: sum, total: 100}
+checker: {type: testlib, file: checker/checker.cpp}
+solutions:
+  - {file: solutions/perm.py, lang: python3, expected_score: 100}
+  - {file: solutions/reverse.cpp, lang: cpp17, expected_score: 100}
+license: CC0-1.0

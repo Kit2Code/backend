@@ -1,0 +1,21 @@
+# fixtures/cms-italian/cms-checker: check/checker.cpp makes a CMS "comparator" checker;
+# Sum with total_value 100 over 3 tests; testo/testo.pdf with no primary_language (CMS default "it").
+format_version: 1
+slug: cms-checker
+title: {th: Factor it}
+source: ""
+tags: []
+type: batch
+time_limit_ms: 1000
+memory_limit_mb: 256
+languages: [c11, cpp17, cpp20, python3]
+lang_time_factor: {}
+io: {input: "", output: ""}
+scoring: {type: sum, total: 100}
+samples: []
+checker: {type: cms, file: checker/checker.cpp}
+solutions:
+  - {file: solutions/soluzione.cpp, lang: cpp17, expected_score: 100}
+  - {file: solutions/trivial.py, lang: python3}
+visibility_default: hidden
+license: ""

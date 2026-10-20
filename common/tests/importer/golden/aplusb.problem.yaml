@@ -1,0 +1,22 @@
+# Expected import of fixtures/cms-italian/aplusb, written by hand from the CMS v1.5.1 rules:
+# no gen/GEN, so Sum over n_input = 3 tests worth total_value (default 100); infile/outfile ""
+# means stdin/stdout; samples "0" picks test 000; no graders, so every language.
+format_version: 1
+slug: aplusb
+title: {th: A plus B}
+source: ""
+tags: []
+type: batch
+time_limit_ms: 1000
+memory_limit_mb: 256
+languages: [c11, cpp17, cpp20, python3]
+lang_time_factor: {}
+io: {input: "", output: ""}
+scoring: {type: sum, total: 100}
+samples: ["000"]
+checker: {type: diff}
+solutions:
+  - {file: solutions/overflow.cpp, lang: cpp17}
+  - {file: solutions/soluzione.cpp, lang: cpp17, expected_score: 100}
+visibility_default: hidden
+license: ""

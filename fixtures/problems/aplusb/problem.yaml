@@ -1,0 +1,15 @@
+format_version: 1
+slug: aplusb
+title: {th: "เอบวกบี", en: "A plus B"}
+source: "Synthetic test problem"
+tags: [math]
+time_limit_ms: 1000
+memory_limit_mb: 256
+languages: [c11, cpp17, cpp20, python3]
+scoring: {type: sum, total: 100}
+samples: ["01"]
+solutions:
+  - {file: solutions/main.cpp, lang: cpp17, expected_score: 100}
+  - {file: solutions/main.py, lang: python3, expected_score: 100}
+  - {file: solutions/overflow.cpp, lang: cpp17}
+license: CC0-1.0

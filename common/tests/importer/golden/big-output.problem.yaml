@@ -1,0 +1,21 @@
+# fixtures/cms-italian/big-output: explicit score_type Sum with score_type_parameters 50 (points per
+# test) over n_input 2 tests, so a total of 100.
+format_version: 1
+slug: big-output
+title: {th: Count}
+source: ""
+tags: []
+type: batch
+time_limit_ms: 1000
+memory_limit_mb: 256
+languages: [c11, cpp17, cpp20, python3]
+lang_time_factor: {}
+io: {input: "", output: ""}
+scoring: {type: sum, total: 100}
+samples: []
+checker: {type: diff}
+solutions:
+  - {file: solutions/flood.cpp, lang: cpp17}
+  - {file: solutions/soluzione.cpp, lang: cpp17, expected_score: 100}
+visibility_default: hidden
+license: ""

@@ -1,0 +1,12 @@
+format_version: 1
+slug: python-only
+title: {th: "ตัวพิมพ์ใหญ่", en: "Shout"}
+source: "Synthetic test problem"
+time_limit_ms: 2000
+memory_limit_mb: 256
+languages: [python3]
+lang_time_factor: {python3: 1.0}
+scoring: {type: sum, total: 100}
+solutions:
+  - {file: solutions/upper.py, lang: python3, expected_score: 100}
+license: CC0-1.0

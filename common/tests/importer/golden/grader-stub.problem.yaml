@@ -1,0 +1,29 @@
+# fixtures/cms-italian/grader-stub: task name "adder"; sol/grader.c and sol/grader.cpp make it
+# "Batch with grader" with submission file adder.%l; the header sol/adder.h goes with both C and
+# C++ graders; only languages with a grader are allowed (no Python).
+format_version: 1
+slug: adder
+title: {th: Adder}
+source: ""
+tags: []
+type: batch
+time_limit_ms: 1000
+memory_limit_mb: 256
+languages: [c11, cpp17, cpp20]
+lang_time_factor: {}
+io: {input: "", output: ""}
+scoring: {type: sum, total: 100}
+samples: []
+checker: {type: diff}
+grader:
+  submission_file: adder.%l
+  files:
+    c11: [graders/grader.c, graders/adder.h]
+    cpp17: [graders/grader.cpp, graders/adder.h]
+    cpp20: [graders/grader.cpp, graders/adder.h]
+  downloadable: []
+solutions:
+  - {file: solutions/soluzione.c, lang: c11, expected_score: 100}
+  - {file: solutions/soluzione.cpp, lang: cpp17, expected_score: 100}
+visibility_default: hidden
+license: ""

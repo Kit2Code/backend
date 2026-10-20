@@ -1,0 +1,10 @@
+name: big-output
+title: Count
+time_limit: 1
+memory_limit: 256
+n_input: 2
+infile: ""
+outfile: ""
+primary_language: en
+score_type: Sum
+score_type_parameters: 50

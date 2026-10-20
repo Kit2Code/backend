@@ -1,0 +1,8 @@
+name: cms-checker
+title: Factor it
+time_limit: 1
+memory_limit: 256
+n_input: 3
+total_value: 100
+infile: ""
+outfile: ""

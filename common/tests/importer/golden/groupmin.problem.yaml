@@ -1,0 +1,26 @@
+# fixtures/cms-italian/groupmin: gen/GEN has "# ST: 30" then 2 tests, "# ST: 70" then 2 tests
+# (plain "# ..." comment lines count for nothing), so GroupMin with consecutive tests; n_input = 4.
+# No infile/outfile, so the CMS defaults input.txt / output.txt. time_limit 1.5 s.
+format_version: 1
+slug: groupmin
+title: {th: Sum of numbers}
+source: ""
+tags: []
+type: batch
+time_limit_ms: 1500
+memory_limit_mb: 128
+languages: [c11, cpp17, cpp20, python3]
+lang_time_factor: {}
+io: {input: input.txt, output: output.txt}
+scoring:
+  type: group_min
+  subtasks:
+    - {name: "1", points: 30, tests: ["000", "001"]}
+    - {name: "2", points: 70, tests: ["002", "003"]}
+samples: []
+checker: {type: diff}
+solutions:
+  - {file: solutions/partial.cpp, lang: cpp17}
+  - {file: solutions/soluzione.cpp, lang: cpp17, expected_score: 100}
+visibility_default: hidden
+license: ""

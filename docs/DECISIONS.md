@@ -173,3 +173,31 @@ because Windows-made zips use them for paths and drives, and they're never neede
 Skipping macOS junk avoids confusing errors for uploads zipped on a Mac.
 **Alternatives:** `ZipFile.extractall` (it sanitises names but follows no size limits and doesn't
 refuse links or special files).
+
+## 2026-10-21: Importing CMS Italian-format tasks
+
+**Choice:** `common/grader_common/importer/italy.py` re-implements the task rules of CMS v1.5.1
+`cmscontrib/loaders/italy_yaml.py` (names, limits, statements, `gen/GEN` subtasks, `n_input`,
+`total_value`, score-type overrides, graders, checker, file I/O, public tests) and converts the task
+to our native layout. Where our format differs:
+- **Public tests are not samples.** CMS `public_testcases` only showed results to contestants; our
+  samples are downloadable by anyone. They are listed as a warning, and an optional `samples:` key in
+  task.yaml (same syntax) picks the samples.
+- **The checker must be source** (`check/checker.cpp` or `cor/correttore.cpp`). CMS stores the
+  compiled `check/checker`; a binary built for another machine may not run in our sandbox and
+  can't be reviewed. If source is present we use it even without the binary.
+- **Reference solutions come from `sol/`** (CMS ignores them): every C/C++/Python file except
+  graders, stubs and headers. `soluzione.*` / `solution.*` must reach the full score; the others are
+  only reported. A C++ solution is assumed to be C++17.
+- **Statements:** only Thai and English are kept. If neither exists, the primary-language statement
+  is stored as Thai, with a warning (CMS's default primary language is Italian, which old Thai
+  contests often left unset).
+- **Where CMS would crash** (failed `assert`, missing key, `min([])` on an empty subtask) the import
+  stops with a clear message. `memory_limit` over 512 MiB is refused. `n_input: 2.5` is refused
+  instead of becoming 2.
+- **Not supported:** OutputOnly and Communication tasks, score types other than Sum and GroupMin,
+  graders for languages we don't judge, and the deprecated `../<task>.yaml` location.
+**Why:** old tasks must score as they did in the contest, and nothing should be published by
+accident.
+**Credit:** the language-name table (`LANGUAGE_MAP`) is copied from CMS v1.5.1
+`cmscontrib/loaders/base_loader.py` (AGPL-3.0, same licence as this project).

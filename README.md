@@ -32,13 +32,15 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full set-up, how to run tests and
 
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): the parts of the system and how they talk.
 - [docs/DECISIONS.md](docs/DECISIONS.md): design choices, with the reason and the alternatives.
+- [docs/PROBLEM_FORMAT.md](docs/PROBLEM_FORMAT.md): how to package a problem, and how CMS tasks are imported.
 
 ## Repository layout
 
 ```
 web/            Django project (one image, two roles: public site and admin site)
 judge/worker/   judge worker and its Docker image (isolate built from source)
-common/         Python code shared by the web app and the worker
+common/         code shared by the web app and the worker: problem format, scoring, importer
+fixtures/       small made-up problems used by the tests
 deploy/dev/     the development Docker Compose stack
 scripts/        check.sh, smoke.sh
 docs/           documentation for contributors

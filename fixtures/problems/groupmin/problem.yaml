@@ -1,0 +1,17 @@
+format_version: 1
+slug: groupmin
+title: {th: "ผลรวม", en: "Sum of numbers"}
+source: "Synthetic test problem"
+time_limit_ms: 1000
+memory_limit_mb: 256
+languages: [c11, cpp17, cpp20, python3]
+scoring:
+  type: group_min
+  subtasks:
+    - {name: "1", points: 30, tests: ["1-*"]}
+    - {name: "2", points: 70, tests: ["1-*", "2-*"]}
+samples: ["1-01"]
+solutions:
+  - {file: solutions/full.cpp, lang: cpp17, expected_score: 100}
+  - {file: solutions/partial.cpp, lang: cpp17, expected_score: 30}
+license: CC0-1.0

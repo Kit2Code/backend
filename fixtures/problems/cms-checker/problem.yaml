@@ -1,0 +1,13 @@
+format_version: 1
+slug: cms-checker
+title: {th: "แยกตัวประกอบ", en: "Factor it"}
+source: "Synthetic test problem"
+time_limit_ms: 1000
+memory_limit_mb: 256
+languages: [c11, cpp17, cpp20, python3]
+scoring: {type: sum, total: 100}
+checker: {type: cms, file: checker/checker.cpp}
+solutions:
+  - {file: solutions/good.cpp, lang: cpp17, expected_score: 100}
+  - {file: solutions/trivial.py, lang: python3, expected_score: 50}
+license: CC0-1.0

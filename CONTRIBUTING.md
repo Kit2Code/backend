@@ -30,6 +30,7 @@ and restarts the containers.
 | Tests only | `uv run pytest -q` |
 | Lint and types | `uv run ruff check . && uv run ruff format --check . && uv run mypy .` |
 | Django management | `uv run python web/manage.py <command>` |
+| Import a problem | `uv run grader-import <zip or folder> --store .devdata/problems` |
 | New migration | `uv run python web/manage.py makemigrations`, then commit the file |
 | Secret scan | `gitleaks dir . -v` |
 

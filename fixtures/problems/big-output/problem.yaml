@@ -1,0 +1,12 @@
+format_version: 1
+slug: big-output
+title: {th: "นับเลข", en: "Count"}
+source: "Synthetic test problem"
+time_limit_ms: 1000
+memory_limit_mb: 256
+languages: [c11, cpp17, cpp20, python3]
+scoring: {type: sum, total: 100}
+solutions:
+  - {file: solutions/count.cpp, lang: cpp17, expected_score: 100}
+  - {file: solutions/flood.cpp, lang: cpp17, expected_score: 0}
+license: CC0-1.0

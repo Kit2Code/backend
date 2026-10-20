@@ -33,7 +33,7 @@ line-length = 100
 target-version = "py312"
 # Where our own top-level modules live (for import sorting).
 src = ["web", "judge/worker/src", "common"]
-extend-exclude = [".devdata", "**/migrations"]
+extend-exclude = [".devdata", "**/migrations", "fixtures"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "S", "DJ"]
@@ -47,7 +47,7 @@ python_version = "3.12"
 strict = true
 mypy_path = ["web", "judge/worker/src", "common"]
 explicit_package_bases = true
-exclude = ['^\.devdata/', '/migrations/']
+exclude = ['^\.devdata/', '^fixtures/', '/migrations/']
 plugins = ["mypy_django_plugin.main", "pydantic.mypy"]
 
 [tool.django-stubs]

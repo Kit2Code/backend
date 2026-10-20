@@ -1,0 +1,19 @@
+format_version: 1
+slug: grader-stub
+title: {th: "ฟังก์ชันบวก", en: "Adder (with a grader)"}
+source: "Synthetic test problem"
+time_limit_ms: 1000
+memory_limit_mb: 256
+languages: [c11, cpp17, cpp20]
+scoring: {type: sum, total: 100}
+grader:
+  submission_file: "adder.%l"
+  files:
+    c11: [graders/grader.c, graders/adder.h]
+    cpp17: [graders/grader.cpp, graders/adder.h]
+    cpp20: [graders/grader.cpp, graders/adder.h]
+  downloadable: [graders/adder.h]
+solutions:
+  - {file: solutions/adder.cpp, lang: cpp17, expected_score: 100}
+  - {file: solutions/adder.c, lang: c11, expected_score: 100}
+license: CC0-1.0
