@@ -1,0 +1,391 @@
+{
+  "$defs": {
+    "Checker": {
+      "additionalProperties": false,
+      "description": "How outputs are compared: CMS white-diff, a CMS-style checker, or a testlib checker.",
+      "properties": {
+        "type": {
+          "default": "diff",
+          "enum": [
+            "diff",
+            "cms",
+            "testlib"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "file": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "File"
+        }
+      },
+      "title": "Checker",
+      "type": "object"
+    },
+    "Grader": {
+      "additionalProperties": false,
+      "description": "A CMS-style grader stub that is compiled together with the submission.",
+      "properties": {
+        "submission_file": {
+          "pattern": "^[A-Za-z0-9_][A-Za-z0-9_-]{0,63}\\.%l$",
+          "title": "Submission File",
+          "type": "string"
+        },
+        "files": {
+          "additionalProperties": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "minProperties": 1,
+          "propertyNames": {
+            "enum": [
+              "c11",
+              "cpp17",
+              "cpp20",
+              "python3"
+            ]
+          },
+          "title": "Files",
+          "type": "object"
+        },
+        "downloadable": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Downloadable",
+          "type": "array"
+        }
+      },
+      "required": [
+        "submission_file",
+        "files"
+      ],
+      "title": "Grader",
+      "type": "object"
+    },
+    "GroupMinScoring": {
+      "additionalProperties": false,
+      "description": "CMS \"GroupMin\": the score is the sum over subtasks.",
+      "properties": {
+        "type": {
+          "const": "group_min",
+          "title": "Type",
+          "type": "string"
+        },
+        "subtasks": {
+          "items": {
+            "$ref": "#/$defs/Subtask"
+          },
+          "minItems": 1,
+          "title": "Subtasks",
+          "type": "array"
+        }
+      },
+      "required": [
+        "type",
+        "subtasks"
+      ],
+      "title": "GroupMinScoring",
+      "type": "object"
+    },
+    "InputOutput": {
+      "additionalProperties": false,
+      "description": "File names the program reads and writes. Empty means standard input / standard output.",
+      "properties": {
+        "input": {
+          "default": "",
+          "title": "Input",
+          "type": "string"
+        },
+        "output": {
+          "default": "",
+          "title": "Output",
+          "type": "string"
+        }
+      },
+      "title": "InputOutput",
+      "type": "object"
+    },
+    "Solution": {
+      "additionalProperties": false,
+      "description": "A reference solution. Validation requires `expected_score` when it is given.",
+      "properties": {
+        "file": {
+          "title": "File",
+          "type": "string"
+        },
+        "lang": {
+          "enum": [
+            "c11",
+            "cpp17",
+            "cpp20",
+            "python3"
+          ],
+          "title": "Lang",
+          "type": "string"
+        },
+        "expected_score": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expected Score"
+        }
+      },
+      "required": [
+        "file",
+        "lang"
+      ],
+      "title": "Solution",
+      "type": "object"
+    },
+    "Subtask": {
+      "additionalProperties": false,
+      "description": "One CMS GroupMin subtask: `points` times the lowest outcome among its tests.",
+      "properties": {
+        "name": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "points": {
+          "minimum": 0,
+          "title": "Points",
+          "type": "number"
+        },
+        "tests": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Tests",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "points",
+        "tests"
+      ],
+      "title": "Subtask",
+      "type": "object"
+    },
+    "SumScoring": {
+      "additionalProperties": false,
+      "description": "CMS \"Sum\": every test is worth `total / number of tests`, times its outcome.",
+      "properties": {
+        "type": {
+          "const": "sum",
+          "title": "Type",
+          "type": "string"
+        },
+        "total": {
+          "exclusiveMinimum": 0,
+          "title": "Total",
+          "type": "number"
+        }
+      },
+      "required": [
+        "type",
+        "total"
+      ],
+      "title": "SumScoring",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "The whole `problem.yaml`.",
+  "properties": {
+    "format_version": {
+      "const": 1,
+      "title": "Format Version",
+      "type": "integer"
+    },
+    "slug": {
+      "title": "Slug",
+      "type": "string"
+    },
+    "title": {
+      "additionalProperties": {
+        "maxLength": 200,
+        "minLength": 1,
+        "type": "string"
+      },
+      "minProperties": 1,
+      "propertyNames": {
+        "enum": [
+          "th",
+          "en"
+        ]
+      },
+      "title": "Title",
+      "type": "object"
+    },
+    "source": {
+      "default": "",
+      "title": "Source",
+      "type": "string"
+    },
+    "tags": {
+      "default": [],
+      "items": {
+        "maxLength": 200,
+        "minLength": 1,
+        "type": "string"
+      },
+      "title": "Tags",
+      "type": "array"
+    },
+    "type": {
+      "const": "batch",
+      "default": "batch",
+      "title": "Type",
+      "type": "string"
+    },
+    "time_limit_ms": {
+      "maximum": 60000,
+      "minimum": 1,
+      "title": "Time Limit Ms",
+      "type": "integer"
+    },
+    "memory_limit_mb": {
+      "maximum": 512,
+      "minimum": 16,
+      "title": "Memory Limit Mb",
+      "type": "integer"
+    },
+    "languages": {
+      "items": {
+        "enum": [
+          "c11",
+          "cpp17",
+          "cpp20",
+          "python3"
+        ],
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Languages",
+      "type": "array"
+    },
+    "lang_time_factor": {
+      "additionalProperties": {
+        "exclusiveMinimum": 0,
+        "type": "number"
+      },
+      "default": {},
+      "propertyNames": {
+        "enum": [
+          "c11",
+          "cpp17",
+          "cpp20",
+          "python3"
+        ]
+      },
+      "title": "Lang Time Factor",
+      "type": "object"
+    },
+    "io": {
+      "$ref": "#/$defs/InputOutput",
+      "default": {
+        "input": "",
+        "output": ""
+      }
+    },
+    "scoring": {
+      "discriminator": {
+        "mapping": {
+          "group_min": "#/$defs/GroupMinScoring",
+          "sum": "#/$defs/SumScoring"
+        },
+        "propertyName": "type"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/SumScoring"
+        },
+        {
+          "$ref": "#/$defs/GroupMinScoring"
+        }
+      ],
+      "title": "Scoring"
+    },
+    "samples": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Samples",
+      "type": "array"
+    },
+    "checker": {
+      "$ref": "#/$defs/Checker",
+      "default": {
+        "type": "diff",
+        "file": null
+      }
+    },
+    "grader": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Grader"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "solutions": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Solution"
+      },
+      "title": "Solutions",
+      "type": "array"
+    },
+    "visibility_default": {
+      "default": "hidden",
+      "enum": [
+        "hidden",
+        "public"
+      ],
+      "title": "Visibility Default",
+      "type": "string"
+    },
+    "license": {
+      "default": "",
+      "title": "License",
+      "type": "string"
+    }
+  },
+  "required": [
+    "format_version",
+    "slug",
+    "title",
+    "time_limit_ms",
+    "memory_limit_mb",
+    "languages",
+    "scoring"
+  ],
+  "title": "Problem",
+  "type": "object"
+}

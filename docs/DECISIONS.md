@@ -111,3 +111,39 @@ now.
 **Why:** those settings depend on how each role is reached: the public site over HTTPS through
 Cloudflare and the edge, the admin site over plain HTTP on the home LAN. They will be set per role
 when the edge is built, and the check tightened then. Setting them now would break the admin site.
+
+## 2026-10-20: The problem format is pydantic models with a generated JSON Schema
+
+**Choice:** `common/grader_common/problem_format.py` defines `problem.yaml` as frozen pydantic models
+that refuse unknown keys. `python -m grader_common.problem_format` writes
+`common/grader_common/schema/problem.schema.json`, and a test fails if the committed schema is out of
+date.
+**Why:** one definition shared by the importer, the web app and the worker, so they can't disagree.
+Unknown keys are errors so that a typo (`time_limt_ms`) can't silently fall back to a default.
+**Alternatives:** a hand-written JSON Schema plus separate parsing code (two definitions to keep in
+sync).
+
+## 2026-10-20: `io` field for file input/output
+
+**Choice:** `problem.yaml` has `io: {input, output}`, file names a program reads and writes. Empty
+(the default) means standard input / standard output.
+**Why:** CMS's Italian-format loader (v1.5.1, `cmscontrib/loaders/italy_yaml.py`) defaults to
+`input.txt` / `output.txt`, so old tasks may read and write files instead of stdin/stdout. Without
+this field they couldn't be judged the way they were in the contest.
+
+## 2026-10-20: `expected_score` is optional on solutions
+
+**Choice:** a solution may leave out `expected_score`. Validation then runs it and reports the score
+but doesn't require a particular result.
+**Why:** imported CMS tasks often keep partial or slow solutions next to the real one in `sol/`, with
+no record of what they should score. Requiring a number would either block publishing or force a
+guess.
+
+## 2026-10-20: Names and paths in `problem.yaml` are restricted
+
+**Choice:** test names match `[A-Za-z0-9_-][A-Za-z0-9_.-]{0,63}` (the documented character set, but
+not starting with a dot); every path is relative, made of plain names, and must be inside its own
+folder (`checker/`, `graders/`, `solutions/`).
+**Why:** these values become file paths on the server. Refusing `..`, absolute paths and leading dots
+in the model means no later code can be tricked into reading outside the problem folder, and keeping
+each kind of file in its folder keeps the "never served" rules simple.
