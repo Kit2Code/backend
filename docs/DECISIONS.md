@@ -147,3 +147,14 @@ folder (`checker/`, `graders/`, `solutions/`).
 **Why:** these values become file paths on the server. Refusing `..`, absolute paths and leading dots
 in the model means no later code can be tricked into reading outside the problem folder, and keeping
 each kind of file in its folder keeps the "never served" rules simple.
+
+## 2026-10-20: Scoring follows CMS, but refuses inputs CMS would mis-handle
+
+**Choice:** `common/grader_common/scoring.py` re-implements CMS v1.5.1 Sum and GroupMin
+(`cms/grading/scoretypes/`), taking tests in lexicographic name order as CMS does. Where CMS has no
+rule we chose: a test without an outcome counts as 0; an outcome outside [0, 1] (or NaN) is an error;
+a subtask with no tests is an error; a test pattern that matches nothing is an error.
+**Why:** CMS crashes on an empty GroupMin subtask (`min([])`) while judging. Refusing it at import
+gives a clear message instead of a judge error later. Out-of-range outcomes can only come from a bug
+or a broken checker, and silently clamping them would hide that.
+**Alternatives:** clamping outcomes to [0, 1]; treating an empty subtask as worth 0.
