@@ -37,6 +37,8 @@ jobs:
       GRADER_ROLE: admin
       # This job has no worker container; the sandbox suite runs in its own job.
       GRADER_SKIP_SANDBOX: "1"
+      # Serve static files from the apps' folders, as in dev (CI doesn't run collectstatic).
+      GRADER_STATIC_FROM_APPS: "1"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
