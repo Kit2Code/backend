@@ -18,6 +18,13 @@ SCHEMA_PATH = Path(__file__).parent / "schema" / "problem.schema.json"
 
 Lang = Literal["th", "en"]
 Language = Literal["c11", "cpp17", "cpp20", "python3"]
+# How each language is shown to people.
+LANGUAGE_NAMES: dict[str, str] = {
+    "c11": "C11",
+    "cpp17": "C++17",
+    "cpp20": "C++20",
+    "python3": "Python 3",
+}
 
 _SLUG_RE = re.compile(r"[a-z0-9][a-z0-9_-]{0,63}")
 # A test is the pair tests/<name>.in + tests/<name>.out.

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load i18n problems %}
+{% block title %}{% translate "Problems" %}{% endblock %}
+{% block content %}
+<h1>{% translate "Problems" %}</h1>
+{% if problems %}
+<table>
+  <thead><tr><th>{% translate "Problem" %}</th><th>{% translate "Tags" %}</th></tr></thead>
+  <tbody>
+  {% for problem in problems %}
+    <tr>
+      <td><a href="{% url 'problem' problem.slug %}">{% problem_title problem %}</a></td>
+      <td>{% for tag in problem.tags.all %}<small>{{ tag.name }}</small>{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>{% translate "No problems yet." %}</p>
+{% endif %}
+{% endblock %}

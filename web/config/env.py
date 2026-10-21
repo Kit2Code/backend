@@ -16,6 +16,12 @@ ROLE_URLCONFS = {
     "admin": "config.urls_admin",
 }
 
+# Each role has its own cookie names, so a browser never sends one role's session to the other.
+ROLE_COOKIE_NAMES = {
+    "public": {"SESSION_COOKIE_NAME": "g_sess", "CSRF_COOKIE_NAME": "g_csrf"},
+    "admin": {"SESSION_COOKIE_NAME": "g_admin", "CSRF_COOKIE_NAME": "g_admin_csrf"},
+}
+
 # The repo root when running from a checkout (web/config/env.py -> repo).
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -33,7 +39,10 @@ def apply_dev_defaults() -> None:
     os.environ.setdefault("PUBLIC_BASE_URL", "http://127.0.0.1:8000")
     os.environ.setdefault("ADMIN_BASE_URL", "http://127.0.0.1:8001")
     os.environ.setdefault("GRADER_SECRETS_DIR", str(devdata / "secrets" / "web"))
+    os.environ.setdefault("GRADER_WORKER_SECRETS_DIR", str(devdata / "secrets" / "worker"))
     os.environ.setdefault("GRADER_DB_HOST", "127.0.0.1")
+    os.environ.setdefault("GRADER_STATIC_FROM_APPS", "1")
+    os.environ.setdefault("GRADER_PROBLEMS_DIR", str(devdata / "problems"))
 
 
 def require(name: str) -> str:
@@ -42,6 +51,11 @@ def require(name: str) -> str:
     if not value:
         raise ImproperlyConfigured(f"Environment variable {name} must be set.")
     return value
+
+
+def optional(name: str, default: str) -> str:
+    """Return the environment variable `name`, or `default` if it is missing or empty."""
+    return os.environ.get(name) or default
 
 
 def urlconf_for_role(role: str) -> str:
@@ -53,9 +67,18 @@ def urlconf_for_role(role: str) -> str:
         raise ImproperlyConfigured(f"GRADER_ROLE must be one of: {allowed}.") from None
 
 
-def read_secret(name: str) -> str:
-    """Read one secret file from the directory in GRADER_SECRETS_DIR."""
-    path = Path(require("GRADER_SECRETS_DIR")) / name
+def role_cookie_names(role: str) -> dict[str, str]:
+    """Return the session and CSRF cookie name settings for a role."""
+    return dict(ROLE_COOKIE_NAMES[role])
+
+
+def read_secret(name: str, folder_variable: str = "GRADER_SECRETS_DIR") -> str:
+    """Read one secret file from the directory named by the environment variable `folder_variable`.
+
+    Most secrets are in the web roles' own folder (GRADER_SECRETS_DIR). The admin role also reads
+    the worker token from the worker's folder (GRADER_WORKER_SECRETS_DIR), like production.
+    """
+    path = Path(require(folder_variable)) / name
     try:
         value = path.read_text(encoding="utf-8").strip()
     except OSError as error:

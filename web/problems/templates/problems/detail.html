@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<hgroup>
+  <h1>{{ title }}</h1>
+  {% if format.source %}<p>{{ format.source }}</p>{% endif %}
+</hgroup>
+<ul>
+  <li>{% translate "Time limit" %}: {{ format.time_limit_ms }} {% translate "ms" %}</li>
+  <li>{% translate "Memory limit" %}: {{ format.memory_limit_mb }} MB</li>
+  <li>{% translate "Languages" %}: {{ languages|join:", " }}</li>
+  {% if format.io.input %}<li>{% translate "Input file" %}: <code>{{ format.io.input }}</code></li>{% endif %}
+  {% if format.io.output %}<li>{% translate "Output file" %}: <code>{{ format.io.output }}</code></li>{% endif %}
+  {% if tags %}<li>{% translate "Tags" %}: {% for tag in tags %}{{ tag.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</li>{% endif %}
+</ul>
+
+{% if statement.pdfs %}
+<p>{% translate "Statement (PDF)" %}:
+  {% for lang, name in statement.pdfs.items %}
+    <a href="{% url 'problem-file' problem.slug name %}" lang="{{ lang }}">{% if lang == "th" %}ไทย{% else %}English{% endif %}</a>{% if not forloop.last %} · {% endif %}
+  {% endfor %}
+</p>
+{% endif %}
+
+{% if attachments %}
+<p>{% translate "Files" %}:
+  {% for name in attachments %}
+    <a href="{% url 'problem-file' problem.slug name %}">{{ name }}</a>{% if not forloop.last %} · {% endif %}
+  {% endfor %}
+</p>
+{% endif %}
+
+{% if statement.html %}
+<article lang="{{ statement.language }}">
+  {# Rendered from Markdown and cleaned by nh3 (problems/statements.py): the only |safe here. #}
+  {{ statement.html|safe }}
+</article>
+{% endif %}
+
+{% if samples %}
+<h2>{% translate "Examples" %}</h2>
+{% for sample in samples %}
+<div class="grid">
+  <div>
+    <h3>{% translate "Input" %} <small><a href="{% url 'problem-file' problem.slug 'tests/'|add:sample.name|add:'.in' %}">{% translate "download" %}</a></small></h3>
+    <pre><code>{{ sample.input }}</code></pre>
+  </div>
+  <div>
+    <h3>{% translate "Output" %} <small><a href="{% url 'problem-file' problem.slug 'tests/'|add:sample.name|add:'.out' %}">{% translate "download" %}</a></small></h3>
+    <pre><code>{{ sample.output }}</code></pre>
+  </div>
+</div>
+{% if sample.cut_short %}<p><small>{% translate "This example is long; only its beginning is shown." %}</small></p>{% endif %}
+{% endfor %}
+{% endif %}
+{% endblock %}

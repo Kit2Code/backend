@@ -1,0 +1,55 @@
+{% load i18n static %}<!doctype html>
+{% get_current_language as LANGUAGE_CODE %}
+<html lang="{{ LANGUAGE_CODE }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{% endblock %} · {{ site_name }}</title>
+  <link rel="stylesheet" href="{% static 'vendor/pico/pico.classless.min.css' %}">
+  <link rel="stylesheet" href="{% static 'site.css' %}">
+</head>
+<body>
+  <header>
+    <nav>
+      <ul>
+        <li><a href="{% if grader_role == "public" %}{% url 'home' %}{% else %}/admin/{% endif %}"><strong>{{ site_name }}</strong></a></li>
+        {% if grader_role == "public" %}<li><a href="{% url 'problems' %}">{% translate "Problems" %}</a></li>{% endif %}
+      </ul>
+      <ul>
+        {% if grader_role == "public" %}
+          {% if request.user.is_authenticated %}
+            <li>{{ request.user.username }}</li>
+            <li>
+              <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="secondary">{% translate "Sign out" %}</button>
+              </form>
+            </li>
+          {% elif signin_available %}
+            <li><a href="{% url 'google-start' %}?next={{ request.get_full_path|urlencode }}">{% translate "Sign in with Google" %}</a></li>
+          {% endif %}
+        {% endif %}
+        <li>
+          <form method="post" action="{% url 'set_language' %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            {# Each language in its own name ("English", "ไทย"), whatever the page language. #}
+            {# Names set here are visible to the page's own blocks too: keep them unusual. #}
+            {% get_available_languages as site_language_codes %}
+            {% get_language_info_list for site_language_codes as site_languages %}
+            {% for language in site_languages %}
+              {% if language.code != LANGUAGE_CODE %}<button type="submit" name="language" value="{{ language.code }}" class="secondary outline" lang="{{ language.code }}">{{ language.name_local }}</button>{% endif %}
+            {% endfor %}
+          </form>
+        </li>
+      </ul>
+    </nav>
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+  <footer>
+    {% if grader_role == "public" %}<small><a href="{% url 'privacy' %}">{% translate "Privacy" %}</a></small>{% endif %}
+  </footer>
+</body>
+</html>

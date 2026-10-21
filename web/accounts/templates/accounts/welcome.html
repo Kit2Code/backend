@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Welcome" %}{% endblock %}
+{% block content %}
+<article>
+  <h1>{% translate "Welcome" %}</h1>
+  <p>{% translate "Choose how other people will see you on this site." %}</p>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_div }}
+    <p><a href="{% url 'privacy' %}" target="_blank">{% translate "Read the privacy page" %}</a></p>
+    <button type="submit">{% translate "Create my account" %}</button>
+  </form>
+</article>
+{% endblock %}

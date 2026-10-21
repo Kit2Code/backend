@@ -1,5 +1,14 @@
 # grader-web: the Django app. The same image runs as the public site and as the admin site,
 # chosen with GRADER_ROLE. (The production stage with gunicorn and static files comes later.)
+# Compiled translations: msgfmt turns web/locale/*/LC_MESSAGES/django.po into .mo files. gettext
+# stays in this stage only, out of the final image.
+FROM python:3.12-slim-bookworm@sha256:34386ef0cb081344d7ec1c103ba398e6e9f64e9ab3a1509accc92a4e24a07258 AS translations
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends gettext \
+    && rm -rf /var/lib/apt/lists/*
+COPY web/locale /locale
+RUN for po in /locale/*/LC_MESSAGES/django.po; do msgfmt --check -o "${po%.po}.mo" "$po"; done
+
 FROM python:3.12-slim-bookworm@sha256:34386ef0cb081344d7ec1c103ba398e6e9f64e9ab3a1509accc92a4e24a07258
 
 COPY --from=ghcr.io/astral-sh/uv:0.13.3@sha256:bee0a2a458fd956c5df7b8b4c5fed2257b0af34866e3da7b51db0be3acb375d1 /uv /bin/uv
@@ -20,6 +29,7 @@ RUN uv sync --frozen --no-dev --package grader-web --no-install-workspace
 
 COPY common common
 COPY web web
+COPY --from=translations /locale web/locale
 RUN uv sync --frozen --no-dev --package grader-web
 
 RUN useradd --uid 10001 --no-create-home --shell /usr/sbin/nologin app

@@ -3,8 +3,16 @@
 # Start it with ./init.sh from the repo root. Data lives in ./.devdata (gitignored).
 #
 # Differences from production, on purpose (see docs/DECISIONS.md):
-# - `dev_ports` is an extra normal network so the host can reach Postgres and both web roles on
-#   127.0.0.1 only. The worker is NOT on it: it stays on the internal judge_net.
+# - `dev_ports` is an extra normal network so the host can reach Postgres and the edge on
+#   127.0.0.1 only. The web roles and the worker are NOT on it: like production, they have no
+#   route out, and the host reaches the web roles only through the edge.
+# - The edge is stock Caddy with a mounted Caddyfile (deploy/dev/edge/), not the production edge
+#   image. Its :8090 "Google" listener forwards to `fake-oidc`, a fake Google sign-in for dev and
+#   tests (deploy/dev/fake-oidc/), instead of to Google. fake-oidc sits on its own normal network
+#   (standing in for the internet) that only the edge joins, and publishes 127.0.0.1:8099 so the
+#   browser can open its sign-in page.
+# - app_net has a fixed subnet so the edge's :8090 can listen on its app_net address only and
+#   accept only the public web role's address.
 # - Postgres data is a named volume instead of a folder.
 # - Django runs with runserver (code reload) instead of gunicorn.
 name: grader-dev
@@ -28,7 +36,9 @@ x-web-env: &web-env
   PUBLIC_BASE_URL: "http://127.0.0.1:8000"
   ADMIN_BASE_URL: "http://127.0.0.1:8001"
   GRADER_SECRETS_DIR: /run/secrets/web
+  GRADER_WORKER_SECRETS_DIR: /run/secrets/worker
   GRADER_DB_HOST: db
+  GRADER_STATIC_FROM_APPS: "1"
   TZ: Asia/Bangkok
 
 services:
@@ -56,13 +66,18 @@ services:
     environment:
       <<: *web-env
       GRADER_ROLE: public
+      # Sign in with the fake provider: the browser opens its page on the host's port 8099; the
+      # token and keys still go through the edge's :8090 (the production defaults).
+      GRADER_GOOGLE_AUTHORIZE_URL: "http://127.0.0.1:8099/authorize"
+      GRADER_GOOGLE_ISSUERS: "http://127.0.0.1:8099"
     volumes:
       - ../../web:/app/web
       - ../../common:/app/common
       - ../../.devdata/problems:/data/problems:ro
       - ../../.devdata/secrets/web:/run/secrets/web:ro
-    networks: [app_net, db_net, dev_ports]
-    ports: ["127.0.0.1:8000:8000"]
+    networks:
+      app_net: {ipv4_address: 10.89.90.20}
+      db_net: {}
 
   web-admin:
     <<: *web
@@ -75,8 +90,49 @@ services:
       - ../../.devdata/problems:/data/problems
       - ../../.devdata/uploads:/data/uploads
       - ../../.devdata/secrets/web:/run/secrets/web:ro
-    networks: [app_net, db_net, judge_net, dev_ports]
-    ports: ["127.0.0.1:8001:8000"]
+      - ../../.devdata/secrets/worker:/run/secrets/worker:ro
+    networks: [app_net, db_net, judge_net]
+
+  edge:
+    image: caddy:2.11.7-alpine@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f
+    volumes:
+      - ./edge/Caddyfile:/etc/caddy/Caddyfile:ro
+    networks:
+      app_net: {ipv4_address: 10.89.90.10}
+      dev_ports: {}
+      fake_google_net: {}
+    ports: ["127.0.0.1:8000:8000", "127.0.0.1:8001:8001"]
+    depends_on: [web, web-admin, fake-oidc]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8000/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  fake-oidc:
+    # The web image already has Python and joserfc; only the script is mounted in.
+    build:
+      context: ../..
+      dockerfile: web/Dockerfile
+    user: "${DEV_UID:-1000}:${DEV_GID:-1000}"
+    entrypoint: ["python", "/app/fake-oidc/server.py"]
+    environment:
+      FAKE_OIDC_ISSUER: "http://127.0.0.1:8099"
+      FAKE_OIDC_CLIENT_ID: "grader-dev.apps.example"
+      FAKE_OIDC_SECRET_FILE: /run/secrets/fake-oidc/client_secret
+      FAKE_OIDC_REDIRECT_URIS: "http://127.0.0.1:8000/auth/google/callback,http://localhost:8000/auth/google/callback"
+    volumes:
+      - ./fake-oidc:/app/fake-oidc:ro
+      - ../../.devdata/secrets/fake-oidc:/run/secrets/fake-oidc:ro
+    networks: [fake_google_net]
+    ports: ["127.0.0.1:8099:8099"]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8099/healthz', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
 
   worker:
     build:
@@ -109,10 +165,14 @@ services:
       retries: 10
 
 networks:
-  app_net: {internal: true}
+  app_net:
+    internal: true
+    ipam:
+      config: [{subnet: 10.89.90.0/24}]
   db_net: {internal: true}
   judge_net: {internal: true}
   dev_ports: {}
+  fake_google_net: {}
 
 volumes:
   pgdata: {}

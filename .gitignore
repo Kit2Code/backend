@@ -6,7 +6,8 @@ __pycache__/
 build/
 dist/
 
-# Tool caches
+# Tool caches and test output (e2e screenshots)
+test-results/
 .mypy_cache/
 .pytest_cache/
 .ruff_cache/
@@ -15,6 +16,8 @@ htmlcov/
 
 # Django
 web/staticfiles/
+# Compiled translations: built from the .po files by compilemessages (init.sh, check.sh, CI, image).
+*.mo
 
 # Dev stack data: secrets, problems, uploads (made by ./init.sh)
 .devdata/

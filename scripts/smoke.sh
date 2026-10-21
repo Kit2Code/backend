@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Smoke test for the dev stack (start it first with ./init.sh).
-# Checks that both web roles answer, that /admin/ exists only in the admin role,
-# and that isolate inside the worker works with our box ids and cgroup root.
+# Checks that both web roles answer through the dev edge, that /admin/ exists only in the admin
+# role, that a client can't fake the zone header, and that isolate inside the worker works with our box ids and cgroup root.
 # Exit code 0 means every check passed.
 set -uo pipefail
 cd "$(dirname "$0")/.."
@@ -21,11 +21,11 @@ expect_body() {
   if [ "$body" = "$3" ]; then pass "$1 = $body"; else fail "$1 (got '${body:-no answer}', want '$3')"; fi
 }
 
-# expect_status NAME URL ALLOWED_CODES...
+# expect_status NAME URL ALLOWED_CODES... (set EXTRA_HEADER to send one more request header)
 expect_status() {
   local name="$1" url="$2" code
   shift 2
-  code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 5 "$url" 2>/dev/null)"
+  code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 5 ${EXTRA_HEADER:+-H "$EXTRA_HEADER"} "$url" 2>/dev/null)"
   for want in "$@"; do
     if [ "$code" = "$want" ]; then pass "$name -> $code"; return; fi
   done
@@ -36,6 +36,9 @@ expect_body   "public /healthz" "$PUBLIC_URL/healthz" "ok"
 expect_body   "admin  /healthz" "$ADMIN_URL/healthz" "ok"
 expect_status "public /admin/"  "$PUBLIC_URL/admin/" 404
 expect_status "admin  /admin/"  "$ADMIN_URL/admin/" 200 302
+expect_status "public /internal/judge/claim" "$PUBLIC_URL/internal/judge/claim" 404
+expect_status "admin  /internal/judge/claim" "$ADMIN_URL/internal/judge/claim" 404
+EXTRA_HEADER="X-Edge-Zone: public" expect_status "admin  /admin/ with a faked zone" "$ADMIN_URL/admin/" 200 302
 
 # isolate --version prints e.g. "The process isolator 2.7"; we need >= 2.6.
 version_line="$("${COMPOSE[@]}" exec -T worker isolate --version 2>/dev/null | head -n 1)"

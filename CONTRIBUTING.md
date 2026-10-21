@@ -9,6 +9,9 @@ You need:
 - Docker with the Compose plugin.
 - [uv](https://docs.astral.sh/uv/) (it installs Python 3.12 and every dependency for you).
 - [gitleaks](https://github.com/gitleaks/gitleaks) 8.19 or newer and [pre-commit](https://pre-commit.com/).
+- GNU gettext, to compile the translations: `sudo apt-get install gettext`.
+- The system libraries for the browser tests' Chromium, once per machine (after the first
+  `./init.sh` has installed the Python packages): `sudo uv run playwright install-deps chromium`.
 
 Then, once per clone:
 
@@ -18,7 +21,13 @@ pre-commit install     # scan every commit for secrets
 ```
 
 `./init.sh` is safe to run again at any time; it only creates what is missing and then rebuilds
-and restarts the containers.
+and restarts the containers. It also downloads Playwright's Chromium, compiles the translations,
+and sets up the dev stack's fake Google sign-in.
+
+To see a problem on the dev site, import one:
+`uv run python web/manage.py import_problem fixtures/problems/aplusb --visible`. To sign in, use
+"Sign in with Google" on <http://127.0.0.1:8000>: in dev it opens a fake sign-in page
+(`127.0.0.1:8099`) where you pick a test account.
 
 ## Day-to-day commands
 
@@ -27,10 +36,13 @@ and restarts the containers.
 | Start or update the dev stack | `./init.sh` |
 | Is the stack healthy? | `./scripts/smoke.sh` |
 | All code checks (same as CI) | `./scripts/check.sh` |
-| Tests only | `uv run pytest -q` |
+| Tests only | `uv run pytest -q` (needs the dev stack: some tests drive its containers and a browser) |
+| Browser tests only | `uv run pytest -q web/tests/e2e` (screenshots in `test-results/e2e/`) |
+| New or changed text in the UI | `cd web && uv run python manage.py makemessages -l th -l en --ignore "static/*" --ignore "tests/*"`, translate in `web/locale/*/LC_MESSAGES/django.po`, then `uv run python manage.py compilemessages` |
 | Lint and types | `uv run ruff check . && uv run ruff format --check . && uv run mypy .` |
 | Django management | `uv run python web/manage.py <command>` |
-| Import a problem | `uv run grader-import <zip or folder> --store .devdata/problems` |
+| Import a problem into the store only | `uv run grader-import <zip or folder> --store .devdata/problems` |
+| Import and publish on the dev site | `uv run python web/manage.py import_problem <zip or folder> --visible` |
 | New migration | `uv run python web/manage.py makemigrations`, then commit the file |
 | Secret scan | `gitleaks dir . -v` |
 

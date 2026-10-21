@@ -111,6 +111,7 @@ now.
 **Why:** those settings depend on how each role is reached: the public site over HTTPS through
 Cloudflare and the edge, the admin site over plain HTTP on the home LAN. They will be set per role
 when the edge is built, and the check tightened then. Setting them now would break the admin site.
+**Replaced** on 2026-10-21 by "HTTPS settings per role, and a clean deploy check".
 
 ## 2026-10-20: The problem format is pydantic models with a generated JSON Schema
 
@@ -345,3 +346,121 @@ cut, false TLE/MLE from a leftover process, running outside the judge CPUs).
 **Alternatives:** an `isolate` rule list without `/dev` at all (compilers and Python need `/dev/null` and
 `/dev/urandom`); relying on the narrower container profile alone to hide devices (it isn't tried yet, and the
 fallback is privileged).
+
+## 2026-10-21: The dev stack has an edge in front
+
+**Choice:** the dev stack runs stock Caddy as `edge` with `deploy/dev/edge/Caddyfile`: `:8000` →
+web with `X-Edge-Zone: public`, `:8001` → web-admin with `admin`, and `:8090` for sign-in. The web
+roles are no longer published on the host.
+**Why:** the zone check needs the header on every request; with the edge in front, dev exercises
+the same layer as production, and the web roles have no route out, as in production.
+**Alternatives:** a setting that lets requests without a zone through in dev (simpler, but dev
+would then differ in exactly the layer under test).
+
+## 2026-10-21: Google traffic through one locked-down edge listener
+
+**Choice:** edge `:8090` forwards only `POST /token` and `GET /certs`, listens only on the edge's
+`app_net` address and serves only the public web role's address (both fixed via a fixed `app_net`
+subnet), and caps request bodies at 16 KB. The web side reads both responses with a 64 KB cap.
+**Why:** web keeps no general internet access; web-admin, the worker and the host can't use the
+listener at all. Caddy can't limit response sizes, so that limit lives in `accounts/google.py`.
+**Alternatives:** listening on all of the edge's addresses (reachable from the host's bridge);
+internet access for web.
+
+## 2026-10-21: Sign-in code: Authlib for the requests, joserfc for the ID token
+
+**Choice:** Authlib's `OAuth2Session` builds the sign-in URL (with PKCE) and makes the token
+request; the ID token is verified with joserfc (the JOSE library Authlib itself depends on), with
+the checks spelled out in `accounts/google.py`: RS256 only, issuer, audience, `azp`, expiry,
+issue time, nonce. Both Google issuer spellings (`https://accounts.google.com` and
+`accounts.google.com`) are accepted and stored as the first.
+**Why:** each security check is visible and tested in one place; Authlib's own ID-token helpers
+use the same library underneath. Google documents both issuer forms.
+**Alternatives:** Authlib's Django integration (hides the checks, uses OpenID discovery, which
+would need another outgoing URL); writing the OAuth requests by hand.
+
+## 2026-10-21: Client address for rate limits and logs
+
+**Choice:** public role: `Cf-Connecting-Ip` if it is a valid address; both roles: then the last
+`X-Forwarded-For` entry (the one the edge writes); then the TCP peer.
+**Why:** behind the edge, the TCP peer is always the edge, so it can't tell people apart. Only
+Cloudflare reaches the public listener, and Cloudflare sets `Cf-Connecting-Ip` itself. Earlier
+`X-Forwarded-For` entries come from the client and are ignored.
+**Alternatives:** the TCP peer only, as first planned for the admin site (every admin would share
+one address).
+
+## 2026-10-21: Our own rate limiter in Postgres
+
+**Choice:** `core/ratelimit.py`: one counter row per (limit, key, fixed window), bumped by a single
+`INSERT … ON CONFLICT DO UPDATE … RETURNING count`. Keys are stored as SHA-256 hashes. Refused
+attempts count too. Old rows are not cleaned up yet; a housekeeping job comes with the admin
+system pages.
+**Why:** exact across gunicorn processes, no Redis, and user input (usernames) never reaches the
+table as text.
+**Alternatives:** django-ratelimit with the cache (needs a shared cache); sliding windows (more
+rows, little benefit at this size).
+
+## 2026-10-21: Sessions: database, role mark, and "log out everywhere"
+
+**Choice:** database sessions, 30 days. Each session carries the role it was made in;
+`RoleSessionMiddleware` deletes sessions from the other role and sessions without a mark. "Log out
+everywhere" raises `User.session_version`, which is part of the session hash Django checks on every
+request.
+**Why:** a stolen public cookie must never work on the admin site. The session hash already
+invalidates sessions after a password change; adding a counter does the same for Google users, who
+have no password, without scanning the session table.
+**Alternatives:** deleting the user's session rows (needs a user index on sessions); signed-cookie
+sessions (can't be revoked).
+
+## 2026-10-21: Thai by default, whatever the browser asks for
+
+**Choice:** `ThaiByDefaultMiddleware` removes `Accept-Language` before Django's `LocaleMiddleware`,
+so the site is Thai until the visitor presses the English button (kept in a cookie).
+**Why:** many Thai students' browsers are set to English; the site is meant for them in Thai.
+**Alternatives:** follow the browser (Django's default).
+
+## 2026-10-21: Translations are compiled, not committed
+
+**Choice:** only the `.po` files are in git; `.mo` files are ignored and built by `init.sh`,
+`scripts/check.sh`, CI and a stage of the web image. Developers need GNU gettext.
+**Why:** one source of truth, and no stale binary files in reviews.
+**Alternatives:** committing `.mo` files (no gettext needed, but they drift from the `.po` files).
+
+## 2026-10-21: HTTPS settings per role, and a clean deploy check
+
+**Choice:** public role: Secure session, CSRF and language cookies, HSTS for one year with
+subdomains, and `SECURE_PROXY_SSL_HEADER` (the edge must set `X-Forwarded-Proto: https` on its
+public listener). Silenced there: `W008` (the HTTP→HTTPS redirect is Cloudflare's job; the
+container only gets plain HTTP from the edge) and `W021` (HSTS preload needs the whole domain on
+the browsers' preload list). Admin role (plain HTTP on the LAN): `W004`, `W008`, `W012`, `W016`
+silenced. CI runs `check --deploy --fail-level WARNING` for both roles.
+**Why:** each warning is either fixed or silenced with its reason, so a new warning fails CI.
+Browsers treat `127.0.0.1` as secure, so the dev stack works with Secure cookies over plain HTTP.
+**Alternatives:** HTTPS on the admin site too (needs certificates on the LAN; it isn't reachable
+from outside).
+
+## 2026-10-21: `import_problem --visible` skips validation, for dev and tests only
+
+**Choice:** the `import_problem` management command can publish a problem at once.
+**Why:** the problem pages and end-to-end tests need visible problems before the admin import page
+(with validate-then-publish) exists. In production, problems are published from the admin site.
+
+## 2026-10-21: Problem files: allow-list first, then strict path checks
+
+**Choice:** a requested name must be on the version's allow-list (statement PDFs, `attachments/`,
+sample tests, downloadable grader files). Then the path must have no `.`/`..` parts, resolve to
+itself (no symlink anywhere), be opened with `O_NOFOLLOW`, and be a regular file.
+**Why:** the store should never contain links (the importer refuses them), but the view must not
+depend on that. Checking only that the resolved path stays inside the version folder would let a
+symlinked folder point at `solutions/`.
+
+## 2026-10-21: Tags are free text
+
+**Choice:** `Tag.name` is a text field of up to 64 characters, not a slug.
+**Why:** `problem.yaml` tags are free text and may be Thai.
+
+## 2026-10-21: htmx and KaTeX later
+
+**Choice:** neither is vendored yet. htmx comes with the submission results page; KaTeX when
+statements need math rendering.
+**Why:** nothing in the current pages uses them.

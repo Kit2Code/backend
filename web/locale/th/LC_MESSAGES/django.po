@@ -1,0 +1,394 @@
+# Thai translation of the grader's web app.
+# Edit the msgstr lines; `manage.py makemessages -l th -l en` adds new strings.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: grader\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-21 19:47+0700\n"
+"PO-Revision-Date: 2026-10-21 19:00+0700\n"
+"Last-Translator: grader maintainers\n"
+"Language-Team: Thai\n"
+"Language: th\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: accounts/forms.py:14
+msgid "Username"
+msgstr "ชื่อผู้ใช้"
+
+#: accounts/forms.py:17 accounts/models.py:11 accounts/models.py:27
+msgid "3 to 20 characters: small letters a-z, digits and _ only."
+msgstr "3 ถึง 20 ตัวอักษร ใช้ได้เฉพาะ a-z ตัวเล็ก ตัวเลข และ _"
+
+#: accounts/forms.py:20
+msgid "Display name"
+msgstr "ชื่อที่แสดง"
+
+#: accounts/forms.py:23
+msgid "School (optional)"
+msgstr "โรงเรียน (ไม่บังคับ)"
+
+#: accounts/forms.py:28
+msgid "I have read the privacy page"
+msgstr "ฉันอ่านนโยบายความเป็นส่วนตัวแล้ว"
+
+#: accounts/forms.py:33 accounts/models.py:28 accounts/views.py:151
+msgid "That username is taken."
+msgstr "ชื่อผู้ใช้นี้มีคนใช้แล้ว"
+
+#: accounts/models.py:23
+msgid "username"
+msgstr "ชื่อผู้ใช้"
+
+#: accounts/models.py:30
+msgid "display name"
+msgstr "ชื่อที่แสดง"
+
+#: accounts/models.py:31
+msgid "school"
+msgstr "โรงเรียน"
+
+#: accounts/models.py:61
+msgid "Google identity"
+msgstr "บัญชี Google ที่เชื่อมไว้"
+
+#: accounts/models.py:62
+msgid "Google identities"
+msgstr "บัญชี Google ที่เชื่อมไว้"
+
+#: accounts/templates/accounts/welcome.html:3
+#: accounts/templates/accounts/welcome.html:6
+msgid "Welcome"
+msgstr "ยินดีต้อนรับ"
+
+#: accounts/templates/accounts/welcome.html:7
+msgid "Choose how other people will see you on this site."
+msgstr "เลือกว่าคนอื่นจะเห็นคุณบนเว็บไซต์นี้อย่างไร"
+
+#: accounts/templates/accounts/welcome.html:11
+msgid "Read the privacy page"
+msgstr "อ่านนโยบายความเป็นส่วนตัว"
+
+#: accounts/templates/accounts/welcome.html:12
+msgid "Create my account"
+msgstr "สร้างบัญชีของฉัน"
+
+#: accounts/views.py:52
+msgid "Sign-in is not set up yet"
+msgstr "ยังไม่ได้ตั้งค่าการเข้าสู่ระบบ"
+
+#: accounts/views.py:53
+msgid "You can still read the problems. Sign-in will be available soon."
+msgstr "ตอนนี้ยังดูโจทย์ได้ตามปกติ และจะเข้าสู่ระบบได้ในเร็ว ๆ นี้"
+
+#: accounts/views.py:61
+msgid "Sign-in failed"
+msgstr "เข้าสู่ระบบไม่สำเร็จ"
+
+#: accounts/views.py:62
+msgid "Signing in with Google didn't work. Please try again."
+msgstr "เข้าสู่ระบบด้วย Google ไม่สำเร็จ กรุณาลองอีกครั้ง"
+
+#: accounts/views.py:65
+msgid "Try again"
+msgstr "ลองอีกครั้ง"
+
+#: accounts/views.py:72
+msgid "New accounts are closed"
+msgstr "ปิดรับบัญชีใหม่"
+
+#: accounts/views.py:73
+msgid "This site isn't accepting new accounts right now."
+msgstr "ขณะนี้เว็บไซต์ยังไม่เปิดรับบัญชีใหม่"
+
+#: accounts/views.py:83
+msgid "Account disabled"
+msgstr "บัญชีถูกระงับ"
+
+#: accounts/views.py:84
+msgid "This account has been disabled. Ask the person who runs this site."
+msgstr "บัญชีนี้ถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลเว็บไซต์"
+
+#: config/admin.py:25
+msgid "Too many sign-in attempts. Please wait 15 minutes and try again."
+msgstr "พยายามเข้าสู่ระบบหลายครั้งเกินไป กรุณารอ 15 นาทีแล้วลองใหม่"
+
+#: core/models.py:12
+msgid "grading paused"
+msgstr "หยุดตรวจชั่วคราว"
+
+#: core/models.py:13
+msgid "time scale"
+msgstr "ตัวคูณเวลา"
+
+#: core/models.py:14
+msgid "registration open"
+msgstr "เปิดรับบัญชีใหม่"
+
+#: core/models.py:15
+msgid "announcement"
+msgstr "ประกาศ"
+
+#: core/models.py:16
+msgid "Google client ID"
+msgstr "Google client ID"
+
+#: core/models.py:99
+msgid "requested"
+msgstr "ขอแล้ว"
+
+#: core/models.py:100 judging/models.py:92
+msgid "running"
+msgstr "กำลังทำงาน"
+
+#: core/models.py:101 judging/models.py:32 judging/models.py:93
+msgid "done"
+msgstr "เสร็จแล้ว"
+
+#: core/models.py:102 judging/models.py:94
+msgid "failed"
+msgstr "ล้มเหลว"
+
+#: core/templates/base.html:16 problems/templates/problems/list.html:3
+#: problems/templates/problems/list.html:5
+msgid "Problems"
+msgstr "โจทย์"
+
+#: core/templates/base.html:25
+msgid "Sign out"
+msgstr "ออกจากระบบ"
+
+#: core/templates/base.html:29
+msgid "Sign in with Google"
+msgstr "เข้าสู่ระบบด้วย Google"
+
+#: core/templates/base.html:49 core/templates/core/privacy.html:3
+#: core/templates/core/privacy.html:6
+msgid "Privacy"
+msgstr "ความเป็นส่วนตัว"
+
+#: core/templates/core/home.html:3
+msgid "Home"
+msgstr "หน้าแรก"
+
+#: core/templates/core/home.html:7
+msgid ""
+"Practice with problems from past contests. Programs are judged like in the "
+"contest."
+msgstr "ฝึกทำโจทย์จากการแข่งขันที่ผ่านมา โปรแกรมจะถูกตรวจแบบเดียวกับในการแข่งขัน"
+
+#: core/templates/core/home.html:9
+msgid "New problems"
+msgstr "โจทย์ใหม่"
+
+#: core/templates/core/home.html:14
+msgid "See all problems"
+msgstr "ดูโจทย์ทั้งหมด"
+
+#: core/templates/core/privacy.html:7
+msgid ""
+"You sign in with your Google account. From Google we keep only its account "
+"number, which tells us it is the same account next time. We never ask Google "
+"for your email address, name or photo, and we don't store them."
+msgstr "คุณเข้าสู่ระบบด้วยบัญชี Google โดยเราเก็บจาก Google ไว้เพียงหมายเลขบัญชี เพื่อให้รู้ว่าเป็นบัญชีเดิมในครั้งต่อไป เราไม่เคยขออีเมล ชื่อ หรือรูปภาพของคุณจาก Google และไม่ได้เก็บข้อมูลเหล่านั้น"
+
+#: core/templates/core/privacy.html:12
+msgid ""
+"We store the username, display name and school you type in, the programs you "
+"submit and their results. Other people can see your username, display name, "
+"school and scores, but never your programs."
+msgstr "เราเก็บชื่อผู้ใช้ ชื่อที่แสดง และโรงเรียนที่คุณกรอก รวมถึงโปรแกรมที่คุณส่งและผลการตรวจ คนอื่นจะเห็นชื่อผู้ใช้ ชื่อที่แสดง โรงเรียน และคะแนนของคุณ แต่จะไม่เห็นโปรแกรมของคุณ"
+
+#: core/templates/core/privacy.html:17
+msgid ""
+"Google sees that you signed in to this site. Signing out here does not sign "
+"you out of Google."
+msgstr "Google จะรู้ว่าคุณเข้าสู่ระบบเว็บไซต์นี้ และการออกจากระบบที่นี่ไม่ได้ทำให้คุณออกจากระบบ Google"
+
+#: core/templates/core/privacy.html:21
+msgid ""
+"To have your account and everything in it deleted, ask the person who runs "
+"this site."
+msgstr "หากต้องการลบบัญชีและข้อมูลทั้งหมดในบัญชี กรุณาติดต่อผู้ดูแลเว็บไซต์"
+
+#: core/validators.py:25
+#, python-format
+msgid "At most %(limit)d bytes (this is %(size)d)."
+msgstr "ได้ไม่เกิน %(limit)d ไบต์ (ตอนนี้ %(size)d ไบต์)"
+
+#: core/validators.py:45
+msgid "Control or invisible characters are not allowed."
+msgstr "ห้ามใช้อักขระควบคุมหรืออักขระที่มองไม่เห็น"
+
+#: core/views.py:54
+msgid "Too many tries"
+msgstr "ลองหลายครั้งเกินไป"
+
+#: core/views.py:55
+msgid "Please wait a while and try again."
+msgstr "กรุณารอสักครู่แล้วลองใหม่"
+
+#: judging/models.py:17
+msgid "Accepted"
+msgstr "ผ่าน"
+
+#: judging/models.py:18
+msgid "Partially correct"
+msgstr "ถูกบางส่วน"
+
+#: judging/models.py:19
+msgid "Wrong answer"
+msgstr "คำตอบผิด"
+
+#: judging/models.py:20
+msgid "Time limit exceeded"
+msgstr "เกินเวลาที่กำหนด"
+
+#: judging/models.py:21
+msgid "Memory limit exceeded"
+msgstr "ใช้หน่วยความจำเกินกำหนด"
+
+#: judging/models.py:22
+msgid "Runtime error"
+msgstr "เกิดข้อผิดพลาดขณะทำงาน"
+
+#: judging/models.py:23
+msgid "Output limit exceeded"
+msgstr "ผลลัพธ์ยาวเกินกำหนด"
+
+#: judging/models.py:24
+msgid "Compilation error"
+msgstr "คอมไพล์ไม่ผ่าน"
+
+#: judging/models.py:25
+msgid "Judge error"
+msgstr "ระบบตรวจขัดข้อง"
+
+#: judging/models.py:30 judging/models.py:91
+msgid "queued"
+msgstr "รอตรวจ"
+
+#: judging/models.py:31
+msgid "judging"
+msgstr "กำลังตรวจ"
+
+#: judging/models.py:85
+msgid "judge"
+msgstr "ตรวจ"
+
+#: judging/models.py:86
+msgid "validate"
+msgstr "ตรวจสอบโจทย์"
+
+#: judging/models.py:87
+msgid "calibrate"
+msgstr "ปรับเทียบเวลา"
+
+#: judging/models.py:88
+msgid "self-test"
+msgstr "ทดสอบระบบ"
+
+#: judging/models.py:99
+msgid "fresh submission"
+msgstr "การส่งใหม่"
+
+#: judging/models.py:100
+msgid "validation"
+msgstr "การตรวจสอบโจทย์"
+
+#: judging/models.py:101
+msgid "rejudge"
+msgstr "ตรวจใหม่"
+
+#: judging/models.py:102
+msgid "calibration and self-test"
+msgstr "ปรับเทียบเวลาและทดสอบระบบ"
+
+#: problems/models.py:22
+msgid "visible"
+msgstr "แสดงให้เห็น"
+
+#: problems/models.py:50
+msgid "imported"
+msgstr "นำเข้าแล้ว"
+
+#: problems/models.py:51
+msgid "validating"
+msgstr "กำลังตรวจสอบ"
+
+#: problems/models.py:52
+msgid "valid"
+msgstr "ใช้ได้"
+
+#: problems/models.py:53
+msgid "invalid"
+msgstr "ใช้ไม่ได้"
+
+#: problems/templates/problems/detail.html:10
+msgid "Time limit"
+msgstr "เวลาที่กำหนด"
+
+#: problems/templates/problems/detail.html:10
+msgid "ms"
+msgstr "มิลลิวินาที"
+
+#: problems/templates/problems/detail.html:11
+msgid "Memory limit"
+msgstr "หน่วยความจำที่กำหนด"
+
+#: problems/templates/problems/detail.html:12
+msgid "Languages"
+msgstr "ภาษาที่ใช้ได้"
+
+#: problems/templates/problems/detail.html:13
+msgid "Input file"
+msgstr "ไฟล์ข้อมูลเข้า"
+
+#: problems/templates/problems/detail.html:14
+msgid "Output file"
+msgstr "ไฟล์ผลลัพธ์"
+
+#: problems/templates/problems/detail.html:15
+#: problems/templates/problems/list.html:8
+msgid "Tags"
+msgstr "หมวดหมู่"
+
+#: problems/templates/problems/detail.html:19
+msgid "Statement (PDF)"
+msgstr "โจทย์ (PDF)"
+
+#: problems/templates/problems/detail.html:27
+msgid "Files"
+msgstr "ไฟล์"
+
+#: problems/templates/problems/detail.html:42
+msgid "Examples"
+msgstr "ตัวอย่าง"
+
+#: problems/templates/problems/detail.html:46
+msgid "Input"
+msgstr "ข้อมูลเข้า"
+
+#: problems/templates/problems/detail.html:46
+#: problems/templates/problems/detail.html:50
+msgid "download"
+msgstr "ดาวน์โหลด"
+
+#: problems/templates/problems/detail.html:50
+msgid "Output"
+msgstr "ผลลัพธ์"
+
+#: problems/templates/problems/detail.html:54
+msgid "This example is long; only its beginning is shown."
+msgstr "ตัวอย่างนี้ยาว จึงแสดงเฉพาะส่วนต้น"
+
+#: problems/templates/problems/list.html:8
+msgid "Problem"
+msgstr "โจทย์"
+
+#: problems/templates/problems/list.html:19
+msgid "No problems yet."
+msgstr "ยังไม่มีโจทย์"

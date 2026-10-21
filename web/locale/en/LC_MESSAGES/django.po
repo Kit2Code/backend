@@ -1,0 +1,394 @@
+# English translation of the grader's web app.
+# Edit the msgstr lines; `manage.py makemessages -l th -l en` adds new strings.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: grader\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-21 19:47+0700\n"
+"PO-Revision-Date: 2026-10-21 19:00+0700\n"
+"Last-Translator: grader maintainers\n"
+"Language-Team: English\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: accounts/forms.py:14
+msgid "Username"
+msgstr "Username"
+
+#: accounts/forms.py:17 accounts/models.py:11 accounts/models.py:27
+msgid "3 to 20 characters: small letters a-z, digits and _ only."
+msgstr "3 to 20 characters: small letters a-z, digits and _ only."
+
+#: accounts/forms.py:20
+msgid "Display name"
+msgstr "Display name"
+
+#: accounts/forms.py:23
+msgid "School (optional)"
+msgstr "School (optional)"
+
+#: accounts/forms.py:28
+msgid "I have read the privacy page"
+msgstr "I have read the privacy page"
+
+#: accounts/forms.py:33 accounts/models.py:28 accounts/views.py:151
+msgid "That username is taken."
+msgstr "That username is taken."
+
+#: accounts/models.py:23
+msgid "username"
+msgstr "username"
+
+#: accounts/models.py:30
+msgid "display name"
+msgstr "display name"
+
+#: accounts/models.py:31
+msgid "school"
+msgstr "school"
+
+#: accounts/models.py:61
+msgid "Google identity"
+msgstr "Google identity"
+
+#: accounts/models.py:62
+msgid "Google identities"
+msgstr "Google identities"
+
+#: accounts/templates/accounts/welcome.html:3
+#: accounts/templates/accounts/welcome.html:6
+msgid "Welcome"
+msgstr "Welcome"
+
+#: accounts/templates/accounts/welcome.html:7
+msgid "Choose how other people will see you on this site."
+msgstr "Choose how other people will see you on this site."
+
+#: accounts/templates/accounts/welcome.html:11
+msgid "Read the privacy page"
+msgstr "Read the privacy page"
+
+#: accounts/templates/accounts/welcome.html:12
+msgid "Create my account"
+msgstr "Create my account"
+
+#: accounts/views.py:52
+msgid "Sign-in is not set up yet"
+msgstr "Sign-in is not set up yet"
+
+#: accounts/views.py:53
+msgid "You can still read the problems. Sign-in will be available soon."
+msgstr "You can still read the problems. Sign-in will be available soon."
+
+#: accounts/views.py:61
+msgid "Sign-in failed"
+msgstr "Sign-in failed"
+
+#: accounts/views.py:62
+msgid "Signing in with Google didn't work. Please try again."
+msgstr "Signing in with Google didn't work. Please try again."
+
+#: accounts/views.py:65
+msgid "Try again"
+msgstr "Try again"
+
+#: accounts/views.py:72
+msgid "New accounts are closed"
+msgstr "New accounts are closed"
+
+#: accounts/views.py:73
+msgid "This site isn't accepting new accounts right now."
+msgstr "This site isn't accepting new accounts right now."
+
+#: accounts/views.py:83
+msgid "Account disabled"
+msgstr "Account disabled"
+
+#: accounts/views.py:84
+msgid "This account has been disabled. Ask the person who runs this site."
+msgstr "This account has been disabled. Ask the person who runs this site."
+
+#: config/admin.py:25
+msgid "Too many sign-in attempts. Please wait 15 minutes and try again."
+msgstr "Too many sign-in attempts. Please wait 15 minutes and try again."
+
+#: core/models.py:12
+msgid "grading paused"
+msgstr "grading paused"
+
+#: core/models.py:13
+msgid "time scale"
+msgstr "time scale"
+
+#: core/models.py:14
+msgid "registration open"
+msgstr "registration open"
+
+#: core/models.py:15
+msgid "announcement"
+msgstr "announcement"
+
+#: core/models.py:16
+msgid "Google client ID"
+msgstr "Google client ID"
+
+#: core/models.py:99
+msgid "requested"
+msgstr "requested"
+
+#: core/models.py:100 judging/models.py:92
+msgid "running"
+msgstr "running"
+
+#: core/models.py:101 judging/models.py:32 judging/models.py:93
+msgid "done"
+msgstr "done"
+
+#: core/models.py:102 judging/models.py:94
+msgid "failed"
+msgstr "failed"
+
+#: core/templates/base.html:16 problems/templates/problems/list.html:3
+#: problems/templates/problems/list.html:5
+msgid "Problems"
+msgstr "Problems"
+
+#: core/templates/base.html:25
+msgid "Sign out"
+msgstr "Sign out"
+
+#: core/templates/base.html:29
+msgid "Sign in with Google"
+msgstr "Sign in with Google"
+
+#: core/templates/base.html:49 core/templates/core/privacy.html:3
+#: core/templates/core/privacy.html:6
+msgid "Privacy"
+msgstr "Privacy"
+
+#: core/templates/core/home.html:3
+msgid "Home"
+msgstr "Home"
+
+#: core/templates/core/home.html:7
+msgid ""
+"Practice with problems from past contests. Programs are judged like in the "
+"contest."
+msgstr "Practice with problems from past contests. Programs are judged like in the contest."
+
+#: core/templates/core/home.html:9
+msgid "New problems"
+msgstr "New problems"
+
+#: core/templates/core/home.html:14
+msgid "See all problems"
+msgstr "See all problems"
+
+#: core/templates/core/privacy.html:7
+msgid ""
+"You sign in with your Google account. From Google we keep only its account "
+"number, which tells us it is the same account next time. We never ask Google "
+"for your email address, name or photo, and we don't store them."
+msgstr "You sign in with your Google account. From Google we keep only its account number, which tells us it is the same account next time. We never ask Google for your email address, name or photo, and we don't store them."
+
+#: core/templates/core/privacy.html:12
+msgid ""
+"We store the username, display name and school you type in, the programs you "
+"submit and their results. Other people can see your username, display name, "
+"school and scores, but never your programs."
+msgstr "We store the username, display name and school you type in, the programs you submit and their results. Other people can see your username, display name, school and scores, but never your programs."
+
+#: core/templates/core/privacy.html:17
+msgid ""
+"Google sees that you signed in to this site. Signing out here does not sign "
+"you out of Google."
+msgstr "Google sees that you signed in to this site. Signing out here does not sign you out of Google."
+
+#: core/templates/core/privacy.html:21
+msgid ""
+"To have your account and everything in it deleted, ask the person who runs "
+"this site."
+msgstr "To have your account and everything in it deleted, ask the person who runs this site."
+
+#: core/validators.py:25
+#, python-format
+msgid "At most %(limit)d bytes (this is %(size)d)."
+msgstr "At most %(limit)d bytes (this is %(size)d)."
+
+#: core/validators.py:45
+msgid "Control or invisible characters are not allowed."
+msgstr "Control or invisible characters are not allowed."
+
+#: core/views.py:54
+msgid "Too many tries"
+msgstr "Too many tries"
+
+#: core/views.py:55
+msgid "Please wait a while and try again."
+msgstr "Please wait a while and try again."
+
+#: judging/models.py:17
+msgid "Accepted"
+msgstr "Accepted"
+
+#: judging/models.py:18
+msgid "Partially correct"
+msgstr "Partially correct"
+
+#: judging/models.py:19
+msgid "Wrong answer"
+msgstr "Wrong answer"
+
+#: judging/models.py:20
+msgid "Time limit exceeded"
+msgstr "Time limit exceeded"
+
+#: judging/models.py:21
+msgid "Memory limit exceeded"
+msgstr "Memory limit exceeded"
+
+#: judging/models.py:22
+msgid "Runtime error"
+msgstr "Runtime error"
+
+#: judging/models.py:23
+msgid "Output limit exceeded"
+msgstr "Output limit exceeded"
+
+#: judging/models.py:24
+msgid "Compilation error"
+msgstr "Compilation error"
+
+#: judging/models.py:25
+msgid "Judge error"
+msgstr "Judge error"
+
+#: judging/models.py:30 judging/models.py:91
+msgid "queued"
+msgstr "queued"
+
+#: judging/models.py:31
+msgid "judging"
+msgstr "judging"
+
+#: judging/models.py:85
+msgid "judge"
+msgstr "judge"
+
+#: judging/models.py:86
+msgid "validate"
+msgstr "validate"
+
+#: judging/models.py:87
+msgid "calibrate"
+msgstr "calibrate"
+
+#: judging/models.py:88
+msgid "self-test"
+msgstr "self-test"
+
+#: judging/models.py:99
+msgid "fresh submission"
+msgstr "fresh submission"
+
+#: judging/models.py:100
+msgid "validation"
+msgstr "validation"
+
+#: judging/models.py:101
+msgid "rejudge"
+msgstr "rejudge"
+
+#: judging/models.py:102
+msgid "calibration and self-test"
+msgstr "calibration and self-test"
+
+#: problems/models.py:22
+msgid "visible"
+msgstr "visible"
+
+#: problems/models.py:50
+msgid "imported"
+msgstr "imported"
+
+#: problems/models.py:51
+msgid "validating"
+msgstr "validating"
+
+#: problems/models.py:52
+msgid "valid"
+msgstr "valid"
+
+#: problems/models.py:53
+msgid "invalid"
+msgstr "invalid"
+
+#: problems/templates/problems/detail.html:10
+msgid "Time limit"
+msgstr "Time limit"
+
+#: problems/templates/problems/detail.html:10
+msgid "ms"
+msgstr "ms"
+
+#: problems/templates/problems/detail.html:11
+msgid "Memory limit"
+msgstr "Memory limit"
+
+#: problems/templates/problems/detail.html:12
+msgid "Languages"
+msgstr "Languages"
+
+#: problems/templates/problems/detail.html:13
+msgid "Input file"
+msgstr "Input file"
+
+#: problems/templates/problems/detail.html:14
+msgid "Output file"
+msgstr "Output file"
+
+#: problems/templates/problems/detail.html:15
+#: problems/templates/problems/list.html:8
+msgid "Tags"
+msgstr "Tags"
+
+#: problems/templates/problems/detail.html:19
+msgid "Statement (PDF)"
+msgstr "Statement (PDF)"
+
+#: problems/templates/problems/detail.html:27
+msgid "Files"
+msgstr "Files"
+
+#: problems/templates/problems/detail.html:42
+msgid "Examples"
+msgstr "Examples"
+
+#: problems/templates/problems/detail.html:46
+msgid "Input"
+msgstr "Input"
+
+#: problems/templates/problems/detail.html:46
+#: problems/templates/problems/detail.html:50
+msgid "download"
+msgstr "download"
+
+#: problems/templates/problems/detail.html:50
+msgid "Output"
+msgstr "Output"
+
+#: problems/templates/problems/detail.html:54
+msgid "This example is long; only its beginning is shown."
+msgstr "This example is long; only its beginning is shown."
+
+#: problems/templates/problems/list.html:8
+msgid "Problem"
+msgstr "Problem"
+
+#: problems/templates/problems/list.html:19
+msgid "No problems yet."
+msgstr "No problems yet."

@@ -1,0 +1,62 @@
+# Dev edge. Like the production edge (built later as its own image), it is the only way into the
+# web roles: each port goes to one role and sets X-Edge-Zone for it, replacing anything the client
+# sent. Django checks the header again (core/middleware.py).
+{
+	auto_https off
+	admin off
+}
+
+# Public site (production: :8080 behind the Cloudflare tunnel).
+:8000 {
+	@blocked path /admin /admin/* /internal /internal/* /setup /setup/*
+	respond @blocked 404
+	reverse_proxy web:8000 {
+		header_up X-Edge-Zone public
+	}
+}
+
+# Admin site (production: :8081 on the LAN). The judge API is for the worker only, never via here.
+:8001 {
+	@blocked path /internal /internal/*
+	respond @blocked 404
+	reverse_proxy web-admin:8000 {
+		header_up X-Edge-Zone admin
+	}
+}
+
+# Google sign-in egress (production: forwards to Google over verified TLS; here: to fake-oidc).
+# Exactly two fixed paths. Listens on the edge's app_net address only and serves only the public
+# web role, so neither web-admin, the worker nor the host can use it.
+:8090 {
+	bind 10.89.90.10
+	# `handle` blocks are tried in order and only the first match runs; this one must stay first.
+	@not_web not remote_ip 10.89.90.20
+	handle @not_web {
+		respond 404
+	}
+
+	@token {
+		method POST
+		path /token
+	}
+	handle @token {
+		request_body {
+			max_size 16KB
+		}
+		rewrite * /token
+		reverse_proxy fake-oidc:8099
+	}
+
+	@certs {
+		method GET
+		path /certs
+	}
+	handle @certs {
+		rewrite * /certs
+		reverse_proxy fake-oidc:8099
+	}
+
+	handle {
+		respond 404
+	}
+}

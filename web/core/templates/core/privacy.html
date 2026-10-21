@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Privacy" %}{% endblock %}
+{% block content %}
+<article>
+  <h1>{% translate "Privacy" %}</h1>
+  <p>{% blocktranslate trimmed %}
+    You sign in with your Google account. From Google we keep only its account number, which
+    tells us it is the same account next time. We never ask Google for your email address, name
+    or photo, and we don't store them.
+  {% endblocktranslate %}</p>
+  <p>{% blocktranslate trimmed %}
+    We store the username, display name and school you type in, the programs you submit and
+    their results. Other people can see your username, display name, school and scores, but
+    never your programs.
+  {% endblocktranslate %}</p>
+  <p>{% blocktranslate trimmed %}
+    Google sees that you signed in to this site. Signing out here does not sign you out of
+    Google.
+  {% endblocktranslate %}</p>
+  <p>{% blocktranslate trimmed %}
+    To have your account and everything in it deleted, ask the person who runs this site.
+  {% endblocktranslate %}</p>
+</article>
+{% endblock %}

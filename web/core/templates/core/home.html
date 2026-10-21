@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% load i18n problems %}
+{% block title %}{% translate "Home" %}{% endblock %}
+{% block content %}
+<h1>{{ site_name }}</h1>
+{% if announcement %}<article><p>{{ announcement|linebreaksbr }}</p></article>{% endif %}
+<p>{% translate "Practice with problems from past contests. Programs are judged like in the contest." %}</p>
+{% if recent_problems %}
+<h2>{% translate "New problems" %}</h2>
+<ul>
+  {% for problem in recent_problems %}<li><a href="{% url 'problem' problem.slug %}">{% problem_title problem %}</a></li>{% endfor %}
+</ul>
+{% endif %}
+<p><a href="{% url 'problems' %}">{% translate "See all problems" %}</a></p>
+{% endblock %}

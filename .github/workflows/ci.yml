@@ -32,6 +32,7 @@ jobs:
       PUBLIC_BASE_URL: http://127.0.0.1:8000
       ADMIN_BASE_URL: http://127.0.0.1:8001
       GRADER_SECRETS_DIR: ${{ github.workspace }}/../ci-secrets
+      GRADER_WORKER_SECRETS_DIR: ${{ github.workspace }}/../ci-secrets-worker
       GRADER_DB_HOST: 127.0.0.1
       GRADER_ROLE: admin
       # This job has no worker container; the sandbox suite runs in its own job.
@@ -43,22 +44,26 @@ jobs:
           version: "0.13.3"
           python-version: "3.12"
       - name: Install dependencies
-        run: uv sync --frozen
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends gettext
+          uv sync --frozen
       - name: Write CI secret files
         run: |
-          mkdir -p "$GRADER_SECRETS_DIR"
+          mkdir -p "$GRADER_SECRETS_DIR" "$GRADER_WORKER_SECRETS_DIR"
           echo "ci-only-throwaway" > "$GRADER_SECRETS_DIR/db_password"
           python3 -c 'import secrets; print(secrets.token_urlsafe(48))' > "$GRADER_SECRETS_DIR/django_secret_key"
+          python3 -c 'import secrets; print(secrets.token_urlsafe(48))' > "$GRADER_WORKER_SECRETS_DIR/worker_token"
       - name: Ruff, mypy and pytest
         run: ./scripts/check.sh
       - name: Migrations are up to date
         run: uv run python web/manage.py makemigrations --check --dry-run
       - name: Django deploy checks, public role
-        run: uv run python web/manage.py check --deploy
+        run: uv run python web/manage.py check --deploy --fail-level WARNING
         env:
           GRADER_ROLE: public
       - name: Django deploy checks, admin role
-        run: uv run python web/manage.py check --deploy
+        run: uv run python web/manage.py check --deploy --fail-level WARNING
         env:
           GRADER_ROLE: admin
 

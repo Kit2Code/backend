@@ -15,6 +15,8 @@ dev = [
     "django-stubs[compatible-mypy]>=5.2",
     "pyyaml>=6.0",
     "types-pyyaml>=6.0",
+    "types-requests>=2.32",
+    "pytest-playwright>=0.7",
 ]
 
 [tool.uv]
@@ -50,12 +52,21 @@ explicit_package_bases = true
 exclude = ['^\.devdata/', '^fixtures/', '/migrations/']
 plugins = ["mypy_django_plugin.main", "pydantic.mypy"]
 
+[[tool.mypy.overrides]]
+# Authlib ships no type hints; its few uses in accounts/google.py are wrapped in typed functions.
+module = ["authlib.*"]
+ignore_missing_imports = true
+
 [tool.django-stubs]
 django_settings_module = "config.settings"
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings"
 pythonpath = ["web"]
-testpaths = ["web/tests", "common/tests", "judge/worker/tests"]
-markers = ["sandbox: needs the dev stack's worker container with real isolate"]
+# The worker tests fork processes, so they run before the browser tests start Playwright's threads.
+testpaths = ["common/tests", "judge/worker/tests", "web/tests", "deploy/tests"]
+markers = [
+    "sandbox: needs the dev stack's worker container with real isolate",
+    "devstack: needs the running dev stack (edge, web roles, fake sign-in provider)",
+]
 addopts = "--strict-markers"

@@ -14,17 +14,17 @@ home server, next to an existing CMS installation.
 
 ## Quick start (development)
 
-You need Linux (or WSL 2) with cgroup v2, Docker with Compose, and
-[uv](https://docs.astral.sh/uv/). Then:
+You need Linux (or WSL 2) with cgroup v2, Docker with Compose, [uv](https://docs.astral.sh/uv/)
+and GNU gettext. Then:
 
 ```sh
-./init.sh              # create dev secrets, build the images, start db, web, web-admin and worker
+./init.sh              # create dev secrets, build the images, start the dev stack
 ./scripts/smoke.sh     # check that both web roles and the sandbox answer
 ./scripts/check.sh     # ruff, mypy and the tests
 ```
 
-The public site is at <http://127.0.0.1:8000> and the admin site at <http://127.0.0.1:8001>.
-Both listen on 127.0.0.1 only.
+The public site is at <http://127.0.0.1:8000> and the admin site at <http://127.0.0.1:8001>, both
+through the dev edge and on 127.0.0.1 only. Signing in uses a fake Google sign-in in dev.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the full set-up, how to run tests and the project rules.
 
