@@ -1,0 +1,10 @@
+format_version: 1
+slug: big-memory
+title: {en: "Big memory"}
+source: "Judge test problem"
+time_limit_ms: 5000
+memory_limit_mb: 512
+languages: [c11]
+scoring: {type: sum, total: 100}
+solutions:
+  - {file: solutions/touch480.c, lang: c11, expected_score: 100}

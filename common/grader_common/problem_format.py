@@ -24,8 +24,13 @@ _SLUG_RE = re.compile(r"[a-z0-9][a-z0-9_-]{0,63}")
 # No leading dot, so "." and ".." are impossible.
 TEST_NAME_RE = re.compile(r"[A-Za-z0-9_-][A-Za-z0-9_.-]{0,63}")
 _TEST_PATTERN_RE = re.compile(r"[A-Za-z0-9_.*?!\[\]-]{1,64}")
-_PATH_PART_RE = re.compile(r"[A-Za-z0-9_-][A-Za-z0-9_.-]{0,127}")
+# Path parts never start with "-", so a file name can't be mistaken for a compiler option.
+_PATH_PART_RE = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}")
 _FILE_NAME_RE = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.-]{0,63}")
+# The files the judge uses for redirected standard input, output and error inside a box.
+STREAM_FILES = ("_stdin", "_stdout", "_stderr")
+# A language's run-time factor may at most multiply the time limit by this.
+MAX_LANG_TIME_FACTOR = 10
 
 
 def _check_slug(value: str) -> str:
@@ -168,7 +173,7 @@ class Problem(_Model):
     time_limit_ms: int = Field(ge=1, le=60_000)
     memory_limit_mb: int = Field(ge=16, le=512)
     languages: list[Language] = Field(min_length=1)
-    lang_time_factor: dict[Language, Annotated[float, Field(gt=0)]] = {}
+    lang_time_factor: dict[Language, Annotated[float, Field(gt=0, le=MAX_LANG_TIME_FACTOR)]] = {}
     io: InputOutput = InputOutput()
     scoring: Scoring
     samples: list[TestName] = []
@@ -193,7 +198,25 @@ class Problem(_Model):
                     raise ValueError(f"grader: language {lang} is not in languages")
         if len(self.samples) != len(set(self.samples)):
             raise ValueError("samples must be unique")
+        self._check_io_names()
         return self
+
+    def _check_io_names(self) -> None:
+        """The program's input/output files must not overwrite the judge's own files in its box."""
+        basename = self.executable_basename()
+        # The executable is named after the submission; for Python it is a .zip archive.
+        taken = {*STREAM_FILES, basename, basename + ".zip"}
+        if self.io.input and self.io.input == self.io.output:
+            raise ValueError("io: input and output must be different files")
+        for name in (self.io.input, self.io.output):
+            if name in taken:
+                raise ValueError(f"io: {name!r} is a name the judge uses itself")
+
+    def executable_basename(self) -> str:
+        """The submission's file name without extension: from the grader, or "main"."""
+        if self.grader is None:
+            return "main"
+        return self.grader.submission_file.removesuffix(".%l")
 
     def max_score(self) -> float:
         """The score of a fully correct submission."""

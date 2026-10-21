@@ -162,6 +162,16 @@ requires-dist = [
 name = "grader-worker"
 version = "0.1.0"
 source = { editable = "judge/worker" }
+dependencies = [
+    { name = "grader-common" },
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "grader-common", editable = "common" },
+    { name = "pydantic", specifier = ">=2.11,<3" },
+]
 
 [[package]]
 name = "grader-workspace"

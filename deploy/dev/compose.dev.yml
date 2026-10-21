@@ -87,8 +87,20 @@ services:
     cgroup: host
     init: true
     restart: unless-stopped
+    environment:
+      JUDGE_SLOTS: "2"
+      JUDGE_BOX_CPUS: "10,11"
+      JUDGE_MEM_TOTAL: "1024M"
+      TZ: Asia/Bangkok
     volumes:
+      # Live code, like the web roles (the image has the same code baked in). Read-only: a process
+      # that got root in this container must not be able to change the repo's source.
+      - ../../judge/worker:/app/judge/worker:ro
+      - ../../common:/app/common:ro
+      # Test programs and problems for the sandbox tests, read-only.
+      - ../../fixtures:/app/fixtures:ro
       - ../../.devdata/problems:/data/problems:ro
+      - ../../.devdata/judge-cache:/data/cache
     networks: [judge_net]
     healthcheck:
       test: ["CMD", "test", "-d", "/sys/fs/cgroup/grader-judge"]

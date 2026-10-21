@@ -1,0 +1,11 @@
+format_version: 1
+slug: testlib-codes
+title: {en: "testlib checker codes"}
+source: "Judge test problem"
+time_limit_ms: 1000
+memory_limit_mb: 64
+languages: [python3]
+scoring: {type: sum, total: 100}
+checker: {type: testlib, file: checker/checker.cpp}
+solutions:
+  - {file: solutions/ok.py, lang: python3, expected_score: 100}

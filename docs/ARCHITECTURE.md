@@ -89,7 +89,7 @@ checked against a pinned commit. isolate runs each program in a "box" with no ne
 user, and limits on CPU time, wall time, memory, processes, file size and output.
 
 The server also runs CMS, which has its own isolate. To never collide with it, ours uses its own
-namespace (`judge/worker/isolate.conf`):
+namespace (`judge/worker/isolate.base`):
 
 | | CMS's isolate | ours |
 |---|---|---|
@@ -97,18 +97,37 @@ namespace (`judge/worker/isolate.conf`):
 | sandbox user/group ids | from 60000 | from 70000 |
 | box ids | from 0 | 100–109 |
 
-The worker's entrypoint (`judge/worker/entrypoint.sh`) creates the `grader-judge` cgroup and turns on
-the `cpuset`, `memory` and `pids` controllers isolate needs. *(planned)* It will also cap the total
-memory of all sandboxes and pin each box to its own CPU.
+The worker's entrypoint (`judge/worker/entrypoint.sh`, which runs `grader_worker/setup.py`) creates
+the `grader-judge` cgroup and turns on the `cpuset`, `memory` and `pids` controllers isolate needs.
+It also caps the total memory of all sandboxes (`JUDGE_MEM_TOTAL`, no swap) and pins each box to
+its own CPU (`JUDGE_BOX_CPUS`).
 
-isolate needs to write to the host's cgroup tree, so the worker container is privileged. That makes
-it the most dangerous container, which is why it has no internet, no route to the database and no
+isolate needs `CAP_SYS_ADMIN` and write access to the host's cgroup tree, so the worker container is
+privileged in dev; production is meant to use a narrower profile (only `SYS_ADMIN` added, cgroup
+tree mounted read-write; see DECISIONS.md, "Worker container security profile"). isolate itself is
+not setuid, because the worker already runs as root. Either way it is
+the most dangerous container, which is why it has no internet, no route to the database and no
 database password.
+
+`judge-env` (`grader_worker/env_report.py`) prints an **environment report** as JSON: isolate and
+kernel versions, the cgroup type and whether it is writable, `memory.max`/`memory.swap.max` of the
+judge cgroup, the container's effective capabilities, seccomp mode and AppArmor label, the
+box → CPU map with each judge CPU's SMT siblings and P/E-core kind, warnings (judge CPUs sharing a
+core, P/E mix, swap), and the read-only `isolate-check-environment` output. It only reads. The dev
+result is kept in `docs/env-dev.json`. *(planned)* The worker sends it to web-admin at start and
+every 10 minutes, for the admin System page, since the home server has no terminal.
 
 *(planned)* The worker **polls** web-admin's `/internal/*` API over `judge_net`: it claims a job,
 sends heartbeats and progress, and posts the result. The job carries everything needed (source code,
 problem version), so the worker never touches the database. Request and response bodies are
 defined once in `common/grader_common/` and shared by both sides.
+
+Notes for the web side, from the sandbox audit:
+- The worker reports exact time, wall time and memory per test. A submission could encode facts
+  about a hidden test's input in how long it runs or how much it allocates, so pages should round
+  these values (and submissions are rate-limited anyway).
+- The shared memory budget has no queue: a waiting large step is retried every 50 ms, so with a tight
+  `JUDGE_MEM_TOTAL` a big job can wait longer than a fair queue would make it.
 
 ## Problems: format, importer and store
 

@@ -169,3 +169,55 @@ def test_committed_json_schema_is_up_to_date() -> None:
     """Regenerate with: uv run python -m grader_common.problem_format"""
     committed = Path(problem_format.SCHEMA_PATH).read_text(encoding="utf-8")
     assert committed == problem_format.schema_json()
+
+
+@pytest.mark.parametrize(
+    ("path", "value"),
+    [
+        # Names starting with "-" would look like options on a compiler's command line.
+        (["grader", "files", "cpp17"], ["graders/-o"]),
+        (["grader", "files", "cpp17"], ["graders/-sub/grader.cpp"]),
+        (["grader", "downloadable"], ["graders/-x.h"]),
+        (["checker"], {"type": "cms", "file": "checker/-checker.cpp"}),
+        (["solutions", 0, "file"], "solutions/-main.cpp"),
+        # A factor above 10 would let one problem hold a judge slot for minutes.
+        (["lang_time_factor"], {"python3": 10.5}),
+        (["lang_time_factor"], {"python3": -1}),
+    ],
+)
+def test_unsafe_names_and_factors_are_refused(path: list[str | int], value: Any) -> None:
+    with pytest.raises(ValidationError):
+        Problem.model_validate(_mutated(path, value))
+
+
+def test_lang_time_factor_up_to_ten_is_allowed() -> None:
+    problem = Problem.model_validate(_mutated(["lang_time_factor"], {"python3": 10}))
+    assert problem.lang_time_factor["python3"] == 10
+
+
+@pytest.mark.parametrize("name", ["_stdin", "_stdout", "_stderr", "main", "main.zip"])
+@pytest.mark.parametrize("which", ["input", "output"])
+def test_io_names_must_not_clash_with_judge_files(which: str, name: str) -> None:
+    """The judge's own files in the box: redirected streams and the executable (main[.zip])."""
+    data = minimal()
+    data["io"] = {which: name}
+    with pytest.raises(ValidationError, match=name):
+        Problem.model_validate(data)
+
+
+@pytest.mark.parametrize("name", ["aplusb", "aplusb.zip"])
+def test_io_names_must_not_clash_with_the_grader_executable(name: str) -> None:
+    data = example()
+    data["io"] = {"input": name}
+    with pytest.raises(ValidationError, match=name):
+        Problem.model_validate(data)
+    data["grader"] = None
+    assert Problem.model_validate(data).io.input == name  # the executable is "main" then
+
+
+def test_io_input_and_output_must_differ() -> None:
+    """Otherwise a program that writes nothing would be judged on the input file itself."""
+    data = minimal()
+    data["io"] = {"input": "data.txt", "output": "data.txt"}
+    with pytest.raises(ValidationError, match="must be different"):
+        Problem.model_validate(data)

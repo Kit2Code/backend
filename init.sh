@@ -14,7 +14,8 @@ new_secret() {
 }
 
 umask 077
-mkdir -p .devdata/secrets/db .devdata/secrets/web .devdata/problems .devdata/uploads
+mkdir -p .devdata/secrets/db .devdata/secrets/web .devdata/problems .devdata/uploads \
+  .devdata/judge-cache
 if [ ! -s .devdata/secrets/db/db_password ]; then
   new_secret > .devdata/secrets/db/db_password
   echo "init: created a dev database password"

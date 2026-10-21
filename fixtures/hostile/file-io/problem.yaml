@@ -1,0 +1,9 @@
+format_version: 1
+slug: hostile-file-io
+title: {en: "Hostile programs (file input and output)"}
+source: "Judge test problem"
+time_limit_ms: 1000
+memory_limit_mb: 256
+languages: [c11, python3]
+io: {input: in.txt, output: out.txt}
+scoring: {type: sum, total: 100}

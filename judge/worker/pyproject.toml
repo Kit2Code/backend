@@ -3,7 +3,14 @@
 name = "grader-worker"
 version = "0.1.0"
 requires-python = ">=3.12,<3.13"
-dependencies = []
+dependencies = [
+    "grader-common",
+    "pydantic>=2.11,<3",
+]
+
+[project.scripts]
+judge-run = "grader_worker.cli:judge_run"
+judge-env = "grader_worker.cli:judge_env"
 
 [build-system]
 requires = ["uv_build>=0.13,<0.14"]

@@ -1,0 +1,211 @@
+{
+ "source": "CMS v1.5.1 cms/grading/steps/whitediff.py (_white_diff), run on this corpus",
+ "encoding": "bytes stored as latin-1 strings",
+ "cases": [
+  {
+   "output": "3\n",
+   "correct": "3\n",
+   "equal": true
+  },
+  {
+   "output": "3",
+   "correct": "3\n",
+   "equal": true
+  },
+  {
+   "output": "3\n",
+   "correct": "3",
+   "equal": true
+  },
+  {
+   "output": "3   \n",
+   "correct": "3\n",
+   "equal": true
+  },
+  {
+   "output": "   3\n",
+   "correct": "3\n",
+   "equal": true
+  },
+  {
+   "output": "1  2\n",
+   "correct": "1 2\n",
+   "equal": true
+  },
+  {
+   "output": "1\t2\n",
+   "correct": "1 2\n",
+   "equal": true
+  },
+  {
+   "output": "1 \t \t2\n",
+   "correct": "1 2\n",
+   "equal": true
+  },
+  {
+   "output": "1\r\n2\r\n",
+   "correct": "1\n2\n",
+   "equal": true
+  },
+  {
+   "output": "1\n2\n\n\n",
+   "correct": "1\n2\n",
+   "equal": true
+  },
+  {
+   "output": "1\n2\n",
+   "correct": "1\n2\n\n\n",
+   "equal": true
+  },
+  {
+   "output": "1\n2\n  \n\t\n",
+   "correct": "1\n2\n",
+   "equal": true
+  },
+  {
+   "output": "1\n\n2\n",
+   "correct": "1\n2\n",
+   "equal": false
+  },
+  {
+   "output": "1 2\n",
+   "correct": "1\n2\n",
+   "equal": false
+  },
+  {
+   "output": "12\n",
+   "correct": "1 2\n",
+   "equal": false
+  },
+  {
+   "output": "",
+   "correct": "",
+   "equal": true
+  },
+  {
+   "output": "",
+   "correct": "\n",
+   "equal": true
+  },
+  {
+   "output": "\n",
+   "correct": "",
+   "equal": true
+  },
+  {
+   "output": "",
+   "correct": "0\n",
+   "equal": false
+  },
+  {
+   "output": "0\n",
+   "correct": "",
+   "equal": false
+  },
+  {
+   "output": "\n1\n",
+   "correct": "1\n",
+   "equal": false
+  },
+  {
+   "output": "1\u000b2\n",
+   "correct": "1 2\n",
+   "equal": true
+  },
+  {
+   "output": "1\f2\n",
+   "correct": "1 2\n",
+   "equal": true
+  },
+  {
+   "output": "1\r2\n",
+   "correct": "1 2\n",
+   "equal": true
+  },
+  {
+   "output": "1\u00c2\u00a02\n",
+   "correct": "1 2\n",
+   "equal": false
+  },
+  {
+   "output": "Yes\n",
+   "correct": "yes\n",
+   "equal": false
+  },
+  {
+   "output": "1.0\n",
+   "correct": "1\n",
+   "equal": false
+  },
+  {
+   "output": "-0\n",
+   "correct": "0\n",
+   "equal": false
+  },
+  {
+   "output": "a b c\n",
+   "correct": "a  b  c  \n",
+   "equal": true
+  },
+  {
+   "output": "\u00ff\u00fe\n",
+   "correct": "\u00ff\u00fe\n",
+   "equal": true
+  },
+  {
+   "output": "\u00ff\n",
+   "correct": "\u00fe\n",
+   "equal": false
+  },
+  {
+   "output": "1\n2\n3",
+   "correct": "1\n2\n3\n",
+   "equal": true
+  },
+  {
+   "output": "1\n2",
+   "correct": "1\n2\n3\n",
+   "equal": false
+  },
+  {
+   "output": "1\n2\n3\n",
+   "correct": "1\n2\n",
+   "equal": false
+  },
+  {
+   "output": " \n",
+   "correct": "\n",
+   "equal": true
+  },
+  {
+   "output": "x\n\n",
+   "correct": "x\n",
+   "equal": true
+  },
+  {
+   "output": "x\n \n y\n",
+   "correct": "x\n\ny\n",
+   "equal": true
+  },
+  {
+   "output": "\t\n",
+   "correct": "",
+   "equal": true
+  },
+  {
+   "output": "1 2 3 4 5 6 7 8 9 10\n1 2 3 4 5 6 7 8 9 10\n1 2 3 4 5 6 7 8 9 10\n",
+   "correct": "1 2 3 4 5 6 7 8 9 10\n1 2 3 4 5 6 7 8 9 10\n1 2 3 4 5 6 7 8 9 10\n",
+   "equal": true
+  },
+  {
+   "output": "a\u0000b\n",
+   "correct": "a\u0000b\n",
+   "equal": true
+  },
+  {
+   "output": "a\u0000b\n",
+   "correct": "a b\n",
+   "equal": false
+  }
+ ]
+}

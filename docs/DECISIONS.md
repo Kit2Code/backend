@@ -201,3 +201,147 @@ to our native layout. Where our format differs:
 accident.
 **Credit:** the language-name table (`LANGUAGE_MAP`) is copied from CMS v1.5.1
 `cmscontrib/loaders/base_loader.py` (AGPL-3.0, same licence as this project).
+
+## 2026-10-21: Worker container security profile
+
+**What isolate 2.7 needs from its container:**
+- **Root with `CAP_SYS_ADMIN`.** isolate is setuid root. Each box gets new mount, IPC, UTS, PID and
+  network namespaces, bind mounts and a `chroot`, which all need `CAP_SYS_ADMIN`. Switching to the
+  box user (uid 70000 and up) needs `CAP_SETUID`/`CAP_SETGID`, and preparing the box folder needs
+  `CAP_CHOWN`/`CAP_FOWNER`/`CAP_DAC_OVERRIDE`. Docker gives these three to every container already.
+- **A writable cgroup v2 tree in the host cgroup namespace.** isolate makes one cgroup per box under
+  `/sys/fs/cgroup/grader-judge` and reads its memory and OOM counters. Docker mounts
+  `/sys/fs/cgroup` read-only in a container that isn't privileged, so it has to be mounted again
+  read-write.
+- **Seccomp and AppArmor that allow `unshare`, `mount` and `chroot`.** Docker's default AppArmor
+  profile blocks `mount` even when `CAP_SYS_ADMIN` is granted.
+
+**Dev, now (`deploy/dev/compose.dev.yml`):** the worker is `privileged: true` with `cgroup: host`
+and `init: true`. It is only on `judge_net` (internal: no internet, no route to the database), has
+no host ports, no Docker socket and no secrets (the worker token comes with the worker loop). The
+problem store is mounted read-only, the judge cache read-write. The root filesystem is writable
+(isolate keeps its boxes in `/var/local/lib/isolate`). The environment report from this setup is
+in `docs/env-dev.json`: all 41 capabilities, cgroup v2 mounted read-write, seccomp in filter mode
+(the dev host's Docker 29 still applies its seccomp filter to privileged containers) and no
+AppArmor on the dev host.
+
+**Choice for production:** a narrower profile than `privileged`: `cgroup: host`,
+`cap_add: [SYS_ADMIN]`, `security_opt: [seccomp=unconfined, apparmor=unconfined]`, and a volume `/sys/fs/cgroup:/sys/fs/cgroup:rw`, without `privileged`. Plus, as in dev: the problem
+store read-only, only the `worker_token` secret directory, `judge_net` only, no Docker socket. It is
+adopted only if the whole sandbox suite (`uv run pytest -q judge/worker/tests`, including every
+hostile fixture) passes with it. If a test fails only because of the profile, the worker falls back
+to `privileged: true`, and the failing test is named in this entry. The environment report shows on
+the admin System page which capabilities, seccomp mode and AppArmor label the worker really got.
+**Why:** a privileged container sees every host device (`/dev/sda` and friends), has all
+capabilities (loading kernel modules, raw I/O, changing the network), and its `/sys` and `/proc` are
+not masked: root in it is close to root on the server, which holds family files. The narrower
+profile keeps Docker's device restrictions and masked paths and drops about 26 capabilities, while
+still giving isolate what it needs. It is still a strong profile (`CAP_SYS_ADMIN` with no seccomp
+filter), so the other walls stay: no internet, no database, one secret.
+**Alternatives:** `privileged: true` everywhere (simplest, how CMS v1.5 is usually run; much wider
+than needed); also keeping Docker's default seccomp profile (it allows `unshare` and `mount` once
+`CAP_SYS_ADMIN` is added, so it may work and would be narrower still; to try after the profile above
+passes); a private cgroup namespace (box cgroups would live under Docker's cgroup for the container,
+which is removed and recreated on every restart; the setup is designed around one fixed subtree).
+**Tightening found in the sandbox audit (to apply in the same trial):** `cap_drop: [ALL]` and add back
+only `SYS_ADMIN, SETUID, SETGID, CHOWN, DAC_OVERRIDE, FOWNER, SYS_CHROOT, KILL, MKNOD` (`MKNOD` for the
+boxes' small `/dev`, see below; not `DAC_READ_SEARCH`);
+`no-new-privileges:true` (isolate no longer has the setuid bit); a read-only root filesystem with tmpfs
+for `/run` and `/tmp`; `mem_limit` and `pids_limit` for the worker process itself (boxes are in
+`grader-judge`, outside that limit); then try Docker's default seccomp profile too. Known residual risk:
+`CAP_SYS_ADMIN` without seccomp and a read-write `/sys/fs/cgroup` is still close to host root for anyone
+who becomes root in the container (cgroup v1 `release_agent` class of escapes, writing other apps'
+cgroups); longer term, a one-shot setup step could create `grader-judge` so the worker needs only that
+subtree writable.
+**Status (2026-10-21):** not tried yet. Dev still runs `privileged: true` until the suite has been run
+under the narrower profile; the result ("adopted" or "fell back: <test>") goes here.
+
+## 2026-10-21: Program output counts toward the memory limit
+
+**Choice:** keep the program's output as a file inside the box, as CMS does. The file's page cache is
+charged to the box's memory cgroup, so `cg-mem` grows with the output (about 1 MB per MB written). A
+program that writes a flood of output is usually killed by the memory limit before it reaches the
+64 MB output limit and gets **MLE**, not OLE, and a program whose memory plus output is above the
+memory limit gets MLE too.
+**Why:** this is exactly how CMS v1.5 judges (isolate `--cg-mem`, output file in the box), so verdicts
+match the contests these problems come from, and the code stays simple. Real problems have small
+outputs compared with their memory limits.
+**Alternatives:** read the program's stdout through a pipe that the worker drains and counts (output
+no longer costs memory and OLE is exact, but it differs from CMS and adds code that handles hostile
+output in the worker); report OLE first whenever the output reached the size limit (helps only the
+few floods that get that far).
+
+## 2026-10-21: Temporary disk use by programs writing many files
+
+**Choice (for now):** accept it in dev, and fix where boxes live before production. The file-size
+limit (64 MB) applies per file and boxes live on disk without a quota, so a program can write many
+files (roughly 1 GB per second of CPU time) or many empty files (inodes) until its time limit stops it.
+Everything is deleted when the box is cleaned up after each step, and the hostile suite checks that
+nothing is left.
+**Limits of this choice:** the CPU limit can be up to 60 s × time scale, so this is more than "a few
+GB" in the worst case; cleaning up millions of files takes time while the slot is held; and boxes are
+in the container's own filesystem, which sits on Docker's data disk (on ZimaOS often the small system
+disk, shared with every other app). **Before the production compose:** put `box_root` on its own
+volume under `/DATA/AppData/grader/`, ideally a fixed-size filesystem image with quotas so isolate's
+`--quota` works; add an inode-flood hostile test with a bound on cleanup time.
+**Why:** the time limit bounds it in dev, and the box is always removed.
+**Alternatives:** isolate's `--quota` (needs a filesystem with quotas; Docker's overlayfs and bind
+mounts usually don't have them); boxes on a size-capped tmpfs (files would count toward the memory
+limit, which reverses keeping boxes on disk).
+
+## 2026-10-21: Public sign-in with Google only
+
+**Choice:** students sign in on the public site with Google only (OpenID Connect authorization-code flow with
+`state`, `nonce` and PKCE, using Authlib). We ask for the `openid` scope only and store just Google's account id
+(`iss` + `sub`); on first sign-in the student picks a username, display name and optional school. Staff keep
+username + password (Argon2), and only on the admin port. The Google client ID and secret are pasted into an admin
+page and the secret is stored encrypted (Fernet, key derived from the Django secret key with HKDF).
+**How web reaches Google without internet access:** the public web container stays on internal-only networks. The
+edge gets an extra listener on the internal app network that forwards exactly two fixed paths to Google over
+verified TLS (token endpoint and signing keys) and returns 404 for anything else. The browser part of sign-in is a
+plain redirect, so no Google JavaScript runs on our pages and the CSP stays strict. Dev and tests use a small fake
+OpenID Connect provider in the dev stack, because automated tests can't sign in to real Google.
+**Why:** no public passwords to store, reset or brute-force, and no reset emails; asking for `openid` only keeps
+email addresses out of the database and backups. The admin port is plain HTTP on the LAN, which Google doesn't
+accept as a redirect target, so staff need passwords anyway. Forwarding through the edge keeps "the web roles have
+no direct internet" true: an SSRF bug in the public site can reach only Google's token endpoint.
+**Alternatives:** username + password for everyone (more to protect and support); Google plus passwords (both sets
+of code); django-allauth (larger, its own models and templates to override); hand-written OIDC (more
+security-sensitive code of our own); storing the email too (personal data in backups); giving the public web
+container normal internet access (simpler, but an SSRF bug could reach anything); passing the client secret as an
+environment variable (visible in `docker inspect`).
+
+## 2026-10-21: Sandbox hardening after the first sandbox audit
+
+**Choices:**
+- **A small `/dev` in every box.** By default isolate shows the container's whole `/dev` in each box; in a
+  privileged container that includes host devices such as `/dev/kmsg` (the host kernel log). The worker's setup
+  now builds `/var/local/lib/grader-judge-dev` with only `null`, `zero`, `full`, `random`, `urandom` and an empty
+  `shm` folder (isolate mounts each box's private tmpfs there), and every run passes
+  `--dir=/dev=/var/local/lib/grader-judge-dev:dev`. Inside a box `/dev` is read-only.
+- **Memory reservations that survive a restart are dropped.** Each entry stores its process id *and* the process
+  start time, because container process ids repeat after a restart; setup also clears the ledger at start.
+- **A box whose cleanup failed is never reused.** Its slot is marked broken (cleared at the next start); if every
+  slot is broken, jobs fail fast with a judge error instead of waiting forever.
+- **White-diff streams.** It runs in the worker, outside any box, so it must not load a hostile output into
+  memory token by token (a 64 MB line of one-letter tokens used about 3 GB). It now reads both files in 64 KB
+  pieces and compares them as streams, with the same result as CMS v1.5.1 (golden tests, plus a randomised
+  comparison with a copy of CMS's own logic).
+- **Everything a box produces is cleaned and capped before it leaves the worker:** all Unicode control and format
+  characters (C0, C1, bidi overrides, zero-width) are removed except tab and newline; compile logs are cut at
+  64 KB of UTF-8, other messages at 4096 characters. Any unexpected error while judging becomes a judge error
+  (JE) for that submission instead of crashing the job.
+- **Problem packages are checked harder at import:** no file names starting with `-`, `io.input`/`io.output`
+  can't clash with the executable or the worker's own stream files, and a language time factor must be in
+  (0, 10]. The memory budget (`JUDGE_MEM_TOTAL`) must be at least the largest step limit (512 MB).
+- **Compiled checkers are cached safely.** Each is written to a unique temporary file, synced to disk and then
+  renamed into place, with a `checker.sha256` file beside it. A cached checker is used only if it is a regular,
+  non-empty ELF file matching its checksum; anything else is rebuilt, so a half-written file after a power cut
+  can't turn every test of a problem into a judge error.
+- **A ceiling on the whole judge cgroup:** `cpuset.cpus` = the judge CPUs and a `pids.max`, so even a box with a
+  wrong per-box CPU setting can't run on the CPUs used by CMS or the web apps.
+**Why:** each closes a concrete path found by the audit (reading host devices, a judge that stalls after a power
+cut, false TLE/MLE from a leftover process, running outside the judge CPUs).
+**Alternatives:** an `isolate` rule list without `/dev` at all (compilers and Python need `/dev/null` and
+`/dev/urandom`); relying on the narrower container profile alone to hide devices (it isn't tried yet, and the
+fallback is privileged).

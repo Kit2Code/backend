@@ -1,0 +1,108 @@
+{
+    "isolate": {
+        "version": "2.7",
+        "version_line": "The process isolator 2.7"
+    },
+    "kernel": "6.18.54.1-microsoft-standard-WSL2",
+    "cgroup": {
+        "type": "cgroup2",
+        "version": 2,
+        "writable": true,
+        "root": "/sys/fs/cgroup/grader-judge",
+        "memory_max": "1073741824",
+        "memory_swap_max": "0",
+        "subtree_control": [
+            "cpuset",
+            "memory",
+            "pids"
+        ]
+    },
+    "capabilities": {
+        "cap_eff": "000001ffffffffff",
+        "cap_eff_names": [
+            "CAP_CHOWN",
+            "CAP_DAC_OVERRIDE",
+            "CAP_DAC_READ_SEARCH",
+            "CAP_FOWNER",
+            "CAP_FSETID",
+            "CAP_KILL",
+            "CAP_SETGID",
+            "CAP_SETUID",
+            "CAP_SETPCAP",
+            "CAP_LINUX_IMMUTABLE",
+            "CAP_NET_BIND_SERVICE",
+            "CAP_NET_BROADCAST",
+            "CAP_NET_ADMIN",
+            "CAP_NET_RAW",
+            "CAP_IPC_LOCK",
+            "CAP_IPC_OWNER",
+            "CAP_SYS_MODULE",
+            "CAP_SYS_RAWIO",
+            "CAP_SYS_CHROOT",
+            "CAP_SYS_PTRACE",
+            "CAP_SYS_PACCT",
+            "CAP_SYS_ADMIN",
+            "CAP_SYS_BOOT",
+            "CAP_SYS_NICE",
+            "CAP_SYS_RESOURCE",
+            "CAP_SYS_TIME",
+            "CAP_SYS_TTY_CONFIG",
+            "CAP_MKNOD",
+            "CAP_LEASE",
+            "CAP_AUDIT_WRITE",
+            "CAP_AUDIT_CONTROL",
+            "CAP_SETFCAP",
+            "CAP_MAC_OVERRIDE",
+            "CAP_MAC_ADMIN",
+            "CAP_SYSLOG",
+            "CAP_WAKE_ALARM",
+            "CAP_BLOCK_SUSPEND",
+            "CAP_AUDIT_READ",
+            "CAP_PERFMON",
+            "CAP_BPF",
+            "CAP_CHECKPOINT_RESTORE"
+        ]
+    },
+    "security": {
+        "seccomp": "filter",
+        "no_new_privs": false,
+        "lsm_label": "kernel"
+    },
+    "slots": 2,
+    "mem_total": 1073741824,
+    "box_map": {
+        "100": 10,
+        "101": 11
+    },
+    "cpus": {
+        "10": {
+            "smt_siblings": [
+                10,
+                11
+            ],
+            "kind": null,
+            "max_mhz": null
+        },
+        "11": {
+            "smt_siblings": [
+                10,
+                11
+            ],
+            "kind": null,
+            "max_mhz": null
+        }
+    },
+    "cpu_topology": {
+        "p_cores": null,
+        "e_cores": null
+    },
+    "swap_total_kb": 2097152,
+    "isolate_check_environment": {
+        "exit_code": 1,
+        "output": "Using cgroup root: /sys/fs/cgroup/grader-judge\nChecking for cgroup support for cpuset.cpus ... PASS\nChecking for cgroup support for cpuset.mems ... PASS\nChecking for cgroup support for cpu.stat ... PASS\nChecking for cgroup support for cgroup.procs ... PASS\nChecking for cgroup support for memory.events ... PASS\nChecking for cgroup support for memory.max ... PASS\nChecking for swap ... CAUTION\nWARNING: swap is enabled, and although accounted for, may still give run-time variability under memory pressure.\nChecking for simultaneous multithreading ... FAIL\nWARNING: simultaneous multithreading is enabled.\necho off > /sys/devices/system/cpu/smt/control\nChecking for CPU frequency scaling ... SKIPPED (not detected)\nChecking for Intel frequency boost ... SKIPPED (not detected)\nChecking for general frequency boost ... SKIPPED (not detected)\nChecking for kernel address space randomisation ... FAIL\nWARNING: address space randomisation is enabled.\necho 0 > /proc/sys/kernel/randomize_va_space\nChecking for transparent hugepage support ... FAIL\nWARNING: transparent hugepages are enabled.\necho never > /sys/kernel/mm/transparent_hugepage/enabled\nWARNING: transparent hugepage defrag is enabled.\necho never > /sys/kernel/mm/transparent_hugepage/defrag\nWARNING: khugepaged defrag is enabled.\necho 0 > /sys/kernel/mm/transparent_hugepage/khugepaged/defrag\nChecking for core file pattern ... FAIL\nWARNING: core files are piped to a program.\necho core >/proc/sys/kernel/core_pattern\nChecking for hard link protection ... PASS\nChecking for asymmetric cores ... PASS\n"
+    },
+    "warnings": [
+        "judge CPUs 10 and 11 share a physical core (SMT siblings): their run times disturb each other",
+        "swap is on (2048 MiB): boxes can't use it (memory.swap.max = 0), but host swapping can still add timing noise"
+    ]
+}

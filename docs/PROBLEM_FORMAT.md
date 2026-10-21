@@ -45,7 +45,7 @@ tags: [math]                      # optional
 time_limit_ms: 1000               # 1 to 60000
 memory_limit_mb: 256              # 16 to 512
 languages: [c11, cpp17, cpp20, python3]
-lang_time_factor: {python3: 1.0}  # optional: multiplies the time limit per language
+lang_time_factor: {python3: 1.0}  # optional: multiplies the time limit per language (above 0, at most 10)
 io: {input: "", output: ""}       # optional: "" = stdin / stdout, or a file name like input.txt
 scoring:
   type: group_min
@@ -62,7 +62,12 @@ visibility_default: hidden
 license: "who may use this problem"
 ```
 
-Unknown keys are errors, so a typo can't silently turn into a default. The full schema is
+Unknown keys are errors, so a typo can't silently turn into a default. File and folder names in
+paths (checker, graders, solutions) may not start with `-`, so they can't be mistaken for compiler
+options. The `io` file names may not be names the judge uses itself in the sandbox: `_stdin`,
+`_stdout`, `_stderr`, or the program's executable (`main` and `main.zip`, or with a grader the
+`submission_file` name without `.%l`, plus `.zip`), and a file input and file output must have
+different names. The full schema is
 generated into [`common/grader_common/schema/problem.schema.json`](../common/grader_common/schema/problem.schema.json).
 
 > **Quote test names that are only digits.** In YAML, `samples: [01]` is the *number* 1, not the

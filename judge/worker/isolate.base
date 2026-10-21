@@ -1,4 +1,5 @@
-# isolate configuration for the grader's judge, baked into the worker image.
+# Base isolate configuration for the grader's judge, baked into the worker image. At start-up
+# grader_worker.setup copies it to /usr/local/etc/isolate and adds one box1NN.cpus line per slot.
 # It uses its own namespace so it never collides with another isolate (such as CMS's) on the
 # same host: its own cgroup subtree, its own UID/GID range, and box ids 100-109.
 

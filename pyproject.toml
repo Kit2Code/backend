@@ -45,7 +45,7 @@ select = ["E", "F", "W", "I", "B", "UP", "S", "DJ"]
 [tool.mypy]
 python_version = "3.12"
 strict = true
-mypy_path = ["web", "judge/worker/src", "common"]
+mypy_path = ["web", "judge/worker/src", "common", "judge/worker/tests/sandbox"]
 explicit_package_bases = true
 exclude = ['^\.devdata/', '^fixtures/', '/migrations/']
 plugins = ["mypy_django_plugin.main", "pydantic.mypy"]
@@ -56,5 +56,6 @@ django_settings_module = "config.settings"
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "config.settings"
 pythonpath = ["web"]
-testpaths = ["web/tests", "common/tests"]
+testpaths = ["web/tests", "common/tests", "judge/worker/tests"]
+markers = ["sandbox: needs the dev stack's worker container with real isolate"]
 addopts = "--strict-markers"
