@@ -3,7 +3,7 @@
 from django.urls import URLPattern, URLResolver, include, path
 
 from accounts.views import google_callback, google_start, logout_everywhere, logout_view, welcome
-from core.views import healthz, home, privacy
+from core.views import home, privacy
 from judging.views import (
     all_submissions,
     my_submissions,
@@ -18,7 +18,6 @@ from problems.views import problem_detail, problem_file, problem_list
 
 urlpatterns: list[URLPattern | URLResolver] = [
     path("", home, name="home"),
-    path("healthz", healthz, name="healthz"),
     # Django's language switch (set_language): POST with a CSRF token.
     path("i18n/", include("django.conf.urls.i18n")),
     path("privacy", privacy, name="privacy"),

@@ -11,7 +11,7 @@ from collections.abc import Callable
 from django.conf import settings
 from django.contrib.auth.signals import user_logged_in
 from django.dispatch import receiver
-from django.http import Http404, HttpRequest, HttpResponseBase
+from django.http import Http404, HttpRequest, HttpResponse, HttpResponseBase
 
 # Paths that work without a zone header: Docker's healthcheck calls them inside the container.
 ZONE_EXEMPT_PATHS = frozenset({"/healthz"})
@@ -49,6 +49,23 @@ def zone_allows(request: HttpRequest) -> bool:
     if path in ZONE_EXEMPT_PATHS:
         return True
     return zone == role
+
+
+class HealthzMiddleware:
+    """Answer /healthz with "ok" before anything else, whatever the Host header.
+
+    Docker's healthcheck calls 127.0.0.1 inside the container, but production only accepts the
+    site's own host name (ALLOWED_HOSTS), and the edge's zone check doesn't apply to it either. It
+    says nothing but "this process answers", so it is safe to give to anyone.
+    """
+
+    def __init__(self, get_response: GetResponse) -> None:
+        self.get_response = get_response
+
+    def __call__(self, request: HttpRequest) -> HttpResponseBase:
+        if request.path_info == "/healthz":
+            return HttpResponse("ok", content_type="text/plain")
+        return self.get_response(request)
 
 
 class EdgeZoneMiddleware:

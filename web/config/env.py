@@ -96,3 +96,14 @@ def base_url_parts(url: str) -> tuple[str, str]:
     if parts.scheme not in ("http", "https") or not parts.hostname:
         raise ImproperlyConfigured(f"Base URL {url!r} must look like https://host[:port].")
     return parts.hostname, f"{parts.scheme}://{parts.netloc}"
+
+
+def extra_base_urls(value: str) -> list[tuple[str, str]]:
+    """Comma-separated extra base URLs (for example the admin site's Tailscale address), each as
+    (hostname, origin). Empty items are ignored."""
+    urls = [base_url_parts(url.strip()) for url in value.split(",") if url.strip()]
+    for hostname, _origin in urls:
+        # Django reads "*" or ".example.org" in ALLOWED_HOSTS as wildcards: never from here.
+        if "*" in hostname or hostname.startswith("."):
+            raise ImproperlyConfigured(f"{hostname!r}: give exact addresses, without wildcards.")
+    return urls

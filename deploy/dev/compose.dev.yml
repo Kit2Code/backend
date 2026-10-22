@@ -6,21 +6,22 @@
 # - `dev_ports` is an extra normal network so the host can reach Postgres and the edge on
 #   127.0.0.1 only. The web roles and the worker are NOT on it: like production, they have no
 #   route out, and the host reaches the web roles only through the edge.
-# - The edge is stock Caddy with a mounted Caddyfile (deploy/dev/edge/), not the production edge
-#   image. Its :8090 "Google" listener forwards to `fake-oidc`, a fake Google sign-in for dev and
+# - The edge is the production edge image (deploy/edge/), given dev addresses. Its :8090 "Google"
+#   listener forwards to `fake-oidc`, a fake Google sign-in for dev and
 #   tests (deploy/dev/fake-oidc/), instead of to Google. fake-oidc sits on its own normal network
 #   (standing in for the internet) that only the edge joins, and publishes 127.0.0.1:8099 so the
 #   browser can open its sign-in page.
 # - app_net has a fixed subnet so the edge's :8090 can listen on its app_net address only and
-#   accept only the public web role's address.
+#   accept only the web roles' addresses (production does the same, with another subnet).
 # - Postgres data is a named volume instead of a folder.
-# - Django runs with runserver (code reload) instead of gunicorn.
+# - Django runs with runserver (code reload) instead of gunicorn (the image's `dev` stage).
 name: grader-dev
 
 x-web: &web
   build:
     context: ../..
     dockerfile: web/Dockerfile
+    target: dev
   # Run as the developer's own user so files in .devdata stay readable and deletable.
   user: "${DEV_UID:-1000}:${DEV_GID:-1000}"
   command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
@@ -99,18 +100,27 @@ services:
       judge_net: {}
 
   edge:
-    image: caddy:2.11.7-alpine@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f
-    volumes:
-      - ./edge/Caddyfile:/etc/caddy/Caddyfile:ro
+    # The production edge image and Caddyfile (deploy/edge/), with the dev stack's addresses.
+    build:
+      context: ../..
+      dockerfile: deploy/edge/Dockerfile
+    environment:
+      GRADER_EDGE_APP_IP: 10.89.90.10
+      GRADER_WEB_IP: 10.89.90.20
+      GRADER_WEB_ADMIN_IP: 10.89.90.21
+      GRADER_PUBLIC_PROTO: http
+      GRADER_GOOGLE_TOKEN_UPSTREAM: http://fake-oidc:8099
+      GRADER_GOOGLE_CERTS_UPSTREAM: http://fake-oidc:8099
+      GRADER_GOOGLE_CERTS_PATH: /certs
     networks:
       app_net: {ipv4_address: 10.89.90.10}
       dev_ports: {}
       fake_google_net: {}
-    ports: ["127.0.0.1:8000:8000", "127.0.0.1:8001:8001"]
+    ports: ["127.0.0.1:8000:8080", "127.0.0.1:8001:8081"]
     depends_on: [web, web-admin, fake-oidc]
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8000/healthz"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8079/"]
       interval: 5s
       timeout: 5s
       retries: 30
@@ -144,8 +154,9 @@ services:
       context: ../..
       dockerfile: judge/worker/Dockerfile
     command: ["judge-worker"]
-    # Dev only for now: the narrower production profile is decided with the sandbox work.
-    privileged: true
+    # The production profile (deploy/zimaos/grader.compose.yml), so every sandbox test runs under it.
+    cap_add: [SYS_ADMIN, NET_ADMIN]
+    security_opt: ["seccomp=unconfined", "apparmor=unconfined"]
     cgroup: host
     init: true
     restart: unless-stopped

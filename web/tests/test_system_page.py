@@ -204,3 +204,13 @@ def test_long_gone_workers_are_hidden_and_only_online_ones_show_their_report(sta
     assert 'data-worker="current"' in html and 'data-worker="yesterday"' in html
     assert "replaced" not in html  # an old container's id, gone for good
     assert "CURRENT WARNING" in html and "OLD WARNING" not in html
+
+
+def test_the_reason_of_a_judge_error_result_is_shown(staff: Client) -> None:
+    submission = make_submission(status=Submission.Status.DONE, verdict=Verdict.JUDGE_ERROR,
+                                 judged_at=timezone.now())  # fmt: skip
+    JudgeJob.objects.create(
+        kind=JudgeJob.Kind.JUDGE, priority=JudgeJob.Priority.FRESH, submission=submission,
+        status=JudgeJob.Status.DONE, error="compile: isolate did not finish within 50 s",
+    )  # fmt: skip
+    assert "isolate did not finish within 50 s" in page(staff)

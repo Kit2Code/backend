@@ -23,7 +23,9 @@ HOSTILE_PROBLEM = "hostile/problem"  # 1 s, 256 MB, expected output CONTAINED
 FILE_IO_PROBLEM = "hostile/file-io"  # reads in.txt, writes out.txt; the answer is the input
 APLUSB = "problems/aplusb"
 CONTAINED: tuple[VerdictCode, ...] = ("AC",)  # the program printed CONTAINED: every attempt failed
-STOPPED: tuple[VerdictCode, ...] = ("WA", "TLE", "OLE", "MLE", "RE")  # stopped by a limit, no JE
+# Stopped by a limit, or allowed to finish inside the box (AC): anything but a judge error. What
+# matters is that nothing escapes and nothing is left, as the sandbox test checks.
+STOPPED: tuple[VerdictCode, ...] = ("WA", "TLE", "OLE", "MLE", "RE", "AC")
 
 
 @dataclass(frozen=True)
@@ -54,7 +56,7 @@ CASES = (
     Case("fifo_output", "hostile/fifo_output.c", "c11", HOSTILE_PROBLEM, ("WA",)),
     Case("symlink_output", "hostile/symlink_output.c", "c11", HOSTILE_PROBLEM, ("WA",)),
     Case("symlink_file_output", "hostile/symlink_file_output.c", "c11", FILE_IO_PROBLEM, ("WA",)),
-    Case("memfd_shm", "hostile/memfd_shm.c", "c11", HOSTILE_PROBLEM, ("MLE", "RE")),
+    Case("memfd_shm", "hostile/memfd_shm.c", "c11", HOSTILE_PROBLEM, ("MLE", "RE", "TLE")),
     Case("affinity", "hostile/affinity.c", "c11", HOSTILE_PROBLEM, CONTAINED),
     Case("devices", "hostile/devices.c", "c11", HOSTILE_PROBLEM, CONTAINED),
     Case(

@@ -28,6 +28,10 @@ def run_two_jobs(mem_total: str) -> list[dict[str, Any]]:
     return results
 
 
+def duration(job: dict[str, Any]) -> float:
+    return float(job["run_finished"]) - float(job["run_started"])
+
+
 def overlap(a: dict[str, Any], b: dict[str, Any]) -> float:
     """Seconds during which both jobs were running their tests."""
     finished = min(float(a["run_finished"]), float(b["run_finished"]))
@@ -40,7 +44,10 @@ def test_two_512mb_jobs_under_1024mb_run_together_without_false_mle() -> None:
         assert job["result"]["verdict"] == "AC", job
         assert job["result"]["max_memory_kb"] > 400 * 1024
     assert first["box_id"] != second["box_id"]
-    assert overlap(first, second) > 0.2
+    # Together for most of the shorter run (a fixed number of seconds failed on fast runs).
+    shorter = min(duration(first), duration(second))
+    assert shorter > 0
+    assert overlap(first, second) >= 0.8 * shorter
 
 
 def test_with_768mb_the_second_job_waits_for_memory() -> None:

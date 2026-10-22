@@ -445,3 +445,14 @@ def test_a_job_with_nothing_to_work_on_is_given_up_not_handed_out() -> None:
     broken.refresh_from_db()
     assert broken.status == JudgeJob.Status.FAILED
     assert claim().json()["kind"] == "judge"  # the queue moves on
+
+
+def test_a_judge_error_result_keeps_its_reason_on_the_job() -> None:
+    make_submission()
+    job_id = claim().json()["job_id"]
+    message = "compile: isolate did not finish within 50 s"
+    assert (
+        complete(job_id, verdict="JE", score=0, message=message, tests=[], subtasks=[]).status_code
+        == 204
+    )
+    assert JudgeJob.objects.get().error == message

@@ -10,11 +10,12 @@ import secrets
 import subprocess
 import sys
 import urllib.request
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
 import pytest
-from playwright.sync_api import Page, expect
+from playwright.sync_api import BrowserContext, ConsoleMessage, Page, expect
 
 REPO = Path(__file__).resolve().parents[3]
 PUBLIC_URL = "http://127.0.0.1:8000"
@@ -30,6 +31,21 @@ def _dev_stack_is_running() -> None:
         urllib.request.urlopen(f"{PUBLIC_URL}/healthz", timeout=5)  # noqa: S310 - fixed URL
     except OSError as error:
         pytest.fail(f"the dev stack isn't answering on {PUBLIC_URL} (run ./init.sh): {error}")
+
+
+@pytest.fixture(autouse=True)
+def _no_content_security_policy_violations(context: BrowserContext) -> Iterator[None]:
+    """Fail any browser test whose pages broke the edge's Content-Security-Policy (an inline script
+    or style, a resource from elsewhere): the browser reports those on the console."""
+    violations: list[str] = []
+
+    def check(message: ConsoleMessage) -> None:
+        if "Content Security Policy" in message.text:
+            violations.append(f"{message.location.get('url', '')}: {message.text}")
+
+    context.on("console", check)
+    yield
+    assert violations == [], "\n".join(violations)
 
 
 @pytest.fixture(scope="session")

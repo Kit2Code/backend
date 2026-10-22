@@ -1,0 +1,123 @@
+# grader-edge: the only way into the grader (docs/ARCHITECTURE.md, "One web image, two roles").
+#   :8080  public site   (only the Cloudflare tunnel reaches it, over edge_net)
+#   :8081  admin site    (published on the NAS: LAN and Tailscale)
+#   :8090  Google sign-in egress (app_net only): exactly two fixed Google URLs
+# Each site port goes to one web role and sets X-Edge-Zone for it, replacing anything the client
+# sent; Django checks the header again (web/core/middleware.py).
+#
+# The {$NAME:default} values are the production ones (deploy/zimaos/grader.compose.yml gives these
+# addresses to the containers). The dev stack runs this same file with its own addresses and the fake
+# Google sign-in; deploy/tests/test_edge.py runs it against stub backends.
+{
+	auto_https off
+	admin off
+	# No access log: request lines can carry one-time tokens, and Docker keeps stdout.
+}
+
+(security_headers) {
+	header {
+		# Everything comes from our own origin: no inline scripts or styles, no frames, no plugins.
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy same-origin
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+		Cross-Origin-Opener-Policy same-origin
+		-Server
+	}
+}
+
+# The edge's own health, for Docker's healthcheck (the web roles have healthchecks of their own).
+:8079 {
+	bind 127.0.0.1
+	respond "ok"
+}
+
+# Public site. Admin, setup and judge-API paths don't exist here. The path matcher ignores case and
+# matches the decoded, cleaned path, so /ADMIN, /%61dmin, //admin and /x/../admin are caught too
+# (deploy/tests/test_edge.py tries these).
+:8080 {
+	import security_headers
+	@blocked path /admin /admin/* /api/admin /api/admin/* /internal /internal/* /setup /setup/*
+	respond @blocked 404
+	request_body {
+		max_size 1MB
+	}
+	reverse_proxy {$GRADER_WEB_UPSTREAM:web:8000} {
+		header_up X-Edge-Zone public
+		# Cloudflare ended TLS; the browser's connection is HTTPS (plain http only in the dev stack).
+		header_up X-Forwarded-Proto {$GRADER_PUBLIC_PROTO:https}
+	}
+}
+
+# Admin site. The judge API is for the worker only, directly on judge_net, never via here.
+:8081 {
+	import security_headers
+	@internal path /internal /internal/*
+	respond @internal 404
+	# Problem zips may be large (the importer's own limit is 1 GiB unpacked); everything else is small.
+	@import path /admin/grader/import/
+	request_body @import {
+		max_size 1100MB
+	}
+	@not_import not path /admin/grader/import/
+	request_body @not_import {
+		max_size 1MB
+	}
+	reverse_proxy {$GRADER_WEB_ADMIN_UPSTREAM:web-admin:8000} {
+		header_up X-Edge-Zone admin
+	}
+}
+
+# Google sign-in egress. Listens on the edge's app_net address only. The public web role may POST
+# /token and GET /certs; web-admin may only GET /certs (the Sign-in page's test button); everyone
+# else gets 404. Query strings are dropped; bodies are capped. TLS to Google is verified.
+:8090 {
+	bind {$GRADER_EDGE_APP_IP:10.89.91.10}
+
+	# `handle` blocks are tried in order and only the first match runs; these two must stay first.
+	@admin_certs {
+		remote_ip {$GRADER_WEB_ADMIN_IP:10.89.91.21}
+		method GET
+		path /certs
+	}
+	handle @admin_certs {
+		rewrite * {$GRADER_GOOGLE_CERTS_PATH:/oauth2/v3/certs}?
+		reverse_proxy {$GRADER_GOOGLE_CERTS_UPSTREAM:https://www.googleapis.com} {
+			header_up Host {upstream_hostport}
+		}
+	}
+	@not_web not remote_ip {$GRADER_WEB_IP:10.89.91.20}
+	handle @not_web {
+		respond 404
+	}
+
+	@token {
+		method POST
+		path /token
+	}
+	handle @token {
+		request_body {
+			max_size 16KB
+		}
+		rewrite * /token?
+		reverse_proxy {$GRADER_GOOGLE_TOKEN_UPSTREAM:https://oauth2.googleapis.com} {
+			header_up Host {upstream_hostport}
+		}
+	}
+
+	@certs {
+		method GET
+		path /certs
+	}
+	handle @certs {
+		rewrite * {$GRADER_GOOGLE_CERTS_PATH:/oauth2/v3/certs}?
+		reverse_proxy {$GRADER_GOOGLE_CERTS_UPSTREAM:https://www.googleapis.com} {
+			header_up Host {upstream_hostport}
+		}
+	}
+
+	handle {
+		respond 404
+	}
+}

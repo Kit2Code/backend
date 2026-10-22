@@ -4,11 +4,10 @@ from django.contrib import admin
 from django.urls import URLPattern, URLResolver, include, path
 
 from accounts.views import logout_everywhere
-from core.views import healthz, setup_view
+from core.views import setup_view
 from judging import internal
 
 urlpatterns: list[URLPattern | URLResolver] = [
-    path("healthz", healthz, name="healthz"),
     # Django's language switch (set_language): POST with a CSRF token.
     path("i18n/", include("django.conf.urls.i18n")),
     path("admin/", admin.site.urls),

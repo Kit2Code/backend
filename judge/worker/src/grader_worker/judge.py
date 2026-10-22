@@ -65,7 +65,8 @@ def judge(
 ) -> JudgeResult:
     """Judge `source` (in language `lang`) on the problem version in `problem_dir`.
 
-    `timeline`, if given, gets the wall-clock times when the first test's box was ready (after its
+    `timeline`, if given, gets the times (time.monotonic(): comparable within one process, never
+    jumping back when the system clock is corrected) when the first test's box was ready (after its
     memory reservation) and when the last test finished. `on_test`, if given, is called with each
     test's result as soon as it is known (the worker posts it as progress); if it fails, judging
     carries on.
@@ -123,7 +124,7 @@ def judge(
             except Exception:  # noqa: S110 - progress is only a nicety; the final result counts
                 pass
     if timeline is not None:
-        timeline["run_finished"] = time.time()
+        timeline["run_finished"] = time.monotonic()
     return _summarise(problem, checked.test_names, tests, compiled.log, box_id)
 
 
@@ -200,7 +201,7 @@ def run_test(
     output_name = problem.io.output or _STDOUT
     with slot.box(program.limits) as box:
         if timeline is not None:
-            timeline.setdefault("run_started", time.time())
+            timeline.setdefault("run_started", time.monotonic())
         box.put(program.executable_name, program.executable, executable=True)
         box.put(input_name, test_input)
         result = box.run(

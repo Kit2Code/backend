@@ -3,7 +3,7 @@
 This page explains the parts of the grader and how they talk to each other. Reasons for the bigger
 choices are in [DECISIONS.md](DECISIONS.md).
 
-The project is early: parts marked *(planned)* are designed but not built yet.
+How to install it on ZimaOS is in [DEPLOY.md](DEPLOY.md).
 
 ## The big picture
 
@@ -26,10 +26,10 @@ Everything runs as one Docker Compose app on a home server that also runs CMS.
 | **web** | The Django app in the **public** role: the practice site. |
 | **web-admin** | The same Django image in the **admin** role: Django admin, admin pages, and the internal judge API. |
 | **worker** | The judge. Takes jobs from web-admin, compiles and runs submissions inside isolate, reports results. |
-| **edge** | Caddy. The single entry point; routes each port to one role, sets the zone header, blocks paths that don't belong there, and is the public web role's only way to Google. Dev uses stock Caddy with `deploy/dev/edge/Caddyfile`; the production image is *(planned)*. |
+| **edge** | Caddy with a baked-in Caddyfile (`deploy/edge/`). The single entry point; routes each port to one role, sets the zone header, blocks paths that don't belong there, sets the security headers (a strict Content-Security-Policy), caps request bodies, and is the only way to Google. The dev stack runs the same image with dev addresses. |
 | **fake-oidc** (dev only) | A fake "Sign in with Google" (`deploy/dev/fake-oidc/`) for development and tests. |
-| **tunnel** *(planned)* | cloudflared. Carries public traffic from Cloudflare to the edge; no open ports on the home router. |
-| **secrets-init**, **backup** *(planned)* | One-shot secret generation, and nightly database backups. |
+| **tunnel** | cloudflared. Carries public traffic from Cloudflare to the edge's `:8080`; no open ports on the home router. Production only. |
+| **secrets-init**, **backup** | `grader-ops` (`deploy/ops/`). `secrets-init` runs once at every start: it makes the secrets the first time and gives each service its own folder of copies (and gives the folders web-admin writes to to the web user). `backup` dumps the database nightly and whenever "Back up now" asks. Production only. |
 
 ## One web image, two roles
 
@@ -63,7 +63,7 @@ a client sent), and `core/middleware.py` checks it:
 | `app_net` | no (`internal: true`) | edge, web, web-admin |
 | `db_net` | no | db, web, web-admin, backup |
 | `judge_net` | no | web-admin, worker |
-| `edge_net` *(planned)* | yes | edge, tunnel |
+| `edge_net` | yes | edge, tunnel |
 
 The web roles and the worker never need the internet while running, so their networks have no way
 out. The worker is only on `judge_net`: it cannot reach the database at all.
@@ -209,10 +209,12 @@ the `grader-judge` cgroup and turns on the `cpuset`, `memory` and `pids` control
 It also caps the total memory of all sandboxes (`JUDGE_MEM_TOTAL`, no swap) and pins each box to
 its own CPU (`JUDGE_BOX_CPUS`).
 
-isolate needs `CAP_SYS_ADMIN` and write access to the host's cgroup tree, so the worker container is
-privileged in dev; production is meant to use a narrower profile (only `SYS_ADMIN` added, cgroup
-tree mounted read-write; see DECISIONS.md, "Worker container security profile"). isolate itself is
-not setuid, because the worker already runs as root. Either way it is
+isolate needs `CAP_SYS_ADMIN`, `CAP_NET_ADMIN` and write access to the host's cgroup tree, so the
+worker container gets exactly those (`cap_add`, `cgroup: host`; its entrypoint re-mounts the cgroup
+tree read-write), in dev and in production alike, not `privileged` (DECISIONS.md, "Worker profile
+outcome"). Every call to isolate has a deadline, so a stuck sandbox start becomes a judge error
+instead of a stuck judging slot. isolate itself is not setuid, because the worker already runs as
+root. Either way it is
 the most dangerous container, which is why it has no internet, no route to the database and no
 database password.
 
@@ -335,6 +337,24 @@ IP (`core/audit.py`). Django admin edits are caught by `AuditedModelAdmin`, the 
 model admin; our pages and actions call `audit.record()`; staff sign-in, failed sign-in and
 sign-out come from Django's auth signals. Secrets never go into the log.
 
+## Production
+
+The production install is one ZimaOS app: `deploy/zimaos/grader.compose.yml`, with four images that
+the release workflow builds and pushes to GHCR when a `vX.Y.Z` tag is pushed
+(`scripts/build-images.sh`): `grader-web` (one image, both roles; gunicorn as an unprivileged user),
+`grader-worker`, `grader-edge` and `grader-ops`. Postgres and cloudflared are the upstream images,
+pinned by digest. All data lives under `/DATA/AppData/grader/` (`postgres/`, `problems/`,
+`uploads/`, `backups/`, `judge-cache/`, `secrets/`). CPU 3 runs the services and CPUs 4–5 the
+judge's sandboxes. The compose file holds placeholders for the public hostname, the admin address
+and the tunnel token, which the owner fills in the ZimaOS app settings; extra admin addresses (for
+example over Tailscale) go in `GRADER_ADMIN_EXTRA_URLS`.
+
+`scripts/prod-smoke.sh` runs that same compose file on a development machine (images built locally,
+data in a temporary folder, a "probe" container in place of the tunnel) and checks the zones, that
+nothing but the edge's `:8090` reaches the internet, the network isolation, the secrets, a
+submission judged through the public edge, the self-test, a backup restored into a scratch
+database, and that only web-admin migrates.
+
 ## Code layout
 
 | Path | Contents |
@@ -345,8 +365,9 @@ sign-out come from Django's auth signals. Secrets never go into the log.
 | `common/grader_common/` | code shared by web and worker: problem format, scoring, importer (`grader-import`) |
 | `fixtures/` | small made-up problems for tests (native and CMS Italian format) |
 | `deploy/dev/compose.dev.yml` | the development stack (db, web, web-admin, worker, edge, fake-oidc) |
-| `deploy/dev/edge/`, `deploy/dev/fake-oidc/` | the dev edge's Caddyfile; the fake Google sign-in |
-| `deploy/tests/` | tests that drive the running dev stack (the `:8090` listener, sign-in end to end) |
+| `deploy/edge/`, `deploy/ops/`, `deploy/zimaos/` | the edge image and its Caddyfile; the ops image (`secrets-init`, `backup-loop`); the ZimaOS compose file |
+| `deploy/dev/fake-oidc/` | the fake Google sign-in |
+| `deploy/tests/` | tests that drive Docker: the dev stack (the `:8090` listener, sign-in end to end), the production images, the edge, the ops tools, the compose file and the release workflow |
 | `init.sh` | creates dev secrets and starts the dev stack |
-| `scripts/` | `check.sh` (lint, types, tests) and `smoke.sh` (is the running stack healthy?) |
+| `scripts/` | `check.sh` (lint, types, tests), `smoke.sh` (is the running stack healthy?), `build-images.sh` (the four production images), `prod-smoke.sh` (the production dry run) |
 | `.github/workflows/ci.yml` | CI: the same checks, plus Django deploy checks and a secret scan |

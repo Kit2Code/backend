@@ -14,8 +14,9 @@ TIMEOUT = 120
 
 
 def test_the_box_sees_only_the_allowed_devices() -> None:
-    # The worker itself does have the kernel log, so failing inside the box isn't an accident.
-    assert worker("test", "-c", "/dev/kmsg", timeout=30).returncode == 0
+    # The worker itself has /dev/tty (a non-privileged container has no /dev/kmsg), so the box
+    # missing it isn't an accident.
+    assert worker("test", "-c", "/dev/tty", timeout=30).returncode == 0
     result = worker_json(
         "judge-run", "--problem", PROBLEM, "--lang", "c11", "--source", f"{HOSTILE}/devices.c",
         timeout=TIMEOUT,

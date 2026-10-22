@@ -1,0 +1,43 @@
+# Release: when the owner pushes a version tag (v0.1.0, ...), build the four production images and
+# push them to GHCR as ghcr.io/kit2code/grader-{web,worker,edge,ops}:<version> (and :sha-<commit>).
+# GitHub-hosted runner only. The only credential is the job's own GITHUB_TOKEN.
+# Third-party actions are pinned to exact commits (the tag is in the comment).
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  images:
+    name: Build and push the images
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Version from the tag
+        id: version
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Tag $GITHUB_REF_NAME is not v<major>.<minor>.<patch>" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Log in to GHCR
+        # The token goes in on stdin, never on a command line or into the script's text.
+        env:
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: printf '%s' "$REGISTRY_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+      - name: Build and push
+        run: >-
+          scripts/build-images.sh --push
+          --tag "${{ steps.version.outputs.version }}"
+          --tag "sha-${GITHUB_SHA::7}"
+          --source "https://github.com/${GITHUB_REPOSITORY}"
+      - name: Log out
+        if: always()
+        run: docker logout ghcr.io

@@ -1,7 +1,11 @@
 {% extends "base.html" %}
 {% load i18n judging static problems %}
 {% block title %}{% translate "Submission" %} #{{ submission.pk }}{% endblock %}
-{% block scripts %}<script src="{% static 'vendor/htmx/htmx.min.js' %}" defer></script>{% endblock %}
+{% block scripts %}
+{# No inline <style> from htmx (we don't use its loading indicator): the CSP allows no inline styles. #}
+<meta name="htmx-config" content='{"includeIndicatorStyles": false}'>
+<script src="{% static 'vendor/htmx/htmx.min.js' %}" defer></script>
+{% endblock %}
 {% block content %}
 <h1>{% translate "Submission" %} #{{ submission.pk }}</h1>
 <ul>

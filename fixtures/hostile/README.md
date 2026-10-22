@@ -11,7 +11,7 @@ They are tests, not examples. Never weaken a limit to make one of them pass.
 |---|---|---|
 | `fork_bomb.c` | forks forever | TLE; never more than one process in its box; the worker still judges afterwards |
 | `write_1gb.c` | 1 GB to stdout | OLE at the 64 MB file-size limit; no file over the limit is left |
-| `write_1gb_many_files.c` | 1 GB as 32 files of 32 MB | stopped by its limits; nothing is left after the box is cleaned |
+| `write_1gb_many_files.c` | 1 GB as 32 files of 32 MB | stopped by a limit, or finishes inside the box (AC) if there is room; never JE; nothing is left after the box is cleaned |
 | `network.c` | TCP/UDP to `1.1.1.1:53`, TCP to `web-admin:8000`, any non-loopback interface | prints `CONTAINED` (AC) |
 | `read_secrets.c` | `/etc/shadow`, the worker's `/proc/1/*`, secrets, fixtures, problems | prints `CONTAINED` (AC) |
 | `write_outside.c` | creating files in `/`, system folders, isolate's and the worker's folders | prints `CONTAINED` (AC); no marker exists in the worker afterwards |
@@ -24,7 +24,7 @@ They are tests, not examples. Never weaken a limit to make one of them pass.
 | `fifo_output.c` | replaces its `_stdout` file with a FIFO | WA (no output), without the judge hanging |
 | `symlink_output.c` | replaces its `_stdout` file with a symlink (to a decoy holding the answer, `/etc/shadow`, `/proc/1/environ`) | WA (no output): the link is never followed |
 | `symlink_file_output.c` | on `file-io/` (answer = input), makes `out.txt` a symlink to `in.txt` | WA (no output), never AC |
-| `memfd_shm.c` | 600 MB in memfds and `/dev/shm` files under a 256 MB limit | MLE (or RE), never AC; no file is left |
+| `memfd_shm.c` | 600 MB in memfds and `/dev/shm` files under a 256 MB limit | MLE (or RE, or TLE on a busy or slow CPU), never AC; no file is left |
 | `affinity.c` | more than one CPU, `sched_setaffinity` to every CPU, raising hard resource limits | prints `CONTAINED` (AC) |
 | `compile_urandom.cpp` | `#include "/dev/urandom"` | CE within the compile limits; compile log at most 64 KB |
 | `compile_error_flood.cpp` | a million compile errors from one line of macros | CE within the compile limits; compile log at most 64 KB |

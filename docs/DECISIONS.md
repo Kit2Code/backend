@@ -217,7 +217,7 @@ accident.
 - **Seccomp and AppArmor that allow `unshare`, `mount` and `chroot`.** Docker's default AppArmor
   profile blocks `mount` even when `CAP_SYS_ADMIN` is granted.
 
-**Dev, now (`deploy/dev/compose.dev.yml`):** the worker is `privileged: true` with `cgroup: host`
+*(Updated 2026-10-22: dev and production now both use the narrow profile, with NET_ADMIN and without the cgroup bind mount; see "Worker profile outcome".)* **Dev, now (`deploy/dev/compose.dev.yml`):** the worker is `privileged: true` with `cgroup: host`
 and `init: true`. It is only on `judge_net` (internal: no internet, no route to the database), has
 no host ports, no Docker socket and no secrets (the worker token comes with the worker loop). The
 problem store is mounted read-only, the judge cache read-write. The root filesystem is writable
@@ -351,7 +351,8 @@ fallback is privileged).
 
 **Choice:** the dev stack runs stock Caddy as `edge` with `deploy/dev/edge/Caddyfile`: `:8000` →
 web with `X-Edge-Zone: public`, `:8001` → web-admin with `admin`, and `:8090` for sign-in. The web
-roles are no longer published on the host.
+roles are no longer published on the host. *(Replaced 2026-10-22: dev now runs the production edge
+image, see "One edge configuration for production, dev and tests".)*
 **Why:** the zone check needs the header on every request; with the edge in front, dev exercises
 the same layer as production, and the web roles have no route out, as in production.
 **Alternatives:** a setting that lets requests without a zone through in dev (simpler, but dev
@@ -599,3 +600,69 @@ the keys exactly as a sign-in does. The production edge must keep the same rule.
 while `/token` stays reachable only by the public role.
 **Alternatives:** a test button that only checks the saved values locally (it wouldn't show that
 the egress works); letting web-admin use all of `:8090`.
+
+## 2026-10-22: One edge configuration for production, dev and tests
+
+**Choice:** `deploy/edge/Caddyfile` is baked into the `grader-edge` image and used everywhere. The
+addresses it needs (web roles, :8090's bind address and allowed callers, the Google upstreams, the
+forwarded protocol) are `{$NAME:production default}` placeholders: production uses the defaults, the
+dev stack sets dev values (and the fake Google sign-in), and `deploy/tests/test_edge.py` runs it
+against echo servers. The strict Content-Security-Policy (`default-src 'self'`, no inline scripts or
+styles, no frames) is set there; the browser tests fail on any CSP violation they see. The edge's
+own health is a listener on its loopback (`:8079`), not a request through to Django.
+**Why:** one file means dev and the browser tests exercise exactly what runs on the NAS; a CSP
+mistake shows up in dev, not after an install.
+**Alternatives:** separate dev and production Caddyfiles (they drift); a CSP with `unsafe-inline`
+(htmx only needed one setting to avoid it).
+
+## 2026-10-22: Production layout on the NAS
+
+**Choice:** CPU 3 for every service and CPUs 4,5 for the judge's two sandboxes (`JUDGE_BOX_CPUS`),
+leaving 0–2 to CMS; memory limits from the resource table (about 2 GB, plus 1 GB for sandboxes).
+`app_net` is `10.89.91.0/24` with fixed addresses for the edge, web and web-admin (the dev stack
+keeps `10.89.90.0/24`). The worker's container hostname is fixed (`grader-worker`), so its id stays
+the same across updates. The compose file in git holds placeholders for the public hostname, the
+admin address and the tunnel token; the owner fills them in the ZimaOS app settings. Extra admin
+addresses (Tailscale) go in `GRADER_ADMIN_EXTRA_URLS`. `secrets-init` also hands `uploads/` and
+`problems/` to the web user (Docker creates missing bind-mount folders as root). `/healthz` is
+answered by the first middleware, whatever the Host header, for Docker's healthchecks. Third-party
+images are pinned by digest to releases at least a few weeks old (cloudflared 2026.9.2).
+**Why:** the NAS has CPUs 0–5 only; CMS's workers keep their own cores; the dry run showed that the
+web user couldn't write the setup link and that healthchecks were refused by `ALLOWED_HOSTS`.
+**Alternatives:** the spec's first sketch (CPUs 6,7: they don't exist here); real values in git (the
+owner asked to keep the hostname out).
+
+## 2026-10-22: Production images and operations tools
+
+**Choice:** `web/Dockerfile` has `dev` and `prod` stages; `prod` holds only Python, the virtualenv,
+the code, collected static files and compiled translations, runs gunicorn (gthread; public 2 × 4,
+admin 1 × 4 with a 15-minute timeout for imports, no control socket) as uid 10001. `grader-ops` is
+the Postgres image of the same version plus Python, so `pg_dump`/`pg_restore` match the server.
+`scripts/build-images.sh` is the one way to build the four images (CI builds them on every push,
+the release workflow pushes them on a `v*` tag with the job's `GITHUB_TOKEN`).
+**Why:** small images with nothing to build code with; one build path for CI, release and the dry run.
+**Alternatives:** third-party build/push actions (more pinned dependencies for the same result).
+
+## 2026-10-22: Worker profile outcome, and deadlines for isolate
+
+**Choice:** the worker runs with `cap_add: [SYS_ADMIN, NET_ADMIN]`, seccomp and AppArmor unconfined
+and `cgroup: host` — not `privileged` — in production *and* in the dev stack, so the whole sandbox
+suite runs under the production profile. Two findings from the production dry run changed the
+profile chosen on 2026-10-21: isolate needs NET_ADMIN to switch on the loopback interface in each
+sandbox's network namespace ("SIOCSIFFLAGS on 'lo' failed: Operation not permitted" without it),
+and bind-mounting the host's `/sys/fs/cgroup` into the container makes every sandbox start fail
+("Proxy failed before it passed box_pid"), even in a privileged container. So there is no bind
+mount: the worker's entrypoint re-mounts Docker's own (read-only) cgroup mount read-write, which
+CAP_SYS_ADMIN allows. Every call to isolate now has a deadline (a run: its wall-time limit + 30 s;
+`--init`/`--cleanup`: 60 s); a missed deadline is an IsolateError (a judge error for that job)
+instead of a judging slot stuck forever — which is what the failing sandbox start had caused.
+**Limits of this profile (sandbox audit, 2026-10-22):** it removes `privileged`'s extra devices
+and capabilities, but root *inside the worker* (someone who already escaped isolate or the kernel)
+can still reach the host: with `cgroup: host`, the cgroup tree read-write and CAP_SYS_ADMIN without
+seccomp or AppArmor, it can leave the container's cgroup or re-mount `/proc/sys`. The walls that
+really count are isolate and the kernel; the worker has no internet, no database and one secret,
+so that is what such an escape starts from. Narrower options (a private cgroup namespace with a
+delegated subtree, dropping MKNOD/NET_RAW, Docker's default seccomp profile) are listed as follow-ups.
+**Why:** NET_ADMIN only affects the worker's own network namespace, which sits on the internal
+`judge_net` with no route out; `privileged` would add every device and capability.
+**Alternatives:** `privileged: true` (the planned fallback; not needed).

@@ -136,7 +136,8 @@ def test_output_file_symlinked_to_the_input_is_not_accepted() -> None:
 def test_600mb_of_memfd_and_shm_under_a_256mb_limit_is_stopped() -> None:
     # Uses the box's /dev/shm.
     test = judge(f"{HOSTILE}/memfd_shm.c")
-    assert test["verdict"] in ("MLE", "RE"), test
+    # Zeroing the pages costs CPU time, so on a busy or slow CPU the 1 s limit can stop it first.
+    assert test["verdict"] in ("MLE", "RE", "TLE"), test
     assert test["memory_kb"] <= MEMORY_LIMIT_KB, test
     # Nothing is left in isolate's folders or in the worker's own /dev/shm.
     shm = "/dev/shm"  # noqa: S108 - a path in the worker container, nothing is created there

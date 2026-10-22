@@ -10,6 +10,7 @@ dependencies = [
     "cryptography>=45",
     "django>=5.2,<5.3",
     "grader-common",
+    "gunicorn>=26.2,<27",
     "joserfc>=1.7,<2",
     "markdown-it-py>=4,<5",
     "nh3>=0.3,<0.4",

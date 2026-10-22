@@ -10,6 +10,7 @@ Files go into the box by copying, and come out with O_NOFOLLOW and a size cap, b
 contestant leaves in the box is hostile.
 """
 
+import contextlib
 import os
 import re
 import stat
@@ -24,6 +25,11 @@ from grader_worker.verdicts import Meta, parse_meta
 
 FIRST_BOX, LAST_BOX = 100, 109
 ISOLATE = "isolate"
+# Deadlines for isolate itself (not for the program, which isolate limits): it can hang if its
+# helper process dies while starting a box. A run gets its wall-time limit plus this margin;
+# --init and --cleanup get ADMIN_TIMEOUT_SECONDS. A missed deadline is an IsolateError.
+RUN_GRACE_SECONDS = 30.0
+ADMIN_TIMEOUT_SECONDS = 60.0
 BOX_ENV = ["HOME=/box", "PATH=/usr/local/bin:/usr/bin:/bin"]
 # The box's whole /dev (made by grader_worker.setup; root-owned, outside isolate's box_root).
 BOX_DEV_DIR = "/var/local/lib/grader-judge-dev"
@@ -125,7 +131,14 @@ class Box:
         except IsolateError:
             self.broken = True
             raise
-        output = _isolate(["--cg", f"--box-id={self.box_id}", "--init"], check=True)
+        try:
+            output = _isolate(["--cg", f"--box-id={self.box_id}", "--init"], check=True)
+        except IsolateError:
+            # A half-made box: don't reuse the slot as if nothing happened; tidy up if we can.
+            self.broken = True
+            with contextlib.suppress(IsolateError):
+                _isolate(["--cg", f"--box-id={self.box_id}", "--cleanup"], check=True)
+            raise
         self.path = Path(output.strip()) / "box"
         return self
 
@@ -187,9 +200,14 @@ class Box:
             )
             # Without --stdin, isolate passes its own fd 0 on to the program: give it /dev/null,
             # never the worker's terminal or pipe.
-            completed = subprocess.run(  # noqa: S603
-                command, stdin=subprocess.DEVNULL, capture_output=True, check=False
-            )
+            deadline = limits.wall_time + RUN_GRACE_SECONDS
+            try:
+                completed = subprocess.run(  # noqa: S603
+                    command, stdin=subprocess.DEVNULL, capture_output=True, check=False,
+                    timeout=deadline,
+                )  # fmt: skip
+            except subprocess.TimeoutExpired:
+                raise IsolateError(f"isolate did not finish within {deadline:.0f} s") from None
             if completed.returncode > 1:  # 0 = ran fine, 1 = the program failed, else isolate did
                 raise IsolateError(_short(completed.stderr))
             try:
@@ -206,9 +224,15 @@ class Box:
 
 
 def _isolate(args: list[str], check: bool = False) -> str:
-    completed = subprocess.run(  # noqa: S603
-        [ISOLATE, *args], stdin=subprocess.DEVNULL, capture_output=True, check=False
-    )
+    try:
+        completed = subprocess.run(  # noqa: S603
+            [ISOLATE, *args], stdin=subprocess.DEVNULL, capture_output=True, check=False,
+            timeout=ADMIN_TIMEOUT_SECONDS,
+        )  # fmt: skip
+    except subprocess.TimeoutExpired:
+        raise IsolateError(
+            f"isolate {' '.join(args)} did not finish within {ADMIN_TIMEOUT_SECONDS:.0f} s"
+        ) from None
     if check and completed.returncode != 0:
         raise IsolateError(f"isolate {' '.join(args)}: {_short(completed.stderr)}")
     return completed.stdout.decode("utf-8", "replace")

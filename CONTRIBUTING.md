@@ -54,11 +54,22 @@ the dev superusers and make a new link, so after running them use the new link a
 | Import and publish on the dev site | `uv run python web/manage.py import_problem <zip or folder> --visible` |
 | A new first-run setup link (no superuser yet) | `uv run python web/manage.py setup_link` |
 | Run the sandbox self-test by hand | `docker compose -f deploy/dev/compose.dev.yml exec worker judge-selftest` |
+| Build the four production images | `scripts/build-images.sh --tag <tag>` |
+| Production dry run (the ZimaOS compose file, locally) | `./scripts/prod-smoke.sh` (`--keep` leaves it running) |
 | New migration | `uv run python web/manage.py makemigrations`, then commit the file |
 | Secret scan | `gitleaks dir . -v` |
 
 Running `manage.py` or `pytest` on your machine talks to the dev stack's Postgres on
 `127.0.0.1:5432`, so start the stack first. Settings for that come from `.devdata/` automatically.
+
+## Releases
+
+A release is a git tag `vX.Y.Z` pushed to GitHub. The *Release* workflow
+(`.github/workflows/release.yml`) then builds the four images and pushes them to GHCR as
+`ghcr.io/kit2code/grader-{web,worker,edge,ops}:X.Y.Z`. After the first release, set each of the
+four packages to **public** in the organisation's *Packages* settings, so ZimaOS can download them.
+`deploy/zimaos/grader.compose.yml` names the version to install; [docs/DEPLOY.md](docs/DEPLOY.md)
+explains how to update an installed app. Run `./scripts/prod-smoke.sh` before tagging.
 
 ## Rules
 

@@ -1,0 +1,238 @@
+# The grader as one ZimaOS app: in the ZimaOS dashboard, App Store → Custom Install → Import, paste
+# this file. Step by step, with what to change afterwards: docs/DEPLOY.md.
+#
+# Before the first start, change these in the app's settings (they are placeholders here):
+#   web       PUBLIC_BASE_URL   https://<your public hostname>
+#   web-admin ADMIN_BASE_URL    http://<the NAS's LAN address>:8081  (and PUBLIC_BASE_URL as above)
+#   tunnel    TUNNEL_TOKEN      the token of the Cloudflare tunnel made for the grader
+#
+# All data lives under /DATA/AppData/grader. CPU 3 runs the services and CPUs 4,5 the judge's
+# sandboxes, away from CPUs 0-2 (a CMS installation's workers); see docs/DEPLOY.md to change it.
+name: grader
+
+services:
+  # One-shot: makes the secrets the first time, then gives each service its own copies; also gives
+  # the folders web-admin writes to (uploads, problems) to the web user.
+  secrets-init:
+    image: ghcr.io/kit2code/grader-ops:0.1.0
+    command: ["secrets-init"]
+    restart: "no"
+    network_mode: none
+    cpuset: "3"
+    mem_limit: 64m
+    volumes:
+      - /DATA/AppData/grader/secrets:/secrets
+      - /DATA/AppData/grader/uploads:/data/uploads
+      - /DATA/AppData/grader/problems:/data/problems
+    logging: &logging
+      driver: json-file
+      options: {max-size: "10m", max-file: "3"}
+
+  db:
+    image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+    command: ["postgres", "-c", "shared_buffers=128MB", "-c", "max_connections=30", "-c", "work_mem=4MB"]
+    environment:
+      POSTGRES_USER: grader
+      POSTGRES_DB: grader
+      POSTGRES_PASSWORD_FILE: /run/secrets/db/db_password
+      TZ: Asia/Bangkok
+    volumes:
+      - /DATA/AppData/grader/postgres:/var/lib/postgresql/data
+      - /DATA/AppData/grader/secrets/db:/run/secrets/db:ro
+    networks: [db_net]
+    depends_on:
+      secrets-init: {condition: service_completed_successfully}
+    restart: unless-stopped
+    cpuset: "3"
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "grader", "-d", "grader"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    logging: *logging
+
+  # The public site (GRADER_ROLE=public): reached only through the edge's :8080, from the tunnel.
+  web:
+    image: ghcr.io/kit2code/grader-web:0.1.0
+    environment:
+      GRADER_ROLE: public
+      PUBLIC_BASE_URL: "https://grader.example.org"
+      GRADER_SECRETS_DIR: /run/secrets/web
+      GRADER_DB_HOST: db
+      TZ: Asia/Bangkok
+    volumes:
+      - /DATA/AppData/grader/problems:/data/problems:ro
+      - /DATA/AppData/grader/secrets/web:/run/secrets/web:ro
+    networks:
+      app_net: {ipv4_address: 10.89.91.20}
+      db_net: {}
+    depends_on:
+      secrets-init: {condition: service_completed_successfully}
+    restart: unless-stopped
+    cpuset: "3"
+    mem_limit: 384m
+    healthcheck: &web_health
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    logging: *logging
+
+  # The admin site (GRADER_ROLE=admin): Django admin, admin pages, first-run setup, the judge API.
+  # Only this role runs database migrations.
+  web-admin:
+    image: ghcr.io/kit2code/grader-web:0.1.0
+    environment:
+      GRADER_ROLE: admin
+      ADMIN_BASE_URL: "http://192.0.2.10:8081"
+      PUBLIC_BASE_URL: "https://grader.example.org"
+      # Other addresses you open the admin site at (comma-separated), e.g. the NAS's Tailscale IP.
+      GRADER_ADMIN_EXTRA_URLS: ""
+      GRADER_SECRETS_DIR: /run/secrets/web
+      GRADER_WORKER_SECRETS_DIR: /run/secrets/worker
+      GRADER_DB_HOST: db
+      TZ: Asia/Bangkok
+    volumes:
+      - /DATA/AppData/grader/problems:/data/problems
+      - /DATA/AppData/grader/uploads:/data/uploads
+      - /DATA/AppData/grader/backups:/data/backups:ro
+      - /DATA/AppData/grader/secrets/web:/run/secrets/web:ro
+      - /DATA/AppData/grader/secrets/worker:/run/secrets/worker:ro
+    networks:
+      app_net: {ipv4_address: 10.89.91.21}
+      db_net: {}
+      judge_net: {}
+    depends_on:
+      secrets-init: {condition: service_completed_successfully}
+    restart: unless-stopped
+    cpuset: "3"
+    mem_limit: 384m
+    healthcheck: *web_health
+    logging: *logging
+
+  # The judge. isolate needs CAP_SYS_ADMIN (namespaces, mounts; the entrypoint also re-mounts the
+  # cgroup tree read-write), CAP_NET_ADMIN (it switches on the loopback interface in each sandbox's
+  # own network namespace) and the host's cgroup tree (`cgroup: host`). docs/DECISIONS.md, "Worker
+  # profile outcome". No internet, no database, one secret.
+  worker:
+    image: ghcr.io/kit2code/grader-worker:0.1.0
+    hostname: grader-worker
+    cgroup: host
+    cap_add: [SYS_ADMIN, NET_ADMIN]
+    security_opt: ["seccomp=unconfined", "apparmor=unconfined"]
+    init: true
+    environment:
+      JUDGE_SLOTS: "2"
+      JUDGE_BOX_CPUS: "4,5"
+      JUDGE_MEM_TOTAL: "1024M"
+      WEB_INTERNAL_URL: "http://web-admin:8000"
+      TZ: Asia/Bangkok
+    volumes:
+      - /DATA/AppData/grader/problems:/data/problems:ro
+      - /DATA/AppData/grader/judge-cache:/data/cache
+      - /DATA/AppData/grader/secrets/worker:/run/secrets/worker:ro
+    networks: [judge_net]
+    depends_on:
+      secrets-init: {condition: service_completed_successfully}
+    restart: unless-stopped
+    # The worker process itself; the sandboxes run on JUDGE_BOX_CPUS (their own cgroup).
+    cpuset: "3"
+    mem_limit: 384m
+    healthcheck:
+      test: ["CMD", "test", "-d", "/sys/fs/cgroup/grader-judge"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging: *logging
+
+  # The only way in: :8080 public (tunnel only), :8081 admin (published), :8090 Google sign-in.
+  edge:
+    image: ghcr.io/kit2code/grader-edge:0.1.0
+    ports: ["8081:8081"]
+    networks:
+      edge_net: {}
+      app_net: {ipv4_address: 10.89.91.10}
+    depends_on: [web, web-admin]
+    restart: unless-stopped
+    cpuset: "3"
+    mem_limit: 96m
+    healthcheck:
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:8079/"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    logging: *logging
+
+  # Cloudflare tunnel: public hostname → http://edge:8080 (set in the Cloudflare Zero Trust dashboard).
+  tunnel:
+    image: cloudflare/cloudflared:2026.9.2@sha256:3d92367cab219a86f748128512f5c28b31cbf54faacececa0eff6a8c2085ed5f
+    command: ["tunnel", "--no-autoupdate", "--metrics", "127.0.0.1:60123", "run"]
+    environment:
+      TUNNEL_TOKEN: "PASTE_IN_ZIMAOS_UI_NOT_IN_GIT"
+    networks: [edge_net]
+    depends_on: [edge]
+    restart: unless-stopped
+    cpuset: "3"
+    mem_limit: 128m
+    healthcheck:
+      test: ["CMD", "cloudflared", "tunnel", "--metrics", "127.0.0.1:60123", "ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    logging: *logging
+
+  # Nightly database backups at BACKUP_TIME, plus "Back up now" from the admin Backups page.
+  backup:
+    image: ghcr.io/kit2code/grader-ops:0.1.0
+    command: ["backup-loop"]
+    environment:
+      BACKUP_TIME: "03:30"
+      BACKUP_KEEP: "14"
+      TZ: Asia/Bangkok
+    volumes:
+      - /DATA/AppData/grader/backups:/backups
+      - /DATA/AppData/grader/secrets/backup:/run/secrets/backup:ro
+    networks: [db_net]
+    depends_on:
+      secrets-init: {condition: service_completed_successfully}
+    restart: unless-stopped
+    cpuset: "3"
+    mem_limit: 192m
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "db", "-U", "grader", "-d", "grader"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    logging: *logging
+
+networks:
+  # Internet for the tunnel only (and the edge's :8090 calls to Google).
+  edge_net: {}
+  app_net:
+    internal: true
+    ipam:
+      config:
+        - subnet: 10.89.91.0/24
+  db_net: {internal: true}
+  judge_net: {internal: true}
+
+x-casaos:
+  architectures: [amd64]
+  main: edge
+  author: Kit2Code
+  developer: Kit2Code
+  category: Developer
+  title:
+    en_US: Grader
+  tagline:
+    en_US: Practice grader for past contest problems
+  description:
+    en_US: >-
+      A Thai/English practice site for old CMS contest problems: Google sign-in for students,
+      sandboxed judging with isolate, and an admin site on the LAN. The public site is served
+      through a Cloudflare tunnel.
+  index: /admin/
+  port_map: "8081"
+  scheme: http

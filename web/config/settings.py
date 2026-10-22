@@ -21,11 +21,16 @@ PUBLIC_BASE_URL = (
     _BASE_URL if GRADER_ROLE == "public" else env.optional("PUBLIC_BASE_URL", "")
 ).rstrip("/")
 ALLOWED_HOSTS = [_HOSTNAME]
+CSRF_TRUSTED_ORIGINS = [_ORIGIN]
 if GRADER_ROLE == "admin":
+    # Other addresses the admin site is opened at, besides ADMIN_BASE_URL: say, the NAS's Tailscale
+    # IP or name, "http://100.x.y.z:8081,http://nas.tailnet.ts.net:8081" (docs/DEPLOY.md).
+    for _host, _origin in env.extra_base_urls(env.optional("GRADER_ADMIN_EXTRA_URLS", "")):
+        ALLOWED_HOSTS.append(_host)
+        CSRF_TRUSTED_ORIGINS.append(_origin)
     # The worker calls web-admin directly on judge_net, by its service name. Requests through the
     # edge with that Host header still fail the zone check for /internal/* (see core.middleware).
     ALLOWED_HOSTS.append(env.optional("GRADER_INTERNAL_HOST", "web-admin"))
-CSRF_TRUSTED_ORIGINS = [_ORIGIN]
 
 SECRET_KEY = env.read_secret("django_secret_key")
 
@@ -52,6 +57,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    # First: Docker's healthcheck, which may use any Host header (see the class).
+    "core.middleware.HealthzMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "core.middleware.EdgeZoneMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",

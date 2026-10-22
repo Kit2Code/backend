@@ -69,6 +69,15 @@ jobs:
         env:
           GRADER_ROLE: admin
 
+  images:
+    name: Production images build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Build only (no push): a broken Dockerfile shows up here, not when a release is tagged.
+      - name: Build the four images
+        run: scripts/build-images.sh --tag ci
+
   gitleaks:
     name: Secret scan (whole history)
     runs-on: ubuntu-24.04

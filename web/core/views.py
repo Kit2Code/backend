@@ -12,11 +12,6 @@ from core.models import SiteSetting
 from problems.views import recent_problems
 
 
-def healthz(request: HttpRequest) -> HttpResponse:
-    """Liveness check for Docker healthchecks and the smoke test: the process answers."""
-    return HttpResponse("ok", content_type="text/plain")
-
-
 def home(request: HttpRequest) -> HttpResponse:
     """The public home page: the announcement and a way in to the problems."""
     context = {

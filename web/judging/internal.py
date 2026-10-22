@@ -26,6 +26,7 @@ from core.models import PauseWindow, SiteSetting
 from grader_common import api
 from judging.models import (
     MAX_COMPILE_LOG_BYTES,
+    MAX_MESSAGE_CHARS,
     JudgeJob,
     Submission,
     TestResult,
@@ -334,6 +335,9 @@ def complete(message: api.Complete) -> HttpResponse:
             refresh_best(submission.user_id, submission.problem_id)
         else:
             _update_best(submission, result.score)
+        if result.verdict == "JE":
+            # Why the judge failed (isolate, a checker...): shown on the admin System page.
+            job.error = result.message[:MAX_MESSAGE_CHARS] or "judge error"
         job.status = JudgeJob.Status.DONE
         job.lease_until = None
         job.save()

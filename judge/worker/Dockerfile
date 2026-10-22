@@ -59,5 +59,5 @@ RUN chmod 0755 /usr/local/bin/isolate \
     && cp /usr/local/etc/isolate.base /usr/local/etc/isolate
 
 ENTRYPOINT ["/usr/local/bin/worker-entrypoint"]
-# Placeholder until the worker loop exists: keep the container up so the judge can be exercised.
-CMD ["sleep", "infinity"]
+# The judge loop (grader_worker.client). The entrypoint prepares cgroups and isolate first.
+CMD ["judge-worker"]

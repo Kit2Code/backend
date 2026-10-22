@@ -98,7 +98,14 @@ def recent_judge_errors(limit: int = JUDGE_ERRORS_SHOWN) -> list[JudgeError]:
     judged_je = Submission.objects.filter(verdict=Verdict.JUDGE_ERROR).exclude(pk__in=listed)
     for submission in judged_je.order_by("-judged_at")[:limit]:
         what = f"submission #{submission.pk}"
-        errors.append(JudgeError(submission.judged_at, what, "", submission.pk))
+        reason = (
+            JudgeJob.objects.filter(submission=submission)
+            .exclude(error="")
+            .order_by("-updated_at")
+            .values_list("error", flat=True)
+            .first()
+        )
+        errors.append(JudgeError(submission.judged_at, what, reason or "", submission.pk))
     long_ago = datetime(1970, 1, 1, tzinfo=UTC)
     errors.sort(key=lambda error: error.at or long_ago, reverse=True)
     return errors[:limit]

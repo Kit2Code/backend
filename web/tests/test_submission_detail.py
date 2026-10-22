@@ -223,3 +223,9 @@ def test_the_author_sees_the_compile_log(alice: User, suffix: str) -> None:
     submission = compile_error(alice)
     html = page(signed_in(alice), f"/submissions/{submission.pk}{suffix}")
     assert "secret_idea" in html
+
+
+def test_htmx_adds_no_inline_styles(alice: User) -> None:
+    # The edge's Content-Security-Policy allows no inline styles (deploy/edge/Caddyfile).
+    html = page(EdgeClient(), f"/submissions/{make_submission(alice).pk}")
+    assert '"includeIndicatorStyles": false' in html
