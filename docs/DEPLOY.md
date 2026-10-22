@@ -62,8 +62,9 @@ and Cloudflare sends visitors to the grader's edge on port 8080, which is not re
 
    The LAN address is shown on the ZimaOS dashboard (for example `192.168.1.20`).
 3. Press **Install**. The first start downloads about 1.5 GB of images and takes a few minutes.
-   `secrets-init` runs once and stops; that is expected (it creates the passwords and keys, and
-   shows *Exited*). The other containers should become *healthy*.
+   `secrets-init` and `db-init` run once and stop; that is expected (they create the passwords and
+   keys, and the database account the site uses, and show *Exited*). The other containers should
+   become *healthy*; the worker takes up to a minute.
 
 ## 3. Create the first admin account
 
@@ -117,10 +118,15 @@ Then import problems (**Import**), let their reference solutions be checked, and
 
 ## Updating to a new version
 
-Releases are tagged `vX.Y.Z`. In the ZimaOS dashboard → the grader app → *Settings*, change the
-image tag `0.1.0` to the new version for every `ghcr.io/kit2code/grader-…` image (`web`,
-`web-admin`, `worker`, `edge`, `secrets-init`, `backup`) and save. The app restarts; `web-admin`
-updates the database by itself. Your data, settings and secrets stay.
+Releases are tagged `vX.Y.Z`. Each release run on GitHub (Actions → Release → the run) ends with an
+**Image digests** box: four lines like `ghcr.io/kit2code/grader-web:0.1.2@sha256:…`. In the ZimaOS
+dashboard → the grader app → *Settings*, replace the image of every `ghcr.io/kit2code/grader-…`
+service with the matching line: `grader-web` for `web` and `web-admin`, `grader-worker` for
+`worker`, `grader-edge` for `edge`, `grader-ops` for `secrets-init`, `db-init` and `backup`. Save.
+The app restarts; `web-admin` updates the database by itself. Your data, settings and secrets stay.
+
+The digest (`@sha256:…`) names the exact images that release built and tested; a version tag alone
+could be pushed again later.
 
 ## Backups
 
@@ -203,3 +209,38 @@ starting) and keep the judge's CPUs apart from the services' and from CMS's.
   there a pause window now? Recent judge errors are listed there too.
 - **Time limits feel too tight or too loose.** Admin site → Calibrate, then set the time scale on
   the Grading page.
+- **The worker stays *unhealthy*.** Its log says why: "the judge loop has not started" (wait a
+  minute after a start), "every judge slot is broken" (restart the app), or a start-up error about
+  cgroups or CPUs (check `JUDGE_BOX_CPUS` and the CPU sets name CPUs that exist).
+- **`web` or `web-admin` say "password authentication failed for user grader_app".** `db-init` sets
+  that password at every start: restart the app, and check `db-init` ends with *Exited (0)* and
+  its log says "role grader_app created" or "updated".
+- **The edge stops at once with "must be an https:// address".** A Google upstream setting on
+  `edge` was changed to something that isn't `https://`; remove it (the defaults are Google's own).
+
+## First-install checklist
+
+Tick each line as you go; the step numbers are the sections above. Keep the screenshots of the last
+two lines: they show the install works on this machine.
+
+- [ ] **0.** The four `ghcr.io/kit2code/grader-…` packages are *Public*; the NAS has CPUs 0–5 online
+  and about 3 GB of memory free; other apps (CMS) are stopped or pinned to CPUs 0–2.
+- [ ] **1.** The Cloudflare tunnel `grader` exists, its token is copied, and its public hostname
+  points to `HTTP` `edge:8080`. The tunnel shows *Inactive* until the app starts; that's fine.
+- [ ] **2.** The compose file is imported, the four placeholders are replaced, and *Install*
+  finished. In the app's containers: `secrets-init` and `db-init` *Exited*; `db`, `web`,
+  `web-admin`, `worker`, `edge`, `tunnel` and `backup` *healthy* (allow a few minutes). The
+  Cloudflare tunnel now shows *Healthy*.
+- [ ] **3.** `SETUP-LINK.txt` opened, the admin account made, and you can sign in to
+  `http://<the NAS's LAN address>:8081/admin/`.
+- [ ] **4.** (Optional) the admin site opens over Tailscale too.
+- [ ] **5.** The Google client is saved on the Sign-in page and *Test sign-in config* says keys were
+  received. `https://<your public hostname>` opens the public site and *Sign in with Google*
+  works.
+- [ ] **6.** Admin site → System: the worker is *online*; the environment report has no warnings
+  you can't explain (save a screenshot); *Run self-test* says **all passed** (save a screenshot).
+- [ ] **6.** Import a small problem: zip the folder `fixtures/problems/aplusb` of this repository
+  (on Windows: right-click → *Send to* → *Compressed (zipped) folder*) and upload it on the
+  **Import** page; publish it. Sign in on the public site and submit
+  `fixtures/submissions/aplusb/ac.cpp`: it is judged **AC**.
+

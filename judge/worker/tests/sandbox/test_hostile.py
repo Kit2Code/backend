@@ -102,7 +102,10 @@ def test_fork_bomb_burns_its_cpu_time_alone_and_the_worker_stays_healthy() -> No
     running = [[p for p in snapshot if p["cgroup"] == box_cgroup] for snapshot in seen]
     assert any(running), "the watcher never saw the fork bomb running"
     for processes in running:
-        assert len([p for p in processes if p["uid"] >= FIRST_UID]) <= 1, processes
+        # Only the fork bomb's own processes ("main"; a fork keeps the name): the compiler runs in
+        # the same box first, and gcc starts helper processes of its own.
+        program = [p for p in processes if p["uid"] >= FIRST_UID and p["comm"] == "main"]
+        assert len(program) <= 1, processes
     assert_sandboxed(seen)
     # The worker still runs commands and judges normally afterwards.
     assert worker("true", timeout=30).returncode == 0

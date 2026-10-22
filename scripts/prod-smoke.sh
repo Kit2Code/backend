@@ -76,7 +76,11 @@ echo "== build the images (ghcr.io/kit2code/grader-*:0.1.1)"
 scripts/build-images.sh --tag 0.1.1 >/dev/null || { echo "FAIL  image build"; exit 1; }
 
 echo "== start (data in $DATA)"
-sed "s#/DATA/AppData/grader#$DATA#g" deploy/zimaos/grader.compose.yml > "$COMPOSE_FILE"
+# The real data folder → a temporary one, and the grader's images by tag only (the compose pins the
+# published release's digests; the dry run tests the images just built from this checkout).
+sed -e "s#/DATA/AppData/grader#$DATA#g" \
+    -e 's#\(ghcr\.io/kit2code/grader-[a-z]*:[0-9.]*\)@sha256:[0-9a-f]*#\1#g' \
+    deploy/zimaos/grader.compose.yml > "$COMPOSE_FILE"
 cat > "$OVERRIDE" <<'EOF'
 services:
   tunnel:

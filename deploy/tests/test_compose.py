@@ -179,3 +179,10 @@ def test_the_web_roles_log_in_as_the_plain_database_role() -> None:
         service = services()[name]
         assert service["environment"]["GRADER_DB_USER"] == "grader_app"
         assert service["depends_on"]["db-init"] == {"condition": "service_completed_successfully"}
+
+
+@pytest.mark.parametrize("name", [n for n, s in services().items() if OURS.match(s["image"])])
+def test_our_images_are_pinned_by_digest(name: str) -> None:
+    # A version tag can be pushed again; a digest always names the same, tested bytes (M6H-07).
+    image = services()[name]["image"]
+    assert re.fullmatch(OURS.pattern + r"@sha256:[0-9a-f]{64}", image), image
