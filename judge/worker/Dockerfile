@@ -47,8 +47,11 @@ COPY --from=isolate-build /src/isolate/isolate /usr/local/bin/isolate
 COPY --from=isolate-build /src/isolate/isolate-check-environment /usr/local/bin/isolate-check-environment
 COPY judge/worker/isolate.base /usr/local/etc/isolate.base
 COPY judge/worker/vendor/testlib/testlib.h /usr/local/share/grader/testlib.h
-# The hostile programs, for the self-test that runs on the real host.
-COPY fixtures/hostile /opt/grader/hostile
+# What the self-test judges on the real host (grader_worker/selftest.py): the hostile programs, and
+# aplusb with an accepted solution to check that judging still works before and after them.
+COPY fixtures/hostile /opt/grader/fixtures/hostile
+COPY fixtures/problems/aplusb /opt/grader/fixtures/problems/aplusb
+COPY fixtures/submissions/aplusb/ac.c /opt/grader/fixtures/submissions/aplusb/ac.c
 COPY judge/worker/entrypoint.sh /usr/local/bin/worker-entrypoint
 # The worker runs as root, so isolate needs no setuid bit (one less setuid binary a box could try).
 RUN chmod 0755 /usr/local/bin/isolate \

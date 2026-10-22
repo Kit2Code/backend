@@ -89,9 +89,14 @@ services:
       - ../../common:/app/common
       - ../../.devdata/problems:/data/problems
       - ../../.devdata/uploads:/data/uploads
+      - ../../.devdata/backups:/data/backups:ro
       - ../../.devdata/secrets/web:/run/secrets/web:ro
       - ../../.devdata/secrets/worker:/run/secrets/worker:ro
-    networks: [app_net, db_net, judge_net]
+    networks:
+      # A fixed address: the edge lets web-admin fetch the Google keys (and nothing else) on :8090.
+      app_net: {ipv4_address: 10.89.90.21}
+      db_net: {}
+      judge_net: {}
 
   edge:
     image: caddy:2.11.7-alpine@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f

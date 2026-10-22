@@ -1,0 +1,82 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+{% block extrahead %}{{ block.super }}{% if selftest_waiting %}<meta http-equiv="refresh" content="5">{% endif %}{% endblock %}
+{% block breadcrumbs %}<div class="breadcrumbs"><a href="{% url 'admin:index' %}">{% translate "Home" %}</a> &rsaquo; {{ title }}</div>{% endblock %}
+{% block content %}
+<div class="module">
+  <h2>{% translate "Workers" %}</h2>
+  {% if workers %}
+  <table>
+    <thead><tr><th>{% translate "Worker" %}</th><th>{% translate "State" %}</th><th>{% translate "Slots" %}</th><th>{% translate "Busy" %}</th><th>{% translate "Last seen" %}</th></tr></thead>
+    <tbody>
+    {% for row in workers %}
+      <tr data-worker="{{ row.worker.worker_id }}" data-online="{% if row.online %}yes{% else %}no{% endif %}">
+        <td>{{ row.worker.worker_id }}</td>
+        <td>{% if row.online %}{% translate "online" %}{% else %}<strong>{% translate "offline" %}</strong>{% endif %}</td>
+        <td>{{ row.worker.slots }}</td><td>{{ row.worker.busy_slots }}</td>
+        <td>{{ row.worker.last_seen_at|date:"Y-m-d H:i:s"|default:"-" }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% for row in workers %}{% if row.online %}
+    <h3>{% translate "Environment report" %}: {{ row.worker.worker_id }}</h3>
+    {% if row.worker.env_report.warnings %}
+    <ul class="messagelist">{% for warning in row.worker.env_report.warnings %}<li class="warning">{{ warning }}</li>{% endfor %}</ul>
+    {% endif %}
+    <details><summary>{% translate "Full report" %}</summary><pre>{{ row.report_json }}</pre></details>
+  {% endif %}{% endfor %}
+  {% else %}<p class="errornote">{% translate "No worker has said hello yet." %}</p>{% endif %}
+</div>
+
+<div class="module">
+  <h2>{% translate "Queue" %}</h2>
+  <table>
+    <thead><tr><th>{% translate "Kind" %}</th><th>{% translate "Waiting" %}</th></tr></thead>
+    <tbody>
+    {% for kind, label, count in queued %}<tr><td>{{ label }}</td><td data-queued-kind="{{ kind }}">{{ count }}</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  <p>{% translate "Running now" %}: {{ running }}</p>
+</div>
+
+<div class="module">
+  <h2>{% translate "Self-test" %}</h2>
+  <p>{% translate "Judges the hostile programs on this server and checks that the sandbox stopped each one. It runs even while grading is paused." %}</p>
+  {% if selftest %}
+    <p>{% translate "Last run" %}: {{ selftest.created_at|date:"Y-m-d H:i" }} ·
+    {% if selftest_waiting %}{% translate "running…" %}
+    {% elif selftest.status == "failed" %}<strong>{% translate "could not run" %}</strong>: {{ selftest.error }}
+    {% elif selftest_ok %}<strong data-selftest="pass">{% translate "all passed" %}</strong>
+    {% else %}<strong class="errornote" data-selftest="fail">{% translate "NOT ALL PASSED" %}</strong>{% endif %}</p>
+    {% if selftest.result.cases %}
+    <table>
+      <thead><tr><th>{% translate "Case" %}</th><th>{% translate "Expected" %}</th><th>{% translate "Got" %}</th><th>{% translate "Passed" %}</th><th>{% translate "Seconds" %}</th><th>{% translate "Message" %}</th></tr></thead>
+      <tbody>
+      {% for case in selftest.result.cases %}
+        <tr data-case="{{ case.name }}" data-ok="{% if case.ok %}yes{% else %}no{% endif %}"><td>{{ case.name }}</td><td>{{ case.expected|join:", " }}</td><td>{{ case.verdict }}</td><td>{% if case.ok %}✔{% else %}✘{% endif %}</td><td>{{ case.seconds }}</td><td><pre>{{ case.message|truncatechars:500 }}</pre></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  {% endif %}
+  {% if not selftest_waiting %}
+  <form method="post">{% csrf_token %}<input type="hidden" name="action" value="selftest"><input type="submit" value="{% translate 'Run self-test' %}"></form>
+  {% endif %}
+</div>
+
+<div class="module">
+  <h2>{% translate "Recent judge errors" %}</h2>
+  {% if judge_errors %}
+  <table>
+    <thead><tr><th>{% translate "When" %}</th><th>{% translate "What" %}</th><th>{% translate "Error" %}</th></tr></thead>
+    <tbody>
+    {% for error in judge_errors %}
+      <tr data-judge-error="{{ forloop.counter }}"><td>{{ error.at|date:"Y-m-d H:i:s"|default:"-" }}</td>
+        <td>{% if error.submission_id %}<a href="{% url 'admin:judging_submission_change' error.submission_id %}">{{ error.what }}</a>{% else %}{{ error.what }}{% endif %}</td>
+        <td>{{ error.error }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<p>{% translate "None." %}</p>{% endif %}
+</div>
+{% endblock %}

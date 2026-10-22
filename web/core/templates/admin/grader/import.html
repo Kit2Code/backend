@@ -1,0 +1,12 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+{% block breadcrumbs %}<div class="breadcrumbs"><a href="{% url 'admin:index' %}">{% translate "Home" %}</a> &rsaquo; {{ title }}</div>{% endblock %}
+{% block content %}
+<p>{% translate "The problem is imported hidden. Its reference solutions are then run by the judge; publish it once they all get their expected scores." %}</p>
+{% if error %}<p class="errornote">{{ error }}</p>{% endif %}
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  {{ form.as_div }}
+  <div class="submit-row"><input type="submit" value="{% translate 'Upload and import' %}"></div>
+</form>
+{% endblock %}

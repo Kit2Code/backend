@@ -32,6 +32,12 @@ dev worker (`judge-worker`) picks the job up within a couple of seconds, and the
 updates as each test finishes. `docker compose -f deploy/dev/compose.dev.yml logs -f worker` shows
 what the worker is doing.
 
+The admin site is <http://127.0.0.1:8001/admin/>. The first time, create your admin account with
+the one-time link in `.devdata/uploads/SETUP-LINK.txt` (also printed in the `web-admin` log); it
+works only while no superuser exists. From the admin home page, the **Grader** box leads to Import,
+Grading, System, Calibrate, Backups and Sign-in. (The browser tests in `test_m5_admin.py` delete
+the dev superusers and make a new link, so after running them use the new link again.)
+
 ## Day-to-day commands
 
 | What | Command |
@@ -46,6 +52,8 @@ what the worker is doing.
 | Django management | `uv run python web/manage.py <command>` |
 | Import a problem into the store only | `uv run grader-import <zip or folder> --store .devdata/problems` |
 | Import and publish on the dev site | `uv run python web/manage.py import_problem <zip or folder> --visible` |
+| A new first-run setup link (no superuser yet) | `uv run python web/manage.py setup_link` |
+| Run the sandbox self-test by hand | `docker compose -f deploy/dev/compose.dev.yml exec worker judge-selftest` |
 | New migration | `uv run python web/manage.py makemigrations`, then commit the file |
 | Secret scan | `gitleaks dir . -v` |
 

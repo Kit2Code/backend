@@ -75,9 +75,10 @@ on it, so, as in production, the only way to them is through the edge.
 **The one way out: Google sign-in.** The edge has a third listener, `:8090`, on `app_net` only. It
 forwards exactly `POST /token` and `GET /certs` to Google (in dev: to `fake-oidc`), caps request
 bodies at 16 KB, and answers 404 to anything else. It listens on the edge's `app_net` address only
-and serves only the public web role's address (the dev compose gives `app_net` a fixed subnet for
-this), so web-admin, the worker and the host can't use it. An SSRF bug in the public site could
-reach nothing but Google's token endpoint. Caddy can't cap response sizes, so the web side reads
+and serves the public web role's address (the dev compose gives `app_net` a fixed subnet and the
+web roles fixed addresses for this). web-admin may only `GET /certs` (Google's public keys, for the
+Sign-in page's test button); the worker and the host can't use it at all. An SSRF bug in the public
+site could reach nothing but Google's token endpoint. Caddy can't cap response sizes, so the web side reads
 those two responses with a 64 KB limit. In dev, `fake-oidc` sits on its own normal network
 (`fake_google_net`, standing in for the internet) that only the edge joins.
 
@@ -94,8 +95,9 @@ because Docker silently creates an empty directory when a mounted file doesn't e
 admin role also mounts the worker's folder (named by `GRADER_WORKER_SECRETS_DIR`) to read the
 worker token; the public role never has it.
 
-The Google client secret is typed into the admin site (a management command for now,
-`set_google_client`, reading it from stdin) and kept in the database **encrypted**
+The Google client secret is typed into the admin site's **Sign-in** page (write-only: the page only
+says "set"; `manage.py set_google_client` does the same from stdin, for dev) and kept in the
+database **encrypted**
 (`core/crypto.py`: Fernet, with a key derived from the Django secret key by HKDF). A database
 backup alone doesn't reveal it.
 
@@ -220,8 +222,8 @@ judge cgroup, the container's effective capabilities, seccomp mode and AppArmor 
 box → CPU map with each judge CPU's SMT siblings and P/E-core kind, warnings (judge CPUs sharing a
 core, P/E mix, swap), and the read-only `isolate-check-environment` output. It only reads. The dev
 result is kept in `docs/env-dev.json`. The worker sends it to web-admin at start and every 10
-minutes (it is stored on the `Worker` row; the admin System page that shows it is *(planned)*),
-since the home server has no terminal.
+minutes; it is stored on the `Worker` row and shown on the admin **System** page, since the home
+server has no terminal.
 
 ### The queue and the worker loop
 
@@ -239,12 +241,20 @@ worker                                   web-admin (judging/internal.py)
   heartbeat {job ids} every 10 s  ──►    extend leases; reply with jobs no longer ours
   progress {tests so far}         ──►    store them (the page shows them live)
   complete {result} / fail {why}  ──►    store result + best score / requeue (3 tries, then JE)
+  report {validation | calibration | self-test}  ──►  store it on the job (JudgeJob.result)
 ```
+
+There are four kinds of job, in priority order: **judge** (a submission; a rejudge has a lower
+priority than a fresh one), **validate** (run a problem version's reference solutions; each must
+get its `expected_score`), and **calibrate** and **selftest** (below). Only judge jobs are answered
+with `complete`; the others with `report`. A rejudged result recomputes the user's best score, so
+it can go down as well as up.
 
 - **Claim** runs in one transaction: running jobs whose lease ran out go back to the queue (or
   become a judge error after 3 tries), then `select_for_update(skip_locked=True)` picks the queued
   job with the highest priority (fresh submissions first), oldest first, so two workers never get
-  the same job. Nothing is handed out while grading is paused or inside a pause window.
+  the same job. While grading is paused or inside a pause window, only self-test jobs are handed
+  out. The claim also records how many of the worker's slots are busy.
 - Progress, complete and fail are accepted only from the worker that holds the lease (else 409,
   and the worker drops the job). Results of a job whose lease was lost are thrown away.
 - The worker judges each job in its own thread (one per slot), checks the problem path (two plain
@@ -264,11 +274,11 @@ A problem is a folder with a `problem.yaml` plus statements, tests, and optional
 graders and reference solutions (details for problem setters: [PROBLEM_FORMAT.md](PROBLEM_FORMAT.md)).
 
 - **Format** (`common/grader_common/problem_format.py`): pydantic models are the single definition of
-  `problem.yaml`, used by the importer now and by the web app and the worker later.
+  `problem.yaml`, used by the importer, the web app and the worker.
 - **Scoring** (`common/grader_common/scoring.py`): CMS's Sum and GroupMin as pure functions. The
   worker will call `score()` with each test's outcome.
-- **Importer** (`common/grader_common/importer/`), used by the `grader-import` command now and by the
-  admin upload page later:
+- **Importer** (`common/grader_common/importer/`), used by the admin **Import** page and the
+  `grader-import` command:
   1. `archive.py` unpacks the zip (or copies the folder) into a private staging folder, refusing
      anything unsafe (links, `..`, special files, zip bombs).
   2. `native.py` takes our format as it is; `italy.py` converts a CMS Italian-format task into it.
@@ -279,19 +289,59 @@ graders and reference solutions (details for problem setters: [PROBLEM_FORMAT.md
 - **Registering** (`web/problems/registry.py`): after an import, a `Problem` and `ProblemVersion`
   row point at the stored folder (titles and tags are copied, so the list needs no file reads).
   `manage.py import_problem <zip or folder> [--visible]` does both; `--visible` publishes at once
-  and is for dev and tests only (the admin import page will validate first).
+  and is for dev and tests only. The Import page instead keeps a new problem hidden, queues a
+  validation job, and publishes only a version that passed; a new version of a public problem
+  doesn't replace the current one until it is published.
 - **Store** (`/data/problems` in containers, `.devdata/problems` in dev): `<slug>/v<NNN>-<hash8>/`.
   Versions never change after they are written, so a rejudge always sees the files the submission
   was judged on, and the worker can cache by version. The public web role mounts the store
   read-only; only web-admin writes to it.
+
+## The admin site
+
+Only the admin role routes it (`/admin/`, on the LAN through edge `:8081`). It is the stock Django
+admin plus our own pages, which `GraderAdminSite.get_urls()` (`web/config/admin.py`) adds inside
+the admin, so they are staff-only and look the same. Each page also needs a model permission
+(for example `change_sitesetting` for Grading), so a helper staff account can be given only some.
+
+- **First-run setup** (`core/setup.py`): while no superuser exists, every start of web-admin makes a
+  new one-time link, prints it to the log and saves it as `/data/uploads/SETUP-LINK.txt` (readable in
+  the ZimaOS Files app). Only the token's SHA-256 is stored; it lasts 24 hours. `/setup?token=…`
+  moves the token into the session (so it doesn't stay in the address bar), asks for a username and
+  password, creates the superuser and stops working.
+- **Django admin:** users (Google-linked column; disable, enable, unlink Google), problems
+  (titles and tags; publish and hide as actions, publish only when the current version passed
+  validation), submissions (read-only with their code; rejudge), site settings, pause windows,
+  and the audit log (read-only).
+- **Import:** upload a zip → import report → validation by the worker → Publish (see Problems).
+- **Grading:** pause or resume now, pause windows (contest days), and the time scale.
+- **System:** workers (online if they claimed in the last 30 s; ones not seen for a week are left
+  out, since a recreated container gets a new id), their environment report and its warnings, the
+  queue per kind, the last 50 judge errors, and **Run self-test**: the worker judges every hostile
+  program from `fixtures/hostile` (baked into its image) with the problem's own limits and checks
+  each got a verdict that means "contained" (`grader_worker/selftest.py`). It runs even while
+  grading is paused.
+- **Calibrate:** the worker runs a problem's reference solutions 5 times with limits 10 times the
+  contest's and reports each test's slowest time; the page suggests a time scale that gives every
+  reference solution twice the time it needed (`judging/calibration.py`). The admin sets it on the
+  Grading page.
+- **Backups:** the backup files (`/data/backups`, mounted read-only; download links), and **Back up
+  now**, which only adds a request row for the backup service to pick up.
+- **Sign-in:** the Google client ID and write-only secret, the redirect URI to register, and a test
+  button that fetches Google's keys exactly as a sign-in does.
+
+**Audit log.** Every admin action writes an `AuditLog` row: who, what, to what, when and from which
+IP (`core/audit.py`). Django admin edits are caught by `AuditedModelAdmin`, the base class of every
+model admin; our pages and actions call `audit.record()`; staff sign-in, failed sign-in and
+sign-out come from Django's auth signals. Secrets never go into the log.
 
 ## Code layout
 
 | Path | Contents |
 |---|---|
 | `pyproject.toml`, `uv.lock` | uv workspace root: ties the three Python packages together; one lockfile; ruff, mypy and pytest settings |
-| `web/` | Django project: `config/` (settings, the two URL configurations, the admin site), `accounts/` (users, Google sign-in), `core/` (zones, rate limits, site settings, base template), `problems/` (pages, files, store), `judging/` (submissions, queue, internal API, lists, ranking), `locale/` (translations), `tests/` (`e2e/`: browser tests, including real judging and worker crashes), `Dockerfile` |
-| `judge/worker/` | the worker package (`client.py`: the job loop; `judge.py`: one submission), its `Dockerfile`, `isolate.conf` and entrypoint |
+| `web/` | Django project: `config/` (settings, the two URL configurations, the admin site), `accounts/` (users, Google sign-in), `core/` (zones, rate limits, site settings, audit log, first-run setup, base template, the Grading/Backups/Sign-in pages), `problems/` (pages, files, store, the Import page), `judging/` (submissions, queue, internal API, lists, ranking, the System/Calibrate pages), `locale/` (translations), `tests/` (`e2e/`: browser tests, including real judging, worker crashes and the admin flow), `Dockerfile` |
+| `judge/worker/` | the worker package (`client.py`: the job loop; `judge.py`: one submission; `tasks.py`: validation and calibration; `selftest.py`: the self-test), its `Dockerfile`, `isolate.conf` and entrypoint |
 | `common/grader_common/` | code shared by web and worker: problem format, scoring, importer (`grader-import`) |
 | `fixtures/` | small made-up problems for tests (native and CMS Italian format) |
 | `deploy/dev/compose.dev.yml` | the development stack (db, web, web-admin, worker, edge, fake-oidc) |

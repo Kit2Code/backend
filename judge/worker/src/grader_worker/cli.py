@@ -11,6 +11,11 @@ free slot, and prints a JSON list of {"result", "box_id", "run_started", "run_fi
 
 An invalid request (unknown language, bad problem folder, bad job list) prints one error line on
 stderr and exits 2.
+
+    judge-selftest
+
+judges the hostile programs (grader_worker.selftest) and prints the report; exit 1 if one of them
+was not contained.
 """
 
 import argparse
@@ -25,7 +30,8 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from grader_common.importer.errors import ProblemImportError
-from grader_worker import config
+from grader_worker import config, selftest
+from grader_worker.client import web_admin_ip
 from grader_worker.env_report import judge_env as judge_env  # the `judge-env` command
 from grader_worker.judge import MAX_SOURCE_BYTES, SubmissionError, judge
 from grader_worker.slots import SlotPool
@@ -118,3 +124,18 @@ def _run_jobs(pool: SlotPool, jobs: list[Job]) -> list[dict[str, Any]]:
     if errors:
         raise errors[0]
     return [r for r in results if r is not None]
+
+
+def judge_selftest(argv: Sequence[str] | None = None) -> int:
+    """`judge-selftest`: run the self-test in one slot, print the report; 1 if a case failed."""
+    del argv  # no options
+    try:
+        pool = SlotPool(config.Settings.from_env(os.environ))
+        ip = web_admin_ip(os.environ.get("WEB_INTERNAL_URL", "http://web-admin:8000"))
+        with pool.acquire() as slot:
+            report = selftest.run(config.FIXTURES_DIR, slot, judge, ip)
+    except (SubmissionError, config.ConfigError, OSError) as error:
+        print(f"judge-selftest: error: {error}", file=sys.stderr)
+        return 2
+    print(report.model_dump_json(indent=2))
+    return 0 if report.ok else 1

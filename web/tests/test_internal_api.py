@@ -424,3 +424,24 @@ def test_impossible_numbers_in_a_result_are_400(bad: dict[str, Any]) -> None:
     assert post("/internal/judge/complete", data).status_code == 400
     submission.refresh_from_db()
     assert submission.status == Submission.Status.JUDGING
+
+
+def test_a_rejudge_that_scores_lower_lowers_the_best_score() -> None:
+    submission = make_submission()
+    assert complete(claim().json()["job_id"], score=100).status_code == 204
+    assert UserProblemBest.objects.get().best_score == 100
+    JudgeJob.objects.create(
+        kind=JudgeJob.Kind.JUDGE, priority=JudgeJob.Priority.REJUDGE, submission=submission
+    )
+    assert complete(claim().json()["job_id"], verdict="PA", score=40).status_code == 204
+    best = UserProblemBest.objects.get()
+    assert (best.best_score, best.submission_id) == (40, submission.pk)
+
+
+def test_a_job_with_nothing_to_work_on_is_given_up_not_handed_out() -> None:
+    broken = JudgeJob.objects.create(kind=JudgeJob.Kind.VALIDATE, priority=JudgeJob.Priority.FRESH)
+    make_submission()
+    assert claim().status_code == 204  # this round only gave up the broken job
+    broken.refresh_from_db()
+    assert broken.status == JudgeJob.Status.FAILED
+    assert claim().json()["kind"] == "judge"  # the queue moves on

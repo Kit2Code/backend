@@ -1,6 +1,10 @@
 """Forms for accounts."""
 
+from typing import Any
+
 from django import forms
+from django.contrib.auth import password_validation
+from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
 from accounts.models import USERNAME_RULE, User
@@ -32,3 +36,31 @@ class FirstSignInForm(forms.Form):
         if User.objects.filter(username=username).exists():
             raise forms.ValidationError(_("That username is taken."))
         return username
+
+
+class FirstSuperuserForm(forms.Form):
+    """First-run setup: the first admin account's username and password."""
+
+    username = forms.CharField(
+        label=_("Username"),
+        max_length=20,
+        validators=[USERNAME_RULE],
+        help_text=_("3 to 20 characters: small letters a-z, digits and _ only."),
+    )
+    password1 = forms.CharField(label=_("Password"), widget=forms.PasswordInput, strip=False)
+    password2 = forms.CharField(label=_("Password again"), widget=forms.PasswordInput, strip=False)
+
+    def clean(self) -> dict[str, Any]:
+        cleaned = super().clean() or {}
+        first, second = cleaned.get("password1"), cleaned.get("password2")
+        if first and second:
+            if first != second:
+                self.add_error("password2", _("The two passwords are different."))
+            else:
+                try:
+                    password_validation.validate_password(
+                        first, User(username=cleaned.get("username", ""))
+                    )
+                except ValidationError as error:
+                    self.add_error("password1", error)
+        return cleaned

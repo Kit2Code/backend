@@ -112,6 +112,8 @@ class JudgeJob(models.Model):
         ProblemVersion, on_delete=models.CASCADE, null=True, blank=True
     )
     error = models.CharField(max_length=MAX_MESSAGE_CHARS, blank=True)
+    # What a job that isn't a submission found (a grader_common.api report, as JSON).
+    result = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

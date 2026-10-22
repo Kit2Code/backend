@@ -96,15 +96,36 @@ class ClaimRequest(_Model):
     free_slots: int = Field(ge=1, le=10)
 
 
+JobKind = Literal["judge", "validate", "calibrate", "selftest"]
+
+
 class JudgeJob(_Model):
-    """One submission to judge. It carries everything needed, so the worker never reads the DB."""
+    """One job for the worker. It carries everything needed, so the worker never reads the DB.
+
+    `judge`: one submission (`language` and `source`), answered with Complete.
+    `validate`: run a problem version's reference solutions, answered with Report.
+    `calibrate`: time those solutions on the judge CPUs, answered with Report.
+    `selftest`: run the hostile programs baked into the worker (no problem), answered with Report.
+    Fields a kind doesn't use are left out (None), and must be.
+    """
 
     job_id: JobId
-    kind: Literal["judge"]
-    problem_path: ProblemPath
-    language: str = Field(max_length=16)
-    source: str = Field(max_length=64 * 1024)
+    kind: JobKind
+    problem_path: ProblemPath | None = None
+    language: str | None = Field(default=None, max_length=16)
+    source: str | None = Field(default=None, max_length=64 * 1024)
     time_scale: float = Field(gt=0, le=10)
+
+    @model_validator(mode="after")
+    def _fields_fit_the_kind(self) -> "JudgeJob":
+        is_submission = self.language is not None and self.source is not None
+        if (self.kind == "judge") != is_submission:
+            raise ValueError("language and source go with judge jobs, and only with them")
+        if self.language is None and self.source is not None:
+            raise ValueError("source without language")
+        if (self.kind == "selftest") != (self.problem_path is None):
+            raise ValueError("every job but a self-test names a problem version")
+        return self
 
 
 class Heartbeat(_Model):
@@ -134,6 +155,92 @@ class Complete(_Model):
     worker_id: WorkerId
     job_id: JobId
     result: JudgeResult
+
+
+class SolutionRun(_Model):
+    """How one reference solution did when its problem version was validated."""
+
+    file: str = Field(max_length=200)
+    lang: str = Field(max_length=16)
+    expected_score: float | None = Field(default=None, ge=0)
+    verdict: VerdictCode
+    score: float = Field(ge=0)
+    max_score: float = Field(ge=0)
+    ok: bool
+    message: str = Field(default="", max_length=4096)
+
+
+class ValidationReport(_Model):
+    """The answer to a `validate` job: every reference solution must be `ok`."""
+
+    kind: Literal["validate"]
+    solutions: list[SolutionRun] = Field(default=[], max_length=50)
+    warnings: list[Annotated[str, Field(max_length=4096)]] = Field(default=[], max_length=20)
+
+    @property
+    def ok(self) -> bool:
+        return all(run.ok for run in self.solutions)
+
+
+class CalibrationTest(_Model):
+    name: str = Field(min_length=1, max_length=64)
+    max_time: float = Field(ge=0, le=MAX_SECONDS, description="the slowest CPU time over the runs")
+    # False if any run got another verdict than AC here (say TLE): the time was cut off.
+    accepted: bool = True
+
+
+class CalibrationSolution(_Model):
+    """One reference solution's times, per test, and its time limit at time scale 1.0."""
+
+    file: str = Field(max_length=200)
+    lang: str = Field(max_length=16)
+    limit: float = Field(gt=0, le=MAX_SECONDS, description="seconds, with the language factor")
+    tests: list[CalibrationTest] = Field(default=[], max_length=1000)
+    verdicts: list[VerdictCode] = Field(default=[], max_length=10)
+
+
+class CalibrationReport(_Model):
+    """The answer to a `calibrate` job: each reference solution, run `runs` times."""
+
+    kind: Literal["calibrate"]
+    runs: int = Field(ge=1, le=10)
+    solutions: list[CalibrationSolution] = Field(default=[], max_length=50)
+    warnings: list[Annotated[str, Field(max_length=4096)]] = Field(default=[], max_length=20)
+
+
+class SelfTestCase(_Model):
+    """One hostile program of the self-test: the verdicts that mean "contained", and what it got."""
+
+    name: str = Field(min_length=1, max_length=64)
+    expected: list[VerdictCode] = Field(min_length=1, max_length=9)
+    verdict: VerdictCode
+    ok: bool
+    seconds: float = Field(ge=0, le=MAX_SECONDS)
+    message: str = Field(default="", max_length=4096)
+
+
+class SelfTestReport(_Model):
+    """The answer to a `selftest` job: every case must be `ok`."""
+
+    kind: Literal["selftest"]
+    cases: list[SelfTestCase] = Field(max_length=100)
+
+    @property
+    def ok(self) -> bool:
+        return bool(self.cases) and all(case.ok for case in self.cases)
+
+
+AnyReport = Annotated[
+    ValidationReport | CalibrationReport | SelfTestReport, Field(discriminator="kind")
+]
+
+
+class Report(_Model):
+    """POST /internal/judge/report: the answer to a job that isn't a submission."""
+
+    worker_id: WorkerId
+    job_id: JobId
+    report: AnyReport
 
 
 class Fail(_Model):

@@ -1,0 +1,52 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+{% block breadcrumbs %}<div class="breadcrumbs"><a href="{% url 'admin:index' %}">{% translate "Home" %}</a> &rsaquo; {{ title }}</div>{% endblock %}
+{% block content %}
+<div class="module">
+  <h2>{% translate "Now" %}</h2>
+  {% if paused %}
+  <p class="errornote" id="grading-state" data-state="paused">{% translate "Grading is paused: new submissions wait in the queue." %}</p>
+  {% else %}
+  <p id="grading-state" data-state="running">{% translate "Grading is running." %}</p>
+  {% endif %}
+  <p>{% blocktranslate count count=queued %}{{ count }} job is waiting.{% plural %}{{ count }} jobs are waiting.{% endblocktranslate %}</p>
+  <form method="post">{% csrf_token %}
+    {% if setting.grading_paused %}
+    <input type="hidden" name="action" value="resume"><input type="submit" value="{% translate 'Resume grading' %}">
+    {% else %}
+    <input type="hidden" name="action" value="pause"><input type="submit" value="{% translate 'Pause grading now' %}">
+    {% endif %}
+  </form>
+  {% if setting.grading_paused %}<p>{% translate "Paused by hand: it stays paused until you resume it." %}</p>{% endif %}
+</div>
+
+<div class="module">
+  <h2>{% translate "Pause windows" %}</h2>
+  <p>{% translate "Grading pauses by itself during each window, for example a CMS contest from its start until the final results." %}</p>
+  {% if windows %}
+  <table>
+    <thead><tr><th>{% translate "From" %}</th><th>{% translate "Until" %}</th><th>{% translate "Note" %}</th><th></th></tr></thead>
+    <tbody>
+    {% for window in windows %}
+      <tr><td>{{ window.starts_at|date:"Y-m-d H:i" }}</td><td>{{ window.ends_at|date:"Y-m-d H:i" }}</td>
+        <td>{{ window.note }}{% if window.starts_at <= now %} <strong>({% translate "now" %})</strong>{% endif %}</td>
+        <td><form method="post">{% csrf_token %}<input type="hidden" name="action" value="delete_window"><input type="hidden" name="window" value="{{ window.pk }}"><input type="submit" value="{% translate 'Remove' %}"></form></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<p>{% translate "No pause windows planned." %}</p>{% endif %}
+  <h3>{% translate "Add a pause window" %}</h3>
+  <form method="post">{% csrf_token %}<input type="hidden" name="action" value="add_window">
+    {{ window_form.as_div }}
+    <input type="submit" value="{% translate 'Add' %}">
+  </form>
+</div>
+
+<div class="module">
+  <h2>{% translate "Time scale" %}</h2>
+  <form method="post">{% csrf_token %}<input type="hidden" name="action" value="time_scale">
+    {{ scale_form.as_div }}
+    <input type="submit" value="{% translate 'Save' %}">
+  </form>
+</div>
+{% endblock %}

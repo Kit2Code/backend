@@ -14,6 +14,8 @@ from datetime import timedelta
 from functools import wraps
 
 from django.db import IntegrityError, transaction
+from django.db.models import F, Value
+from django.db.models.functions import Greatest
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
@@ -31,6 +33,7 @@ from judging.models import (
     Verdict,
     Worker,
 )
+from problems.models import ProblemVersion
 
 LEASE = timedelta(seconds=60)
 MAX_ATTEMPTS = 3
@@ -81,7 +84,8 @@ def grading_paused() -> bool:
 
 
 def _give_up(job: JudgeJob, error: str) -> None:
-    """The job won't be tried again: its submission becomes a judge error."""
+    """The job won't be tried again: its submission becomes a judge error, or the problem
+    version it was validating becomes invalid."""
     job.status = JudgeJob.Status.FAILED
     job.error = error
     job.lease_until = None
@@ -89,6 +93,10 @@ def _give_up(job: JudgeJob, error: str) -> None:
     if job.submission_id is not None:
         Submission.objects.filter(pk=job.submission_id).update(
             status=Submission.Status.DONE, verdict=Verdict.JUDGE_ERROR, judged_at=timezone.now()
+        )
+    if job.kind == JudgeJob.Kind.VALIDATE and job.problem_version_id is not None:
+        ProblemVersion.objects.filter(pk=job.problem_version_id).update(
+            status=ProblemVersion.Status.INVALID
         )
 
 
@@ -137,42 +145,75 @@ def hello(message: api.WorkerHello) -> HttpResponse:
 @_endpoint(api.ClaimRequest)
 def claim(message: api.ClaimRequest) -> HttpResponse:
     """Hand out the most urgent queued job, or 204 if there is none (or grading is paused)."""
-    Worker.objects.filter(worker_id=message.worker_id).update(last_seen_at=timezone.now())
-    if grading_paused():
-        return _no_content()
     with transaction.atomic():
         _release_expired_leases()
+        queued = JudgeJob.objects.filter(status=JudgeJob.Status.QUEUED)
+        if grading_paused():
+            # Paused: submissions wait, but the self-test still runs (it checks the judge itself).
+            queued = queued.filter(kind=JudgeJob.Kind.SELFTEST)
         # skip_locked: two workers claiming at the same moment each skip the row the other has
         # locked, so they never get the same job and never wait for each other.
-        job = (
-            JudgeJob.objects.select_for_update(skip_locked=True)
-            .filter(status=JudgeJob.Status.QUEUED, kind=JudgeJob.Kind.JUDGE)
-            .order_by("-priority", "created_at")
-            .first()
-        )
-        if job is None or job.submission_id is None:
+        job = queued.select_for_update(skip_locked=True).order_by("-priority", "created_at").first()
+        if job is None or not _has_work(job):
+            if job is not None:
+                _give_up(job, "the job names no submission or problem version")
+            _seen(message, taken=0)
             return _no_content()
+        _seen(message, taken=1)
         job.status = JudgeJob.Status.RUNNING
         job.worker_id = message.worker_id
         job.attempts += 1
         job.lease_until = timezone.now() + LEASE
         job.save()
+        # Built inside the transaction: if the job can't be described (say, a bad time_scale
+        # setting), the error rolls the claim back, so the job stays queued and keeps its tries.
+        payload = _describe(job)
+    return JsonResponse(payload.model_dump(mode="json", exclude_none=True))
+
+
+def _seen(message: api.ClaimRequest, taken: int) -> None:
+    """The worker is alive; its slots in use are the ones it didn't offer, plus this claim's job."""
+    Worker.objects.filter(worker_id=message.worker_id).update(
+        last_seen_at=timezone.now(),
+        busy_slots=Greatest(F("slots") - message.free_slots + taken, Value(0)),
+    )
+
+
+def _has_work(job: JudgeJob) -> bool:
+    if job.kind == JudgeJob.Kind.JUDGE:
+        return job.submission_id is not None
+    if job.kind == JudgeJob.Kind.SELFTEST:
+        return True
+    return job.problem_version_id is not None
+
+
+def _describe(job: JudgeJob) -> api.JudgeJob:
+    """The job as the worker gets it. A submission is marked as being judged."""
+    time_scale = SiteSetting.get().time_scale
+    if job.kind == JudgeJob.Kind.JUDGE:
         submission = Submission.objects.select_related("problem", "problem_version").get(
-            pk=job.submission_id
+            judgejob=job
         )
         submission.status = Submission.Status.JUDGING
         submission.save(update_fields=["status"])
-        # Built inside the transaction: if the job can't be described (say, a bad time_scale
-        # setting), the error rolls the claim back, so the job stays queued and keeps its tries.
-        payload = api.JudgeJob(
+        return api.JudgeJob(
             job_id=job.pk,
             kind="judge",
-            problem_path=f"{submission.problem.slug}/{submission.problem_version.dir_name}",
+            problem_path=_problem_path(submission.problem_version),
             language=submission.language,
             source=submission.source,
-            time_scale=SiteSetting.get().time_scale,
+            time_scale=time_scale,
         )
-    return JsonResponse(payload.model_dump(mode="json"))
+    if job.kind == JudgeJob.Kind.SELFTEST:
+        return api.JudgeJob(job_id=job.pk, kind="selftest", time_scale=time_scale)
+    version = ProblemVersion.objects.select_related("problem").get(judgejob=job)
+    return api.JudgeJob(
+        job_id=job.pk, kind=job.kind, problem_path=_problem_path(version), time_scale=time_scale
+    )
+
+
+def _problem_path(version: ProblemVersion) -> str:
+    return f"{version.problem.slug}/{version.dir_name}"
 
 
 @_endpoint(api.Heartbeat)
@@ -222,6 +263,31 @@ def _cap_utf8(text: str, limit: int) -> str:
     return text.encode("utf-8")[:limit].decode("utf-8", "ignore")
 
 
+def refresh_best(user_id: int, problem_id: int) -> None:
+    """Work out the user's best score on the problem again from all their judged submissions.
+
+    Used after a rejudge, which can lower a score; `_update_best` only ever raises it.
+    """
+    lookup = {"user_id": user_id, "problem_id": problem_id}
+    best_submission = (
+        Submission.objects.filter(**lookup, status=Submission.Status.DONE, score__isnull=False)
+        .order_by("-score", "created_at")
+        .first()
+    )
+    if best_submission is None or best_submission.score is None:
+        UserProblemBest.objects.filter(**lookup).delete()
+        return
+    UserProblemBest.objects.update_or_create(
+        user_id=user_id,
+        problem_id=problem_id,
+        defaults={
+            "best_score": best_submission.score,
+            "reached_at": best_submission.created_at,
+            "submission": best_submission,
+        },
+    )
+
+
 def _update_best(submission: Submission, score: float) -> None:
     """Keep the user's best score on the problem, and when they first reached it."""
     lookup = {"user_id": submission.user_id, "problem_id": submission.problem_id}
@@ -264,10 +330,32 @@ def complete(message: api.Complete) -> HttpResponse:
         submission.save()
         TestResult.objects.filter(submission=submission).delete()
         TestResult.objects.bulk_create([_test_row(submission, test) for test in result.tests])
-        _update_best(submission, result.score)
+        if job.priority == JudgeJob.Priority.REJUDGE:
+            refresh_best(submission.user_id, submission.problem_id)
+        else:
+            _update_best(submission, result.score)
         job.status = JudgeJob.Status.DONE
         job.lease_until = None
         job.save()
+    return _no_content()
+
+
+@_endpoint(api.Report)
+def report(message: api.Report) -> HttpResponse:
+    """The result of a job that isn't a submission: a validation, calibration or self-test."""
+    with transaction.atomic():
+        job = _held_job(message.worker_id, message.job_id)
+        if job is None or job.kind != message.report.kind:
+            return _not_yours()
+        job.result = message.report.model_dump(mode="json")
+        job.status = JudgeJob.Status.DONE
+        job.lease_until = None
+        job.save()
+        if isinstance(message.report, api.ValidationReport):
+            valid = message.report.ok
+            ProblemVersion.objects.filter(judgejob=job).update(
+                status=ProblemVersion.Status.VALID if valid else ProblemVersion.Status.INVALID
+            )
     return _no_content()
 
 

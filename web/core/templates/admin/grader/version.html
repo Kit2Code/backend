@@ -1,0 +1,45 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+{% block extrahead %}{{ block.super }}{% if validating %}<meta http-equiv="refresh" content="3">{% endif %}{% endblock %}
+{% block breadcrumbs %}<div class="breadcrumbs"><a href="{% url 'admin:index' %}">{% translate "Home" %}</a> &rsaquo; <a href="{% url 'admin:grader-import' %}">{% translate "Import a problem" %}</a> &rsaquo; {{ title }}</div>{% endblock %}
+{% block content %}
+<div class="module aligned">
+  <p><strong>{% translate "Problem" %}:</strong> {{ problem.slug }} ({% if problem.is_visible %}{% translate "public" %}{% else %}{% translate "hidden" %}{% endif %})</p>
+  <p><strong>{% translate "Version" %}:</strong> {{ version.dir_name }}{% if is_current %} · {% translate "current version" %}{% endif %}</p>
+  <p><strong>{% translate "Validation" %}:</strong> <span id="version-status">{{ version.get_status_display }}</span>{% if validating %} …{% endif %}</p>
+</div>
+
+<h2>{% translate "Import report" %}</h2>
+<ul>
+  <li>{% translate "Format" %}: {{ version.report.format }}</li>
+  <li>{% translate "Tests" %}: {{ version.report.test_count }}</li>
+  <li>{% translate "Imported at" %}: {{ version.report.imported_at }}</li>
+</ul>
+{% if version.report.warnings %}
+<h3>{% translate "Warnings" %}</h3>
+<ul class="messagelist">{% for warning in version.report.warnings %}<li class="warning">{{ warning }}</li>{% endfor %}</ul>
+{% endif %}
+
+<h2>{% translate "Reference solutions" %}</h2>
+{% if validation.error %}<p class="errornote">{% translate "The judge could not validate this version" %}: {{ validation.error }}</p>{% endif %}
+{% for warning in validation.result.warnings %}<p class="warning">{{ warning }}</p>{% endfor %}
+{% if validation.result.solutions %}
+<table id="solutions">
+  <thead><tr><th>{% translate "File" %}</th><th>{% translate "Language" %}</th><th>{% translate "Expected score" %}</th><th>{% translate "Verdict" %}</th><th>{% translate "Score" %}</th><th>{% translate "Passed" %}</th><th>{% translate "Message" %}</th></tr></thead>
+  <tbody>
+  {% for run in validation.result.solutions %}
+    <tr><td>{{ run.file }}</td><td>{{ run.lang }}</td><td>{{ run.expected_score|default_if_none:"-" }}</td><td>{{ run.verdict }}</td><td>{{ run.score|floatformat:"-2" }} / {{ run.max_score|floatformat:"-2" }}</td><td>{% if run.ok %}✔{% else %}✘{% endif %}</td><td><pre>{{ run.message }}</pre></td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% elif not validating %}<p>{% translate "No results yet." %}</p>{% endif %}
+
+<div class="submit-row">
+  {% if can_publish %}
+  <form method="post" action="{% url 'admin:grader-publish' version.pk %}">{% csrf_token %}<input type="submit" class="default" value="{% translate 'Publish' %}"></form>
+  {% endif %}
+  {% if not validating %}
+  <form method="post" action="{% url 'admin:grader-validate' version.pk %}">{% csrf_token %}<input type="submit" value="{% translate 'Validate again' %}"></form>
+  {% endif %}
+</div>
+{% endblock %}

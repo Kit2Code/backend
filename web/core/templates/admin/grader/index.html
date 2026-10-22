@@ -1,0 +1,16 @@
+{% extends "admin/index.html" %}
+{% load i18n %}
+{% block content %}
+<div class="module" id="grader-pages">
+  <table>
+    <caption>{% translate "Grader" %}</caption>
+    <tr><th scope="row"><a href="{% url 'admin:grader-import' %}">{% translate "Import a problem" %}</a></th><td></td></tr>
+    <tr><th scope="row"><a href="{% url 'admin:grader-grading' %}">{% translate "Grading" %}</a></th><td></td></tr>
+    <tr><th scope="row"><a href="{% url 'admin:grader-system' %}">{% translate "System" %}</a></th><td></td></tr>
+    <tr><th scope="row"><a href="{% url 'admin:grader-calibrate' %}">{% translate "Calibrate" %}</a></th><td></td></tr>
+    <tr><th scope="row"><a href="{% url 'admin:grader-backups' %}">{% translate "Backups" %}</a></th><td></td></tr>
+    <tr><th scope="row"><a href="{% url 'admin:grader-signin' %}">{% translate "Sign-in" %}</a></th><td></td></tr>
+  </table>
+</div>
+{{ block.super }}
+{% endblock %}

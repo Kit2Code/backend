@@ -27,6 +27,8 @@ STATE_DIR = Path("/run/grader-judge")
 PROBLEMS_DIR = Path("/data/problems")
 CACHE_DIR = Path("/data/cache")
 TESTLIB_HEADER = Path("/usr/local/share/grader/testlib.h")
+# The self-test's programs and problems, baked into the image (a copy of parts of fixtures/).
+FIXTURES_DIR = Path("/opt/grader/fixtures")
 
 _UNITS = {"K": 1 << 10, "M": 1 << 20, "G": 1 << 30}
 

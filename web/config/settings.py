@@ -14,6 +14,12 @@ ROOT_URLCONF = env.urlconf_for_role(GRADER_ROLE)
 # Each role is reached at its own base URL; only that host is accepted.
 _BASE_URL = env.require("PUBLIC_BASE_URL" if GRADER_ROLE == "public" else "ADMIN_BASE_URL")
 _HOSTNAME, _ORIGIN = env.base_url_parts(_BASE_URL)
+# This role's own address, for links it prints (the first-run setup link).
+BASE_URL = _BASE_URL.rstrip("/")
+# The public site's address; the admin role shows it as the Google redirect URI to register.
+PUBLIC_BASE_URL = (
+    _BASE_URL if GRADER_ROLE == "public" else env.optional("PUBLIC_BASE_URL", "")
+).rstrip("/")
 ALLOWED_HOSTS = [_HOSTNAME]
 if GRADER_ROLE == "admin":
     # The worker calls web-admin directly on judge_net, by its service name. Requests through the
@@ -167,6 +173,12 @@ USE_TZ = True
 # The problem store: immutable version folders <store>/<slug>/<version>/ (read-only in the
 # public role).
 GRADER_PROBLEMS_DIR = Path(env.optional("GRADER_PROBLEMS_DIR", "/data/problems"))
+# Admin role only: uploads in progress and SETUP-LINK.txt (readable in the ZimaOS Files app).
+GRADER_UPLOADS_DIR = Path(env.optional("GRADER_UPLOADS_DIR", "/data/uploads"))
+# Admin role only, read-only: the backup files made by the backup service (Backups page).
+GRADER_BACKUPS_DIR = Path(env.optional("GRADER_BACKUPS_DIR", "/data/backups"))
+# The largest problem zip the Import page takes: the importer's own limit for everything unpacked.
+GRADER_MAX_UPLOAD_BYTES = 1024**3
 
 # Submit limits, per user (judging/views.py): seconds between submissions, submissions per hour,
 # and how many may wait for the judge at once.

@@ -35,10 +35,12 @@ class Limit:
     window: timedelta
 
 
-# The limits for sign-in and staff login. The submit limits arrive with submissions.
+# The limits for sign-in, staff login and setup.
 STAFF_LOGIN = Limit("staff-login", max_hits=10, window=timedelta(minutes=15))
 GOOGLE_START = Limit("google-start", max_hits=20, window=timedelta(minutes=15))
 FIRST_SIGN_IN = Limit("first-sign-in", max_hits=5, window=timedelta(hours=1))
+# First-run setup form, per IP. The token itself is unguessable; this only slows down noise.
+SETUP = Limit("setup", max_hits=10, window=timedelta(minutes=15))
 
 
 def window_start(limit: Limit, now: datetime) -> datetime:

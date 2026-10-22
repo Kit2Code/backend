@@ -22,6 +22,7 @@ import sys
 import threading
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from collections.abc import Callable, Sequence
 from pathlib import Path
@@ -31,7 +32,7 @@ from pydantic import BaseModel, ValidationError
 
 from grader_common import api
 from grader_common.importer.errors import ProblemImportError
-from grader_worker import config
+from grader_worker import config, selftest, tasks
 from grader_worker.env_report import build_report
 from grader_worker.isolate import IsolateError
 from grader_worker.judge import MAX_MESSAGE_CHARS, SubmissionError, judge
@@ -126,6 +127,17 @@ class ApiClient:
         status, _ = self._post("/internal/judge/complete", message)
         return self._expect("complete", status, 204, 409) == 204
 
+    def report(
+        self,
+        worker_id: str,
+        job_id: int,
+        report: api.ValidationReport | api.CalibrationReport | api.SelfTestReport,
+    ) -> bool:
+        """Post the report of a job that isn't a submission. False: refused (no longer ours)."""
+        message = api.Report(worker_id=worker_id, job_id=job_id, report=report)
+        status, _ = self._post("/internal/judge/report", message)
+        return self._expect("report", status, 204, 409) == 204
+
     def fail(self, worker_id: str, job_id: int, error: str) -> bool:
         message = api.Fail(worker_id=worker_id, job_id=job_id, error=error[:MAX_MESSAGE_CHARS])
         status, _ = self._post("/internal/judge/fail", message)
@@ -147,6 +159,12 @@ def resolve_problem(store: Path, problem_path: str) -> Path:
     return folder
 
 
+def web_admin_ip(base_url: str) -> str:
+    """web-admin's IPv4 address, for the self-test's network probe (the box has no DNS)."""
+    host = urllib.parse.urlsplit(base_url).hostname or ""
+    return socket.gethostbyname(host)
+
+
 def default_worker_id() -> str:
     """The host name (the container's id under Docker), made safe for the API."""
     name = re.sub(r"[^A-Za-z0-9_.-]+", "-", socket.gethostname()).strip("-")
@@ -165,6 +183,10 @@ class JudgeLoop:
         worker_id: str,
         problems_dir: Path = config.PROBLEMS_DIR,
         judge_fn: Callable[..., api.JudgeResult] = judge,
+        validate_fn: Callable[..., api.ValidationReport] = tasks.validate,
+        calibrate_fn: Callable[..., api.CalibrationReport] = tasks.calibrate,
+        selftest_fn: Callable[..., api.SelfTestReport] = selftest.run,
+        fixtures_dir: Path = config.FIXTURES_DIR,
         env_report: Callable[[], dict[str, Any]] = dict,
         poll_seconds: float = 2,
         heartbeat_seconds: float = 10,
@@ -177,6 +199,10 @@ class JudgeLoop:
         self.worker_id = worker_id
         self.problems_dir = problems_dir
         self.judge_fn = judge_fn
+        self.validate_fn = validate_fn
+        self.calibrate_fn = calibrate_fn
+        self.selftest_fn = selftest_fn
+        self.fixtures_dir = fixtures_dir
         self.env_report = env_report
         self.poll_seconds = poll_seconds
         self.heartbeat_seconds = heartbeat_seconds
@@ -274,28 +300,43 @@ class JudgeLoop:
     def _run(self, job: api.JudgeJob) -> None:
         try:
             try:
-                problem_dir = resolve_problem(self.problems_dir, job.problem_path)
-                with self.pool.acquire() as slot:
-                    result = self.judge_fn(
-                        problem_dir,
-                        job.language,
-                        job.source.encode("utf-8"),
-                        slot,
-                        job.time_scale,
-                        on_test=lambda test: self._progress(job.job_id, test),
-                    )
+                kind, outcome = self._work(job)
             except (SubmissionError, ProblemImportError, IsolateError) as error:
                 self._report(job.job_id, "fail", str(error))
                 return
             except Exception as error:  # a bug of ours: let web-admin retry it, then JE
                 self._report(job.job_id, "fail", f"{type(error).__name__}: {error}")
                 return
-            self._report(job.job_id, "complete", result)
+            self._report(job.job_id, kind, outcome)
         finally:
             with self._lock:
                 self._running.discard(job.job_id)
                 self._lost.discard(job.job_id)
             self._wake.set()
+
+    def _work(self, job: api.JudgeJob) -> tuple[str, Any]:
+        """Do the job in one slot; return how to answer ("complete" or "report") and with what."""
+        if job.kind == "selftest" or job.problem_path is None:
+            ip = web_admin_ip(self.api.base_url)
+            with self.pool.acquire() as slot:
+                return "report", self.selftest_fn(self.fixtures_dir, slot, self.judge_fn, ip)
+        problem_dir = resolve_problem(self.problems_dir, job.problem_path)
+        with self.pool.acquire() as slot:
+            if job.kind == "validate":
+                return "report", self.validate_fn(problem_dir, slot, job.time_scale, self.judge_fn)
+            if job.kind == "calibrate":
+                return "report", self.calibrate_fn(problem_dir, slot, job.time_scale, self.judge_fn)
+            if job.language is None or job.source is None:  # api.JudgeJob already refuses this
+                raise SubmissionError("a judge job without language or source")
+            result = self.judge_fn(
+                problem_dir,
+                job.language,
+                job.source.encode("utf-8"),
+                slot,
+                job.time_scale,
+                on_test=lambda test: self._progress(job.job_id, test),
+            )
+            return "complete", result
 
     def _progress(self, job_id: int, test: api.TestResult) -> None:
         if self._is_lost(job_id):
@@ -311,7 +352,12 @@ class JudgeLoop:
         The job stays in `_running` meanwhile, so heartbeats keep its lease. If every try fails,
         the lease lapses later and web-admin queues the job again.
         """
-        send = self.api.complete if kind == "complete" else self.api.fail
+        senders: dict[str, Callable[[str, int, Any], bool]] = {
+            "complete": self.api.complete,
+            "report": self.api.report,
+            "fail": self.api.fail,
+        }
+        send = senders[kind]
         for attempt in range(len(self.retry_seconds) + 1):
             if self._is_lost(job_id):
                 logger.warning("job %s: lost, %s dropped", job_id, kind)

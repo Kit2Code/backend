@@ -43,6 +43,8 @@ def apply_dev_defaults() -> None:
     os.environ.setdefault("GRADER_DB_HOST", "127.0.0.1")
     os.environ.setdefault("GRADER_STATIC_FROM_APPS", "1")
     os.environ.setdefault("GRADER_PROBLEMS_DIR", str(devdata / "problems"))
+    os.environ.setdefault("GRADER_UPLOADS_DIR", str(devdata / "uploads"))
+    os.environ.setdefault("GRADER_BACKUPS_DIR", str(devdata / "backups"))
 
 
 def require(name: str) -> str:

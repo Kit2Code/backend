@@ -1,0 +1,31 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+{% block extrahead %}{{ block.super }}{% if waiting %}<meta http-equiv="refresh" content="5">{% endif %}{% endblock %}
+{% block breadcrumbs %}<div class="breadcrumbs"><a href="{% url 'admin:index' %}">{% translate "Home" %}</a> &rsaquo; {{ title }}</div>{% endblock %}
+{% block content %}
+<p>{% translate "Runs each problem's reference solutions 5 times on the judge CPUs (with limits 10 times the contest's, so nothing is cut off) and keeps each test's slowest time. The suggested scale gives every reference solution twice the time it needed." %}</p>
+<p>{% translate "Current time scale" %}: <strong>{{ time_scale }}</strong>
+{% if overall is not None %} · {% translate "Suggested for all calibrated problems" %}: <strong data-suggested-overall="{{ overall }}">{{ overall }}</strong>{% endif %}
+· <a href="{% url 'admin:grader-grading' %}">{% translate "Change it on the Grading page" %}</a></p>
+
+{% for row in rows %}
+<div class="module" data-problem="{{ row.problem.slug }}">
+  <h2>{{ row.problem.slug }} <small>({{ row.problem.current_version.dir_name }})</small></h2>
+  {% if row.job %}
+    <p>{% translate "Last run" %}: {{ row.job.created_at|date:"Y-m-d H:i" }} · {{ row.job.get_status_display }}{% if row.job.error %}: {{ row.job.error }}{% endif %}
+    {% if row.suggested is not None %} · {% translate "Suggested scale" %}: <strong data-suggested="{{ row.problem.slug }}">{{ row.suggested }}</strong>{% endif %}</p>
+    {% for warning in row.job.result.warnings %}<p class="warning">{{ warning }}</p>{% endfor %}
+    {% for solution in row.job.result.solutions %}
+    <table>
+      <caption>{{ solution.file }} ({{ solution.lang }}) · {% translate "limit at scale 1.0" %}: {{ solution.limit }} s · {{ solution.verdicts|join:" " }}</caption>
+      <thead><tr><th>{% translate "Test" %}</th><th>{% translate "Slowest time (s)" %}</th></tr></thead>
+      <tbody>{% for test in solution.tests %}<tr><td>{{ test.name }}</td><td>{{ test.max_time }}{% if test.accepted is False %} ({% translate "not accepted in every run: left out" %}){% endif %}</td></tr>{% endfor %}</tbody>
+    </table>
+    {% endfor %}
+  {% endif %}
+  <form method="post">{% csrf_token %}<input type="hidden" name="problem" value="{{ row.problem.pk }}"><input type="submit" value="{% translate 'Calibrate' %}"></form>
+</div>
+{% empty %}
+<p>{% translate "No problems yet." %}</p>
+{% endfor %}
+{% endblock %}

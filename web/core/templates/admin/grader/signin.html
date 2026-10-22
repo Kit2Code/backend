@@ -1,0 +1,26 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+{% block breadcrumbs %}<div class="breadcrumbs"><a href="{% url 'admin:index' %}">{% translate "Home" %}</a> &rsaquo; {{ title }}</div>{% endblock %}
+{% block content %}
+<div class="module">
+  <h2>{% translate "Google sign-in client" %}</h2>
+  <p>{% translate "In Google Cloud Console, create an OAuth client of type “Web application” and register this redirect URI:" %}</p>
+  <p><code>{{ redirect_uri }}</code></p>
+  <p>{% translate "Client secret" %}:
+    {% if secret_set %}<strong data-secret="set">{% translate "set" %}</strong>{% else %}<strong data-secret="unset">{% translate "not set" %}</strong>{% endif %}</p>
+  <form method="post">{% csrf_token %}<input type="hidden" name="action" value="save">
+    {{ form.as_div }}
+    <input type="submit" value="{% translate 'Save' %}">
+  </form>
+</div>
+
+<div class="module">
+  <h2>{% translate "Test" %}</h2>
+  <p>{% translate "Fetches Google's public keys the way a real sign-in does, from" %} <code>{{ keys_url }}</code>.</p>
+  {% if test %}
+    {% if test.ok %}<p data-test="ok" data-keys="{{ test.keys }}">✔ {% blocktranslate count count=test.keys %}{{ count }} key received.{% plural %}{{ count }} keys received.{% endblocktranslate %}</p>
+    {% else %}<p class="errornote" data-test="fail">✘ {{ test.error }}</p>{% endif %}
+  {% endif %}
+  <form method="post">{% csrf_token %}<input type="hidden" name="action" value="test"><input type="submit" value="{% translate 'Test sign-in config' %}"></form>
+</div>
+{% endblock %}

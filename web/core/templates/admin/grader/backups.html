@@ -1,0 +1,36 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+{% block breadcrumbs %}<div class="breadcrumbs"><a href="{% url 'admin:index' %}">{% translate "Home" %}</a> &rsaquo; {{ title }}</div>{% endblock %}
+{% block content %}
+<p>{% translate "The database is backed up every night, and when you ask for it below. The files are in the server's grader backups folder; copy that folder elsewhere with the ZimaOS Backup app." %}</p>
+
+<div class="module">
+  <h2>{% translate "Back up now" %}</h2>
+  <form method="post">{% csrf_token %}<input type="hidden" name="action" value="backup_now"><input type="submit" value="{% translate 'Back up now' %}"></form>
+  {% if runs %}
+  <table>
+    <thead><tr><th>{% translate "Asked for" %}</th><th>{% translate "By" %}</th><th>{% translate "State" %}</th><th>{% translate "File" %}</th><th>{% translate "Message" %}</th></tr></thead>
+    <tbody>
+    {% for run in runs %}
+      <tr data-run="{{ run.pk }}" data-status="{{ run.status }}"><td>{{ run.requested_at|date:"Y-m-d H:i" }}</td><td>{{ run.requested_by|default:"-" }}</td><td>{{ run.get_status_display }}</td><td>{{ run.file_name }}</td><td>{{ run.message }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+
+<div class="module">
+  <h2>{% translate "Backup files" %}</h2>
+  {% if not folder_exists %}<p class="errornote">{% translate "The backups folder is not there" %}: {{ folder }}</p>{% endif %}
+  {% if files %}
+  <table>
+    <thead><tr><th>{% translate "File" %}</th><th>{% translate "Size" %}</th><th>{% translate "Made" %}</th></tr></thead>
+    <tbody>
+    {% for file in files %}
+      <tr data-backup="{{ file.name }}" data-size="{{ file.size }}"><td>{% if can_download %}<a href="{% url 'admin:grader-backup-file' file.name %}">{{ file.name }}</a>{% else %}{{ file.name }}{% endif %}</td><td>{{ file.size|filesizeformat }}</td><td>{{ file.modified|date:"Y-m-d H:i" }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<p>{% translate "No backup files yet." %}</p>{% endif %}
+</div>
+{% endblock %}

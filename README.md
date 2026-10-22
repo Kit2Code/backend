@@ -10,8 +10,9 @@ site, and a Python judge worker that drives isolate. It runs as one Docker Compo
 home server, next to an existing CMS installation.
 
 > **Status:** early development. Students can sign in, read problems, submit and see their
-> results live, with lists, a ranking and profiles; the admin pages and the production deployment
-> are still being built.
+> results live, with lists, a ranking and profiles. Admins set the site up from a one-time link and
+> import, validate and publish problems, pause grading, check the judge and request backups from
+> the admin site. The production deployment is still being built.
 
 ## Quick start (development)
 

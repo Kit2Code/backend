@@ -16,7 +16,13 @@ from typing import Any
 
 import pytest
 
-from grader_common.api import JudgeResult, TestResult
+from grader_common.api import (
+    CalibrationReport,
+    JudgeResult,
+    SelfTestReport,
+    TestResult,
+    ValidationReport,
+)
 from grader_common.importer.errors import ProblemImportError
 from grader_worker import client as client_module
 from grader_worker.client import ApiClient, ApiUnavailable, JudgeLoop, resolve_problem
@@ -307,7 +313,8 @@ def test_heartbeats_while_judging_and_lost_jobs_are_dropped(
     thread = threading.Thread(target=loop.run_forever, daemon=True)
     thread.start()
     deadline = time.monotonic() + 10
-    while not fake.bodies("/internal/judge/heartbeat"):
+    # Wait until the worker has read the heartbeat's answer, not just sent the heartbeat.
+    while not loop._is_lost(5):
         assert time.monotonic() < deadline
         time.sleep(0.01)
     assert fake.bodies("/internal/judge/heartbeat")[0]["job_ids"] == [5]
@@ -465,3 +472,95 @@ def test_client_never_follows_a_redirect() -> None:
         for server in servers:
             server.shutdown()
             server.server_close()
+
+
+# ---- other kinds of jobs ----
+
+
+def test_a_validation_job_is_run_and_its_report_sent(
+    web: tuple[FakeWeb, str], store: Path, tmp_path: Path
+) -> None:
+    fake, url = web
+    fake.jobs.append(
+        {"job_id": 5, "kind": "validate", "problem_path": "aplusb/v001-0123abcd", "time_scale": 1.5}
+    )
+    seen: dict[str, Any] = {}
+
+    def fake_validate(problem_dir: Path, slot: Any, time_scale: float, judge_fn: Any) -> Any:
+        seen.update(problem_dir=problem_dir, box=slot.box_id, time_scale=time_scale)
+        return ValidationReport(kind="validate", solutions=[], warnings=["none"])
+
+    def no_judging(*args: Any, **kwargs: Any) -> JudgeResult:
+        raise AssertionError("a validation job is not a submission")
+
+    loop = make_loop(url, store, tmp_path, no_judging)
+    loop.validate_fn = fake_validate
+    run_until(loop, lambda: bool(fake.bodies("/internal/judge/report")))
+    assert seen == {
+        "problem_dir": store / "aplusb" / "v001-0123abcd",
+        "box": 100,
+        "time_scale": 1.5,
+    }
+    (sent,) = fake.bodies("/internal/judge/report")
+    assert sent == {
+        "worker_id": "test-worker",
+        "job_id": 5,
+        "report": {"kind": "validate", "solutions": [], "warnings": ["none"]},
+    }
+    assert not fake.bodies("/internal/judge/fail")
+    assert not fake.bodies("/internal/judge/complete")
+
+
+def test_a_self_test_job_is_run_and_its_report_sent(
+    web: tuple[FakeWeb, str], store: Path, tmp_path: Path
+) -> None:
+    fake, url = web
+    fake.jobs.append({"job_id": 6, "kind": "selftest", "time_scale": 1.0})
+    seen: dict[str, Any] = {}
+
+    def fake_selftest(fixtures: Path, slot: Any, judge_fn: Any, web_admin_ip: str) -> Any:
+        seen.update(fixtures=fixtures, box=slot.box_id, ip=web_admin_ip)
+        case = {"name": "fork_bomb", "expected": ["TLE"], "verdict": "TLE", "ok": True,
+                "seconds": 3.0}  # fmt: skip
+        return SelfTestReport.model_validate({"kind": "selftest", "cases": [case]})
+
+    def no_judging(*args: Any, **kwargs: Any) -> JudgeResult:
+        raise AssertionError("the fake self-test judges nothing")
+
+    loop = make_loop(url, store, tmp_path, no_judging)
+    loop.selftest_fn = fake_selftest
+    loop.fixtures_dir = tmp_path / "fixtures"
+    run_until(loop, lambda: bool(fake.bodies("/internal/judge/report")))
+    assert seen == {"fixtures": tmp_path / "fixtures", "box": 100, "ip": "127.0.0.1"}
+    (sent,) = fake.bodies("/internal/judge/report")
+    assert sent["job_id"] == 6 and sent["report"]["kind"] == "selftest"
+    assert sent["report"]["cases"][0]["name"] == "fork_bomb"
+
+
+def test_a_calibration_job_is_run_and_its_report_sent(
+    web: tuple[FakeWeb, str], store: Path, tmp_path: Path
+) -> None:
+    fake, url = web
+    fake.jobs.append(
+        {
+            "job_id": 7,
+            "kind": "calibrate",
+            "problem_path": "aplusb/v001-0123abcd",
+            "time_scale": 1.0,
+        }
+    )
+    seen: dict[str, Any] = {}
+
+    def fake_calibrate(problem_dir: Path, slot: Any, time_scale: float, judge_fn: Any) -> Any:
+        seen.update(problem_dir=problem_dir, box=slot.box_id)
+        return CalibrationReport(kind="calibrate", runs=5, solutions=[], warnings=[])
+
+    def no_judging(*args: Any, **kwargs: Any) -> JudgeResult:
+        raise AssertionError("the fake calibration judges nothing")
+
+    loop = make_loop(url, store, tmp_path, no_judging)
+    loop.calibrate_fn = fake_calibrate
+    run_until(loop, lambda: bool(fake.bodies("/internal/judge/report")))
+    assert seen == {"problem_dir": store / "aplusb" / "v001-0123abcd", "box": 100}
+    (sent,) = fake.bodies("/internal/judge/report")
+    assert sent["job_id"] == 7 and sent["report"]["kind"] == "calibrate"

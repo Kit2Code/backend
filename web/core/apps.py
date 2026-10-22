@@ -5,5 +5,6 @@ class CoreConfig(AppConfig):
     name = "core"
 
     def ready(self) -> None:
-        # Importing the module connects its signal receiver (the session role mark at login).
-        from core import middleware  # noqa: F401
+        # Importing the modules connects their signal receivers (the session role mark at login,
+        # and the audit rows for staff sign-in).
+        from core import audit, middleware  # noqa: F401

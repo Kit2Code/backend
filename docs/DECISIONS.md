@@ -516,3 +516,86 @@ ranking; a bad setting would otherwise use up every queued job's tries and turn 
 errors; a followed redirect would re-send the bearer token to the host in the `Location` header.
 **Alternatives:** clamping bad numbers (hides a broken worker); checking `max_score` against the
 problem files (left for later; the worker reads the same files).
+
+## 2026-10-22: First-run setup link
+
+**Choice:** while no superuser exists, each start of web-admin deletes unused setup tokens and makes
+a new one (`secrets.token_urlsafe(32)`); only its SHA-256 is stored, it expires after 24 hours, and
+the link is printed to the log and written (mode 0600, via a fresh temporary file and a rename) to
+`/data/uploads/SETUP-LINK.txt`. `/setup?token=…` moves the token into the session and redirects to
+plain `/setup`. Creating the superuser locks the token row and checks again that none exists. The
+form is rate-limited per IP; anything unusable is a 404.
+**Why:** no terminal on ZimaOS, so the link has to reach the owner through the app log or the Files
+app; a stored hash means a database backup can't be used to take over a fresh install; the
+redirect keeps the token out of the address bar and later request logs.
+**Alternatives:** a default admin password (every install would share it until changed); an
+environment variable with the first password (it would sit in the compose file).
+
+## 2026-10-22: Publishing and validation
+
+**Choice:** a problem becomes visible only through "publish" (the Import page or the Django admin
+action), and only when its current version's validation passed; visibility and the current version
+are read-only in the Django admin form. A new version of a public problem doesn't replace the
+current one until it is published. The same zip twice reuses the version (and its validation).
+Uploads are limited to 1 GiB (the importer's own limit for everything unpacked), saved in a fresh
+folder under `/data/uploads/tmp` and removed after the import. Validation runs each reference
+solution as an ordinary submission in one slot: it must get its `expected_score` (±1e-6), or,
+without one, compile and be judged without a judge error. No solutions at all is valid, with a
+warning.
+**Why:** a problem must stay hidden until every reference solution got its expected score; editing the flags
+by hand would skip that check; students keep the working version while a new one is checked.
+**Alternatives:** validating in the web request (minutes of judging in a web worker); a separate
+"publish" permission (one more thing to set up for a one-admin site).
+
+## 2026-10-22: Job kinds and the report call
+
+**Choice:** one queue (`JudgeJob`) for judge, validate, calibrate and selftest jobs. Non-judge jobs
+are answered with `POST /internal/judge/report`; its body is a discriminated union (by `kind`) and
+must match the job's kind; the report is stored in `JudgeJob.result`, and only a validation report
+changes a version's status. A queued job that names nothing to work on is given up at claim time.
+While grading is paused, only self-test jobs are handed out. A rejudged result recomputes the best
+score from all of the user's results on that problem.
+**Why:** leases, retries and priorities already work for submissions; a malformed job would
+otherwise make every claim fail and block the queue; the self-test checks the judge itself and is
+most useful on contest days; a rejudge can lower a score.
+**Alternatives:** separate tables per job kind (duplicated lease logic); one `complete` call with
+optional fields (weaker validation).
+
+## 2026-10-22: Self-test and calibration
+
+**Choice:** the self-test judges every program in `fixtures/hostile` (copied into the worker image
+at `/opt/grader/fixtures` with `aplusb` and an accepted solution, which run first and last) with
+the problem's own limits (time scale 1.0) and accepts the verdicts the sandbox tests accept.
+Calibration runs each reference solution 5 times with limits 10 times the contest's and keeps
+each test's slowest CPU time; the suggested time scale is the largest 2 × time ÷ limit over the
+tests the solution passed in every run (a brute force that hits TLE would otherwise push it to 10),
+rounded up to 0.1, between 1.0 and 10. The admin applies it by hand.
+**Why:** the self-test must mean the same as the sandbox tests, on the real host; calibrating with
+larger limits measures slow runs instead of cutting them off; "a reference solution uses at most
+half the limit" is the usual rule for setting limits.
+**Alternatives:** running the pytest sandbox suite on the server (needs the dev stack and docker);
+applying the suggestion automatically (a noisy run would change every limit).
+
+## 2026-10-22: Audit log details
+
+**Choice:** `AuditedModelAdmin` (the base of every model admin, checked by a test) writes an audit
+row for every add, change and delete in the Django admin, with Django's stored change message
+(language-neutral JSON, not the translated text). Our pages and actions call `audit.record()`.
+Staff sign-in, failed sign-in (username only) and sign-out are recorded from Django's auth
+signals, in the admin role only.
+**Why:** every admin action must be traceable, Django admin edits included; the log must read the same
+whatever language the admin uses.
+**Alternatives:** a `post_save` signal on every model (no request, so no IP or actor).
+
+## 2026-10-22: Backups page and admin access to the Google keys
+
+**Choice:** web-admin mounts `/data/backups` read-only, lists only plain `*.dump` files and serves
+them (to superusers only: a dump holds every session and password hash) with `O_NOFOLLOW` and
+`O_NONBLOCK` (a FIFO can't hang the request); "back up now" adds a `BackupRun` request row (one at a time; the settings
+row is locked as a mutex) for the backup service. On the edge's `:8090`, web-admin (a fixed
+`app_net` address) may `GET /certs` and nothing else, so the Sign-in page's test button fetches
+the keys exactly as a sign-in does. The production edge must keep the same rule.
+**Why:** web-admin never runs `pg_dump` or holds the database superuser; Google's keys are public,
+while `/token` stays reachable only by the public role.
+**Alternatives:** a test button that only checks the saved values locally (it wouldn't show that
+the egress works); letting web-admin use all of `:8090`.

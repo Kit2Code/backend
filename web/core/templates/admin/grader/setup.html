@@ -1,0 +1,13 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+{% block title %}{% translate "First-run setup" %}{% endblock %}
+{% block nav-breadcrumbs %}{% endblock %}
+{% block content %}
+<h1>{% translate "Create the first admin account" %}</h1>
+<p>{% translate "This page works once. After the account exists, sign in to the admin site with it." %}</p>
+<form method="post" action="{% url 'setup' %}">
+  {% csrf_token %}
+  {{ form.as_div }}
+  <div class="submit-row"><input type="submit" value="{% translate 'Create account' %}"></div>
+</form>
+{% endblock %}

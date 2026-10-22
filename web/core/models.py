@@ -1,16 +1,27 @@
 """Site-wide settings, grading pause windows, the audit log, rate-limit counters, backups, setup."""
 
 from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import F, Q
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+
+MIN_TIME_SCALE = 0.1
+MAX_TIME_SCALE = 10.0
 
 
 class SiteSetting(models.Model):
     """The one row of settings an admin can change at runtime. Always use `SiteSetting.get()`."""
 
     grading_paused = models.BooleanField(_("grading paused"), default=False)
-    time_scale = models.FloatField(_("time scale"), default=1.0)
+    # Multiplies every time limit (judge CPUs are slower than the contest's). The judge API takes
+    # (0, 10]; below 0.1 nothing would ever pass.
+    time_scale = models.FloatField(
+        _("time scale"),
+        default=1.0,
+        validators=[MinValueValidator(MIN_TIME_SCALE), MaxValueValidator(MAX_TIME_SCALE)],
+    )
     registration_open = models.BooleanField(_("registration open"), default=True)
     announcement = models.TextField(_("announcement"), blank=True)
     google_client_id = models.CharField(_("Google client ID"), max_length=255, blank=True)
@@ -46,7 +57,9 @@ class PauseWindow(models.Model):
         ]
 
     def __str__(self) -> str:
-        return f"{self.starts_at:%Y-%m-%d %H:%M} – {self.ends_at:%Y-%m-%d %H:%M}"
+        # Always in local time (Asia/Bangkok): rows loaded from the database carry UTC.
+        starts, ends = timezone.localtime(self.starts_at), timezone.localtime(self.ends_at)
+        return f"{starts:%Y-%m-%d %H:%M} – {ends:%Y-%m-%d %H:%M}"
 
 
 class AuditLog(models.Model):

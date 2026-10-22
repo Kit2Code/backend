@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: grader\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-22 00:21+0700\n"
+"POT-Creation-Date: 2026-10-22 14:15+0700\n"
 "PO-Revision-Date: 2026-10-21 19:00+0700\n"
 "Last-Translator: grader maintainers\n"
 "Language-Team: English\n"
@@ -15,29 +15,66 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: accounts/forms.py:14
+#: accounts/admin.py:24
+msgid "Profile"
+msgstr "Profile"
+
+#: accounts/admin.py:28
+msgid "Google"
+msgstr "Google"
+
+#: accounts/admin.py:32
+msgid "Disable the selected users"
+msgstr "Disable the selected users"
+
+#: accounts/admin.py:36
+msgid "Enable the selected users"
+msgstr "Enable the selected users"
+
+#: accounts/admin.py:40
+msgid "Unlink their Google accounts"
+msgstr "Unlink their Google accounts"
+
+#: accounts/admin.py:46 accounts/admin.py:54
+msgid "Done."
+msgstr "Done."
+
+#: accounts/forms.py:18 accounts/forms.py:45
 msgid "Username"
 msgstr "Username"
 
-#: accounts/forms.py:17 accounts/models.py:11 accounts/models.py:27
+#: accounts/forms.py:21 accounts/forms.py:48 accounts/models.py:11
+#: accounts/models.py:27
 msgid "3 to 20 characters: small letters a-z, digits and _ only."
 msgstr "3 to 20 characters: small letters a-z, digits and _ only."
 
-#: accounts/forms.py:20
+#: accounts/forms.py:24
 msgid "Display name"
 msgstr "Display name"
 
-#: accounts/forms.py:23
+#: accounts/forms.py:27
 msgid "School (optional)"
 msgstr "School (optional)"
 
-#: accounts/forms.py:28
+#: accounts/forms.py:32
 msgid "I have read the privacy page"
 msgstr "I have read the privacy page"
 
-#: accounts/forms.py:33 accounts/models.py:28 accounts/views.py:151
+#: accounts/forms.py:37 accounts/models.py:28 accounts/views.py:151
 msgid "That username is taken."
 msgstr "That username is taken."
+
+#: accounts/forms.py:50
+msgid "Password"
+msgstr "Password"
+
+#: accounts/forms.py:51
+msgid "Password again"
+msgstr "Password again"
+
+#: accounts/forms.py:58
+msgid "The two passwords are different."
+msgstr "The two passwords are different."
 
 #: accounts/models.py:23
 msgid "username"
@@ -112,45 +149,603 @@ msgstr "Account disabled"
 msgid "This account has been disabled. Ask the person who runs this site."
 msgstr "This account has been disabled. Ask the person who runs this site."
 
-#: config/admin.py:25
+#: config/admin.py:95
 msgid "Too many sign-in attempts. Please wait 15 minutes and try again."
 msgstr "Too many sign-in attempts. Please wait 15 minutes and try again."
 
-#: core/models.py:12
+#: core/admin_views.py:71
+msgid "Time scale saved."
+msgstr "Time scale saved."
+
+#: core/admin_views.py:76 core/templates/admin/grader/index.html:8
+msgid "Grading"
+msgstr "Grading"
+
+#: core/admin_views.py:136 core/templates/admin/grader/index.html:11
+msgid "Backups"
+msgstr "Backups"
+
+#: core/admin_views.py:188
+msgid "Saved."
+msgstr "Saved."
+
+#: core/admin_views.py:195 core/templates/admin/grader/index.html:12
+msgid "Sign-in"
+msgstr "Sign-in"
+
+#: core/admin_views.py:213
+msgid "The answer holds no keys."
+msgstr "The answer holds no keys."
+
+#: core/forms.py:25
+msgid "The end must be after the start."
+msgstr "The end must be after the start."
+
+#: core/forms.py:32 core/templates/admin/grader/grading.html:46
+msgid "Time scale"
+msgstr "Time scale"
+
+#: core/forms.py:35
+msgid "Every time limit is multiplied by this (1.0 = the contest's limits)."
+msgstr "Every time limit is multiplied by this (1.0 = the contest's limits)."
+
+#: core/forms.py:41
+msgid "Client ID"
+msgstr "Client ID"
+
+#: core/forms.py:45 core/templates/admin/grader/signin.html:9
+msgid "Client secret"
+msgstr "Client secret"
+
+#: core/forms.py:50
+msgid "Leave empty to keep the secret that is already saved."
+msgstr "Leave empty to keep the secret that is already saved."
+
+#: core/models.py:17
 msgid "grading paused"
 msgstr "grading paused"
 
-#: core/models.py:13
+#: core/models.py:21
 msgid "time scale"
 msgstr "time scale"
 
-#: core/models.py:14
+#: core/models.py:25
 msgid "registration open"
 msgstr "registration open"
 
-#: core/models.py:15
+#: core/models.py:26
 msgid "announcement"
 msgstr "announcement"
 
-#: core/models.py:16
+#: core/models.py:27
 msgid "Google client ID"
 msgstr "Google client ID"
 
-#: core/models.py:99
+#: core/models.py:112
 msgid "requested"
 msgstr "requested"
 
-#: core/models.py:100 judging/models.py:92
+#: core/models.py:113 judging/models.py:92
 msgid "running"
 msgstr "running"
 
-#: core/models.py:101 judging/models.py:32 judging/models.py:93
+#: core/models.py:114 judging/models.py:32 judging/models.py:93
 msgid "done"
 msgstr "done"
 
-#: core/models.py:102 judging/models.py:94
+#: core/models.py:115 judging/models.py:94
 msgid "failed"
 msgstr "failed"
+
+#: core/templates/admin/grader/backups.html:3
+#: core/templates/admin/grader/calibrate.html:4
+#: core/templates/admin/grader/grading.html:3
+#: core/templates/admin/grader/import.html:3
+#: core/templates/admin/grader/signin.html:3
+#: core/templates/admin/grader/system.html:4
+#: core/templates/admin/grader/version.html:4 core/templates/core/home.html:3
+msgid "Home"
+msgstr "Home"
+
+#: core/templates/admin/grader/backups.html:5
+msgid ""
+"The database is backed up every night, and when you ask for it below. The "
+"files are in the server's grader backups folder; copy that folder elsewhere "
+"with the ZimaOS Backup app."
+msgstr ""
+"The database is backed up every night, and when you ask for it below. The "
+"files are in the server's grader backups folder; copy that folder elsewhere "
+"with the ZimaOS Backup app."
+
+#: core/templates/admin/grader/backups.html:8
+#: core/templates/admin/grader/backups.html:9
+msgid "Back up now"
+msgstr "Back up now"
+
+#: core/templates/admin/grader/backups.html:12
+msgid "Asked for"
+msgstr "Asked for"
+
+#: core/templates/admin/grader/backups.html:12
+msgid "By"
+msgstr "By"
+
+#: core/templates/admin/grader/backups.html:12
+#: core/templates/admin/grader/system.html:10
+msgid "State"
+msgstr "State"
+
+#: core/templates/admin/grader/backups.html:12
+#: core/templates/admin/grader/backups.html:27
+#: core/templates/admin/grader/version.html:28
+msgid "File"
+msgstr "File"
+
+#: core/templates/admin/grader/backups.html:12
+#: core/templates/admin/grader/system.html:53
+#: core/templates/admin/grader/version.html:28
+msgid "Message"
+msgstr "Message"
+
+#: core/templates/admin/grader/backups.html:23
+msgid "Backup files"
+msgstr "Backup files"
+
+#: core/templates/admin/grader/backups.html:24
+msgid "The backups folder is not there"
+msgstr "The backups folder is not there"
+
+#: core/templates/admin/grader/backups.html:27
+msgid "Size"
+msgstr "Size"
+
+#: core/templates/admin/grader/backups.html:27
+msgid "Made"
+msgstr "Made"
+
+#: core/templates/admin/grader/backups.html:34
+msgid "No backup files yet."
+msgstr "No backup files yet."
+
+#: core/templates/admin/grader/calibrate.html:6
+msgid ""
+"Runs each problem's reference solutions 5 times on the judge CPUs (with "
+"limits 10 times the contest's, so nothing is cut off) and keeps each test's "
+"slowest time. The suggested scale gives every reference solution twice the "
+"time it needed."
+msgstr ""
+"Runs each problem's reference solutions 5 times on the judge CPUs (with "
+"limits 10 times the contest's, so nothing is cut off) and keeps each test's "
+"slowest time. The suggested scale gives every reference solution twice the "
+"time it needed."
+
+#: core/templates/admin/grader/calibrate.html:7
+msgid "Current time scale"
+msgstr "Current time scale"
+
+#: core/templates/admin/grader/calibrate.html:8
+msgid "Suggested for all calibrated problems"
+msgstr "Suggested for all calibrated problems"
+
+#: core/templates/admin/grader/calibrate.html:9
+msgid "Change it on the Grading page"
+msgstr "Change it on the Grading page"
+
+#: core/templates/admin/grader/calibrate.html:15
+#: core/templates/admin/grader/system.html:46
+msgid "Last run"
+msgstr "Last run"
+
+#: core/templates/admin/grader/calibrate.html:16
+msgid "Suggested scale"
+msgstr "Suggested scale"
+
+#: core/templates/admin/grader/calibrate.html:20
+msgid "limit at scale 1.0"
+msgstr "limit at scale 1.0"
+
+#: core/templates/admin/grader/calibrate.html:21
+#: core/templates/admin/grader/signin.html:18
+#: judging/templates/judging/results.html:30
+msgid "Test"
+msgstr "Test"
+
+#: core/templates/admin/grader/calibrate.html:21
+msgid "Slowest time (s)"
+msgstr "Slowest time (s)"
+
+#: core/templates/admin/grader/calibrate.html:22
+msgid "not accepted in every run: left out"
+msgstr "not accepted in every run: left out"
+
+#: core/templates/admin/grader/calibrate.html:26
+#: core/templates/admin/grader/index.html:10 judging/admin_views.py:161
+msgid "Calibrate"
+msgstr "Calibrate"
+
+#: core/templates/admin/grader/calibrate.html:29
+#: problems/templates/problems/list.html:19
+msgid "No problems yet."
+msgstr "No problems yet."
+
+#: core/templates/admin/grader/grading.html:6
+msgid "Now"
+msgstr "Now"
+
+#: core/templates/admin/grader/grading.html:8
+msgid "Grading is paused: new submissions wait in the queue."
+msgstr "Grading is paused: new submissions wait in the queue."
+
+#: core/templates/admin/grader/grading.html:10
+msgid "Grading is running."
+msgstr "Grading is running."
+
+#: core/templates/admin/grader/grading.html:12
+#, python-format
+msgid "%(count)s job is waiting."
+msgid_plural "%(count)s jobs are waiting."
+msgstr[0] "%(count)s job is waiting."
+msgstr[1] "%(count)s jobs are waiting."
+
+#: core/templates/admin/grader/grading.html:15
+msgid "Resume grading"
+msgstr "Resume grading"
+
+#: core/templates/admin/grader/grading.html:17
+msgid "Pause grading now"
+msgstr "Pause grading now"
+
+#: core/templates/admin/grader/grading.html:20
+msgid "Paused by hand: it stays paused until you resume it."
+msgstr "Paused by hand: it stays paused until you resume it."
+
+#: core/templates/admin/grader/grading.html:24
+msgid "Pause windows"
+msgstr "Pause windows"
+
+#: core/templates/admin/grader/grading.html:25
+msgid ""
+"Grading pauses by itself during each window, for example a CMS contest from "
+"its start until the final results."
+msgstr ""
+"Grading pauses by itself during each window, for example a CMS contest from "
+"its start until the final results."
+
+#: core/templates/admin/grader/grading.html:28
+msgid "From"
+msgstr "From"
+
+#: core/templates/admin/grader/grading.html:28
+msgid "Until"
+msgstr "Until"
+
+#: core/templates/admin/grader/grading.html:28
+msgid "Note"
+msgstr "Note"
+
+#: core/templates/admin/grader/grading.html:32
+msgid "now"
+msgstr "now"
+
+#: core/templates/admin/grader/grading.html:33
+msgid "Remove"
+msgstr "Remove"
+
+#: core/templates/admin/grader/grading.html:37
+msgid "No pause windows planned."
+msgstr "No pause windows planned."
+
+#: core/templates/admin/grader/grading.html:38
+msgid "Add a pause window"
+msgstr "Add a pause window"
+
+#: core/templates/admin/grader/grading.html:41
+msgid "Add"
+msgstr "Add"
+
+#: core/templates/admin/grader/grading.html:49
+#: core/templates/admin/grader/signin.html:13
+msgid "Save"
+msgstr "Save"
+
+#: core/templates/admin/grader/import.html:5
+msgid ""
+"The problem is imported hidden. Its reference solutions are then run by the "
+"judge; publish it once they all get their expected scores."
+msgstr ""
+"The problem is imported hidden. Its reference solutions are then run by the "
+"judge; publish it once they all get their expected scores."
+
+#: core/templates/admin/grader/import.html:10
+msgid "Upload and import"
+msgstr "Upload and import"
+
+#: core/templates/admin/grader/index.html:6
+msgid "Grader"
+msgstr "Grader"
+
+#: core/templates/admin/grader/index.html:7
+#: core/templates/admin/grader/version.html:4 problems/admin_views.py:60
+msgid "Import a problem"
+msgstr "Import a problem"
+
+#: core/templates/admin/grader/index.html:9 judging/admin_views.py:77
+msgid "System"
+msgstr "System"
+
+#: core/templates/admin/grader/setup.html:3
+msgid "First-run setup"
+msgstr "First-run setup"
+
+#: core/templates/admin/grader/setup.html:6
+msgid "Create the first admin account"
+msgstr "Create the first admin account"
+
+#: core/templates/admin/grader/setup.html:7
+msgid ""
+"This page works once. After the account exists, sign in to the admin site "
+"with it."
+msgstr ""
+"This page works once. After the account exists, sign in to the admin site "
+"with it."
+
+#: core/templates/admin/grader/setup.html:11
+msgid "Create account"
+msgstr "Create account"
+
+#: core/templates/admin/grader/signin.html:6
+msgid "Google sign-in client"
+msgstr "Google sign-in client"
+
+#: core/templates/admin/grader/signin.html:7
+msgid ""
+"In Google Cloud Console, create an OAuth client of type “Web application” "
+"and register this redirect URI:"
+msgstr ""
+"In Google Cloud Console, create an OAuth client of type “Web application” "
+"and register this redirect URI:"
+
+#: core/templates/admin/grader/signin.html:10
+msgid "set"
+msgstr "set"
+
+#: core/templates/admin/grader/signin.html:10
+msgid "not set"
+msgstr "not set"
+
+#: core/templates/admin/grader/signin.html:19
+msgid "Fetches Google's public keys the way a real sign-in does, from"
+msgstr "Fetches Google's public keys the way a real sign-in does, from"
+
+#: core/templates/admin/grader/signin.html:21
+#, python-format
+msgid "%(count)s key received."
+msgid_plural "%(count)s keys received."
+msgstr[0] "%(count)s key received."
+msgstr[1] "%(count)s keys received."
+
+#: core/templates/admin/grader/signin.html:24
+msgid "Test sign-in config"
+msgstr "Test sign-in config"
+
+#: core/templates/admin/grader/system.html:7
+msgid "Workers"
+msgstr "Workers"
+
+#: core/templates/admin/grader/system.html:10
+msgid "Worker"
+msgstr "Worker"
+
+#: core/templates/admin/grader/system.html:10
+msgid "Slots"
+msgstr "Slots"
+
+#: core/templates/admin/grader/system.html:10
+msgid "Busy"
+msgstr "Busy"
+
+#: core/templates/admin/grader/system.html:10
+msgid "Last seen"
+msgstr "Last seen"
+
+#: core/templates/admin/grader/system.html:15
+msgid "online"
+msgstr "online"
+
+#: core/templates/admin/grader/system.html:15
+msgid "offline"
+msgstr "offline"
+
+#: core/templates/admin/grader/system.html:22
+msgid "Environment report"
+msgstr "Environment report"
+
+#: core/templates/admin/grader/system.html:26
+msgid "Full report"
+msgstr "Full report"
+
+#: core/templates/admin/grader/system.html:28
+msgid "No worker has said hello yet."
+msgstr "No worker has said hello yet."
+
+#: core/templates/admin/grader/system.html:32
+msgid "Queue"
+msgstr "Queue"
+
+#: core/templates/admin/grader/system.html:34
+msgid "Kind"
+msgstr "Kind"
+
+#: core/templates/admin/grader/system.html:34
+msgid "Waiting"
+msgstr "Waiting"
+
+#: core/templates/admin/grader/system.html:39
+msgid "Running now"
+msgstr "Running now"
+
+#: core/templates/admin/grader/system.html:43
+msgid "Self-test"
+msgstr "Self-test"
+
+#: core/templates/admin/grader/system.html:44
+msgid ""
+"Judges the hostile programs on this server and checks that the sandbox "
+"stopped each one. It runs even while grading is paused."
+msgstr ""
+"Judges the hostile programs on this server and checks that the sandbox "
+"stopped each one. It runs even while grading is paused."
+
+#: core/templates/admin/grader/system.html:47
+msgid "running…"
+msgstr "running…"
+
+#: core/templates/admin/grader/system.html:48
+msgid "could not run"
+msgstr "could not run"
+
+#: core/templates/admin/grader/system.html:49
+msgid "all passed"
+msgstr "all passed"
+
+#: core/templates/admin/grader/system.html:50
+msgid "NOT ALL PASSED"
+msgstr "NOT ALL PASSED"
+
+#: core/templates/admin/grader/system.html:53
+msgid "Case"
+msgstr "Case"
+
+#: core/templates/admin/grader/system.html:53
+msgid "Expected"
+msgstr "Expected"
+
+#: core/templates/admin/grader/system.html:53
+msgid "Got"
+msgstr "Got"
+
+#: core/templates/admin/grader/system.html:53
+#: core/templates/admin/grader/version.html:28
+msgid "Passed"
+msgstr "Passed"
+
+#: core/templates/admin/grader/system.html:53
+msgid "Seconds"
+msgstr "Seconds"
+
+#: core/templates/admin/grader/system.html:63
+msgid "Run self-test"
+msgstr "Run self-test"
+
+#: core/templates/admin/grader/system.html:68
+msgid "Recent judge errors"
+msgstr "Recent judge errors"
+
+#: core/templates/admin/grader/system.html:71
+msgid "When"
+msgstr "When"
+
+#: core/templates/admin/grader/system.html:71
+msgid "What"
+msgstr "What"
+
+#: core/templates/admin/grader/system.html:71
+msgid "Error"
+msgstr "Error"
+
+#: core/templates/admin/grader/system.html:80
+msgid "None."
+msgstr "None."
+
+#: core/templates/admin/grader/version.html:7 judging/forms.py:61
+#: judging/templates/judging/list.html:18
+#: judging/templates/judging/submission.html:8
+#: problems/templates/problems/list.html:8
+msgid "Problem"
+msgstr "Problem"
+
+#: core/templates/admin/grader/version.html:7
+msgid "public"
+msgstr "public"
+
+#: core/templates/admin/grader/version.html:7
+msgid "hidden"
+msgstr "hidden"
+
+#: core/templates/admin/grader/version.html:8
+msgid "Version"
+msgstr "Version"
+
+#: core/templates/admin/grader/version.html:8
+msgid "current version"
+msgstr "current version"
+
+#: core/templates/admin/grader/version.html:9
+msgid "Validation"
+msgstr "Validation"
+
+#: core/templates/admin/grader/version.html:12
+msgid "Import report"
+msgstr "Import report"
+
+#: core/templates/admin/grader/version.html:14
+msgid "Format"
+msgstr "Format"
+
+#: core/templates/admin/grader/version.html:15
+msgid "Tests"
+msgstr "Tests"
+
+#: core/templates/admin/grader/version.html:16
+msgid "Imported at"
+msgstr "Imported at"
+
+#: core/templates/admin/grader/version.html:19
+msgid "Warnings"
+msgstr "Warnings"
+
+#: core/templates/admin/grader/version.html:23
+msgid "Reference solutions"
+msgstr "Reference solutions"
+
+#: core/templates/admin/grader/version.html:24
+msgid "The judge could not validate this version"
+msgstr "The judge could not validate this version"
+
+#: core/templates/admin/grader/version.html:28 judging/forms.py:17
+#: judging/templates/judging/list.html:18
+#: judging/templates/judging/submission.html:10
+msgid "Language"
+msgstr "Language"
+
+#: core/templates/admin/grader/version.html:28
+msgid "Expected score"
+msgstr "Expected score"
+
+#: core/templates/admin/grader/version.html:28
+msgid "Verdict"
+msgstr "Verdict"
+
+#: core/templates/admin/grader/version.html:28
+#: judging/templates/judging/list.html:18
+#: judging/templates/judging/profile.html:9
+#: judging/templates/judging/ranking.html:8
+#: judging/templates/judging/results.html:9
+#: judging/templates/judging/results.html:14
+msgid "Score"
+msgstr "Score"
+
+#: core/templates/admin/grader/version.html:35
+msgid "No results yet."
+msgstr "No results yet."
+
+#: core/templates/admin/grader/version.html:39
+msgid "Publish"
+msgstr "Publish"
+
+#: core/templates/admin/grader/version.html:42
+msgid "Validate again"
+msgstr "Validate again"
 
 #: core/templates/base.html:18 problems/templates/problems/list.html:3
 #: problems/templates/problems/list.html:5
@@ -158,7 +753,7 @@ msgid "Problems"
 msgstr "Problems"
 
 #: core/templates/base.html:19 judging/templates/judging/profile.html:9
-#: judging/views.py:195
+#: judging/views.py:194
 msgid "Submissions"
 msgstr "Submissions"
 
@@ -167,7 +762,7 @@ msgstr "Submissions"
 msgid "Ranking"
 msgstr "Ranking"
 
-#: core/templates/base.html:21 judging/views.py:204
+#: core/templates/base.html:21 judging/views.py:203
 msgid "My submissions"
 msgstr "My submissions"
 
@@ -183,10 +778,6 @@ msgstr "Sign in with Google"
 #: core/templates/core/privacy.html:6
 msgid "Privacy"
 msgstr "Privacy"
-
-#: core/templates/core/home.html:3
-msgid "Home"
-msgstr "Home"
 
 #: core/templates/core/home.html:7
 msgid ""
@@ -249,18 +840,26 @@ msgstr "At most %(limit)d bytes (this is %(size)d)."
 msgid "Control or invisible characters are not allowed."
 msgstr "Control or invisible characters are not allowed."
 
-#: core/views.py:54
+#: core/views.py:58
 msgid "Too many tries"
 msgstr "Too many tries"
 
-#: core/views.py:55
+#: core/views.py:59
 msgid "Please wait a while and try again."
 msgstr "Please wait a while and try again."
 
-#: judging/forms.py:17 judging/templates/judging/list.html:18
-#: judging/templates/judging/submission.html:10
-msgid "Language"
-msgstr "Language"
+#: judging/admin.py:37
+msgid "code"
+msgstr "code"
+
+#: judging/admin.py:41
+msgid "Rejudge the selected submissions"
+msgstr "Rejudge the selected submissions"
+
+#: judging/admin.py:62
+#, python-format
+msgid "%(count)d submission(s) queued for rejudging."
+msgstr "%(count)d submission(s) queued for rejudging."
 
 #: judging/forms.py:19
 msgid "Source code"
@@ -289,12 +888,6 @@ msgstr "The code is longer than 64 KB."
 #: judging/forms.py:53
 msgid "The code contains a NUL character."
 msgstr "The code contains a NUL character."
-
-#: judging/forms.py:61 judging/templates/judging/list.html:18
-#: judging/templates/judging/submission.html:8
-#: problems/templates/problems/list.html:8
-msgid "Problem"
-msgstr "Problem"
 
 #: judging/forms.py:62 judging/templates/judging/list.html:18
 #: judging/templates/judging/ranking.html:8
@@ -372,7 +965,7 @@ msgstr "self-test"
 msgid "fresh submission"
 msgstr "fresh submission"
 
-#: judging/models.py:100
+#: judging/models.py:100 problems/admin.py:28
 msgid "validation"
 msgstr "validation"
 
@@ -392,14 +985,6 @@ msgstr "Filter"
 #: judging/templates/judging/submission.html:11
 msgid "Submitted"
 msgstr "Submitted"
-
-#: judging/templates/judging/list.html:18
-#: judging/templates/judging/profile.html:9
-#: judging/templates/judging/ranking.html:8
-#: judging/templates/judging/results.html:9
-#: judging/templates/judging/results.html:14
-msgid "Score"
-msgstr "Score"
 
 #: judging/templates/judging/list.html:18
 #: judging/templates/judging/results.html:30
@@ -461,10 +1046,6 @@ msgstr "Subtask"
 msgid "Compiler output"
 msgstr "Compiler output"
 
-#: judging/templates/judging/results.html:30
-msgid "Test"
-msgstr "Test"
-
 #: judging/templates/judging/submission.html:3
 #: judging/templates/judging/submission.html:6
 msgid "Submission"
@@ -513,6 +1094,38 @@ msgstr ""
 #: judging/views.py:75
 msgid "Too many submissions"
 msgstr "Too many submissions"
+
+#: problems/admin.py:33
+msgid "Publish the selected problems"
+msgstr "Publish the selected problems"
+
+#: problems/admin.py:46
+#, python-format
+msgid ""
+"Not published (the current version has not passed validation): %(slugs)s"
+msgstr ""
+"Not published (the current version has not passed validation): %(slugs)s"
+
+#: problems/admin.py:49
+msgid "Hide the selected problems"
+msgstr "Hide the selected problems"
+
+#: problems/admin_views.py:36
+msgid "Problem zip (native or CMS Italian format)"
+msgstr "Problem zip (native or CMS Italian format)"
+
+#: problems/admin_views.py:42
+#, python-format
+msgid "The file is larger than %(mb)d MB."
+msgstr "The file is larger than %(mb)d MB."
+
+#: problems/admin_views.py:139
+msgid "Only a version that passed validation can be published."
+msgstr "Only a version that passed validation can be published."
+
+#: problems/admin_views.py:146
+msgid "Published."
+msgstr "Published."
 
 #: problems/models.py:22
 msgid "visible"
@@ -591,7 +1204,3 @@ msgstr "Output"
 #: problems/templates/problems/detail.html:55
 msgid "This example is long; only its beginning is shown."
 msgstr "This example is long; only its beginning is shown."
-
-#: problems/templates/problems/list.html:19
-msgid "No problems yet."
-msgstr "No problems yet."

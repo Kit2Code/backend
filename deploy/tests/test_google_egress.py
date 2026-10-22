@@ -1,7 +1,8 @@
 """The edge's :8090 listener: the public web role's only way to reach Google (here: the fake).
 
 It must forward exactly `POST /token` and `GET /certs`, refuse everything else, cap request
-bodies, and be usable only by the public web role: not by web-admin, the worker or the host.
+bodies, and be usable only by the public web role (web-admin may only `GET /certs`, for the Sign-in
+page's test button): not by the worker or the host.
 """
 
 import json
@@ -87,9 +88,14 @@ def test_large_request_bodies_are_refused() -> None:
     assert answer["status"] == 413
 
 
-def test_web_admin_cannot_use_it() -> None:
+def test_web_admin_may_only_fetch_the_certs() -> None:
+    # The Sign-in page's test button: Google's public keys, nothing else.
     answer = probe("web-admin", "GET", f"{EGRESS}/certs")
-    assert answer.get("status") == 404 or "error" in answer
+    assert answer["status"] == 200
+    assert "keys" in json.loads(str(answer["body"]))
+    assert probe("web-admin", "POST", f"{EGRESS}/token", size=10)["status"] == 404
+    assert probe("web-admin", "GET", f"{EGRESS}/token")["status"] == 404
+    assert probe("web-admin", "POST", f"{EGRESS}/certs", size=10)["status"] == 404
 
 
 def test_worker_cannot_reach_it() -> None:
