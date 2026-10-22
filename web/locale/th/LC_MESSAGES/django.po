@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: grader\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-21 19:47+0700\n"
+"POT-Creation-Date: 2026-10-22 00:21+0700\n"
 "PO-Revision-Date: 2026-10-21 19:00+0700\n"
 "Last-Translator: grader maintainers\n"
 "Language-Team: Thai\n"
@@ -152,20 +152,34 @@ msgstr "เสร็จแล้ว"
 msgid "failed"
 msgstr "ล้มเหลว"
 
-#: core/templates/base.html:16 problems/templates/problems/list.html:3
+#: core/templates/base.html:18 problems/templates/problems/list.html:3
 #: problems/templates/problems/list.html:5
 msgid "Problems"
 msgstr "โจทย์"
 
-#: core/templates/base.html:25
+#: core/templates/base.html:19 judging/templates/judging/profile.html:9
+#: judging/views.py:195
+msgid "Submissions"
+msgstr "การส่งทั้งหมด"
+
+#: core/templates/base.html:20 judging/templates/judging/ranking.html:3
+#: judging/templates/judging/ranking.html:5
+msgid "Ranking"
+msgstr "อันดับ"
+
+#: core/templates/base.html:21 judging/views.py:204
+msgid "My submissions"
+msgstr "การส่งของฉัน"
+
+#: core/templates/base.html:31
 msgid "Sign out"
 msgstr "ออกจากระบบ"
 
-#: core/templates/base.html:29
+#: core/templates/base.html:35
 msgid "Sign in with Google"
 msgstr "เข้าสู่ระบบด้วย Google"
 
-#: core/templates/base.html:49 core/templates/core/privacy.html:3
+#: core/templates/base.html:58 core/templates/core/privacy.html:3
 #: core/templates/core/privacy.html:6
 msgid "Privacy"
 msgstr "ความเป็นส่วนตัว"
@@ -193,20 +207,26 @@ msgid ""
 "You sign in with your Google account. From Google we keep only its account "
 "number, which tells us it is the same account next time. We never ask Google "
 "for your email address, name or photo, and we don't store them."
-msgstr "คุณเข้าสู่ระบบด้วยบัญชี Google โดยเราเก็บจาก Google ไว้เพียงหมายเลขบัญชี เพื่อให้รู้ว่าเป็นบัญชีเดิมในครั้งต่อไป เราไม่เคยขออีเมล ชื่อ หรือรูปภาพของคุณจาก Google และไม่ได้เก็บข้อมูลเหล่านั้น"
+msgstr ""
+"คุณเข้าสู่ระบบด้วยบัญชี Google โดยเราเก็บจาก Google ไว้เพียงหมายเลขบัญชี "
+"เพื่อให้รู้ว่าเป็นบัญชีเดิมในครั้งต่อไป เราไม่เคยขออีเมล ชื่อ หรือรูปภาพของคุณจาก Google "
+"และไม่ได้เก็บข้อมูลเหล่านั้น"
 
 #: core/templates/core/privacy.html:12
 msgid ""
 "We store the username, display name and school you type in, the programs you "
 "submit and their results. Other people can see your username, display name, "
 "school and scores, but never your programs."
-msgstr "เราเก็บชื่อผู้ใช้ ชื่อที่แสดง และโรงเรียนที่คุณกรอก รวมถึงโปรแกรมที่คุณส่งและผลการตรวจ คนอื่นจะเห็นชื่อผู้ใช้ ชื่อที่แสดง โรงเรียน และคะแนนของคุณ แต่จะไม่เห็นโปรแกรมของคุณ"
+msgstr ""
+"เราเก็บชื่อผู้ใช้ ชื่อที่แสดง และโรงเรียนที่คุณกรอก รวมถึงโปรแกรมที่คุณส่งและผลการตรวจ "
+"คนอื่นจะเห็นชื่อผู้ใช้ ชื่อที่แสดง โรงเรียน และคะแนนของคุณ แต่จะไม่เห็นโปรแกรมของคุณ"
 
 #: core/templates/core/privacy.html:17
 msgid ""
 "Google sees that you signed in to this site. Signing out here does not sign "
 "you out of Google."
-msgstr "Google จะรู้ว่าคุณเข้าสู่ระบบเว็บไซต์นี้ และการออกจากระบบที่นี่ไม่ได้ทำให้คุณออกจากระบบ Google"
+msgstr ""
+"Google จะรู้ว่าคุณเข้าสู่ระบบเว็บไซต์นี้ และการออกจากระบบที่นี่ไม่ได้ทำให้คุณออกจากระบบ Google"
 
 #: core/templates/core/privacy.html:21
 msgid ""
@@ -230,6 +250,57 @@ msgstr "ลองหลายครั้งเกินไป"
 #: core/views.py:55
 msgid "Please wait a while and try again."
 msgstr "กรุณารอสักครู่แล้วลองใหม่"
+
+#: judging/forms.py:17 judging/templates/judging/list.html:18
+#: judging/templates/judging/submission.html:10
+msgid "Language"
+msgstr "ภาษา"
+
+#: judging/forms.py:19
+msgid "Source code"
+msgstr "โค้ด"
+
+#: judging/forms.py:24
+msgid "…or upload a file"
+msgstr "…หรืออัปโหลดไฟล์"
+
+#: judging/forms.py:38
+msgid "The file is bigger than 64 KB."
+msgstr "ไฟล์ใหญ่เกิน 64 KB"
+
+#: judging/forms.py:42
+msgid "The file must be UTF-8 text."
+msgstr "ไฟล์ต้องเป็นข้อความ UTF-8"
+
+#: judging/forms.py:49
+msgid "Please type or upload your code."
+msgstr "กรุณาพิมพ์หรืออัปโหลดโค้ด"
+
+#: judging/forms.py:51
+msgid "The code is longer than 64 KB."
+msgstr "โค้ดยาวเกิน 64 KB"
+
+#: judging/forms.py:53
+msgid "The code contains a NUL character."
+msgstr "โค้ดมีอักขระ NUL"
+
+#: judging/forms.py:61 judging/templates/judging/list.html:18
+#: judging/templates/judging/submission.html:8
+#: problems/templates/problems/list.html:8
+msgid "Problem"
+msgstr "โจทย์"
+
+#: judging/forms.py:62 judging/templates/judging/list.html:18
+#: judging/templates/judging/ranking.html:8
+#: judging/templates/judging/submission.html:9
+msgid "User"
+msgstr "ผู้ใช้"
+
+#: judging/forms.py:64 judging/templates/judging/list.html:18
+#: judging/templates/judging/results.html:5
+#: judging/templates/judging/results.html:30
+msgid "Result"
+msgstr "ผลการตรวจ"
 
 #: judging/models.py:17
 msgid "Accepted"
@@ -307,6 +378,135 @@ msgstr "ตรวจใหม่"
 msgid "calibration and self-test"
 msgstr "ปรับเทียบเวลาและทดสอบระบบ"
 
+#: judging/templates/judging/list.html:11
+msgid "Filter"
+msgstr "กรอง"
+
+#: judging/templates/judging/list.html:18
+#: judging/templates/judging/submission.html:11
+msgid "Submitted"
+msgstr "เวลาที่ส่ง"
+
+#: judging/templates/judging/list.html:18
+#: judging/templates/judging/profile.html:9
+#: judging/templates/judging/ranking.html:8
+#: judging/templates/judging/results.html:9
+#: judging/templates/judging/results.html:14
+msgid "Score"
+msgstr "คะแนน"
+
+#: judging/templates/judging/list.html:18
+#: judging/templates/judging/results.html:30
+msgid "Time"
+msgstr "เวลา"
+
+#: judging/templates/judging/list.html:18
+#: judging/templates/judging/results.html:30
+msgid "Memory"
+msgstr "หน่วยความจำ"
+
+#: judging/templates/judging/list.html:37
+msgid "No submissions."
+msgstr "ยังไม่มีการส่ง"
+
+#: judging/templates/judging/list.html:43
+msgid "Newer"
+msgstr "ใหม่กว่า"
+
+#: judging/templates/judging/list.html:44
+#: judging/templates/judging/ranking.html:27
+#, python-format
+msgid "Page %(number)s of %(total)s"
+msgstr "หน้า %(number)s จาก %(total)s"
+
+#: judging/templates/judging/list.html:45
+msgid "Older"
+msgstr "เก่ากว่า"
+
+#: judging/templates/judging/profile.html:11
+msgid "Solved"
+msgstr "ทำได้เต็ม"
+
+#: judging/templates/judging/profile.html:18
+msgid "Attempted"
+msgstr "เคยลองทำ"
+
+#: judging/templates/judging/ranking.html:8
+msgid "School"
+msgstr "โรงเรียน"
+
+#: judging/templates/judging/ranking.html:21
+msgid "Nobody has scored yet."
+msgstr "ยังไม่มีใครได้คะแนน"
+
+#: judging/templates/judging/ranking.html:26
+msgid "Previous"
+msgstr "ก่อนหน้า"
+
+#: judging/templates/judging/ranking.html:28
+msgid "Next"
+msgstr "ถัดไป"
+
+#: judging/templates/judging/results.html:14
+msgid "Subtask"
+msgstr "ปัญหาย่อย"
+
+#: judging/templates/judging/results.html:24
+msgid "Compiler output"
+msgstr "ข้อความจากคอมไพเลอร์"
+
+#: judging/templates/judging/results.html:30
+msgid "Test"
+msgstr "ชุดทดสอบ"
+
+#: judging/templates/judging/submission.html:3
+#: judging/templates/judging/submission.html:6
+msgid "Submission"
+msgstr "การส่ง"
+
+#: judging/templates/judging/submission.html:17
+msgid "Your code"
+msgstr "โค้ดของคุณ"
+
+#: judging/templates/judging/submission.html:17
+msgid "plain text"
+msgstr "ข้อความล้วน"
+
+#: judging/templates/judging/submit.html:3
+#: judging/templates/judging/submit.html:5
+#: judging/templates/judging/submit.html:18
+#: problems/templates/problems/detail.html:17
+msgid "Submit"
+msgstr "ส่ง"
+
+#: judging/views.py:35
+msgid "Too big"
+msgstr "ใหญ่เกินไป"
+
+#: judging/views.py:35
+msgid "Submissions can be at most 64 KB."
+msgstr "ส่งได้ไม่เกิน 64 KB"
+
+#: judging/views.py:56
+#, python-format
+msgid "Please wait %(seconds)d seconds between submissions."
+msgstr "กรุณารอ %(seconds)d วินาทีก่อนส่งครั้งต่อไป"
+
+#: judging/views.py:63
+#, python-format
+msgid "You have %(count)d submissions waiting for the judge. Please wait."
+msgstr "คุณมีการส่ง %(count)d ครั้งที่รอตรวจอยู่ กรุณารอสักครู่"
+
+#: judging/views.py:70
+#, python-format
+msgid ""
+"You have reached %(count)d submissions this hour. Please come back later."
+msgstr "คุณส่งครบ %(count)d ครั้งในชั่วโมงนี้แล้ว กรุณากลับมาใหม่ภายหลัง"
+
+#: judging/views.py:75
+msgid "Too many submissions"
+msgstr "ส่งบ่อยเกินไป"
+
 #: problems/models.py:22
 msgid "visible"
 msgstr "แสดงให้เห็น"
@@ -356,38 +556,34 @@ msgstr "ไฟล์ผลลัพธ์"
 msgid "Tags"
 msgstr "หมวดหมู่"
 
-#: problems/templates/problems/detail.html:19
+#: problems/templates/problems/detail.html:20
 msgid "Statement (PDF)"
 msgstr "โจทย์ (PDF)"
 
-#: problems/templates/problems/detail.html:27
+#: problems/templates/problems/detail.html:28
 msgid "Files"
 msgstr "ไฟล์"
 
-#: problems/templates/problems/detail.html:42
+#: problems/templates/problems/detail.html:43
 msgid "Examples"
 msgstr "ตัวอย่าง"
 
-#: problems/templates/problems/detail.html:46
+#: problems/templates/problems/detail.html:47
 msgid "Input"
 msgstr "ข้อมูลเข้า"
 
-#: problems/templates/problems/detail.html:46
-#: problems/templates/problems/detail.html:50
+#: problems/templates/problems/detail.html:47
+#: problems/templates/problems/detail.html:51
 msgid "download"
 msgstr "ดาวน์โหลด"
 
-#: problems/templates/problems/detail.html:50
+#: problems/templates/problems/detail.html:51
 msgid "Output"
 msgstr "ผลลัพธ์"
 
-#: problems/templates/problems/detail.html:54
+#: problems/templates/problems/detail.html:55
 msgid "This example is long; only its beginning is shown."
 msgstr "ตัวอย่างนี้ยาว จึงแสดงเฉพาะส่วนต้น"
-
-#: problems/templates/problems/list.html:8
-msgid "Problem"
-msgstr "โจทย์"
 
 #: problems/templates/problems/list.html:19
 msgid "No problems yet."

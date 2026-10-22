@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: grader\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-21 19:47+0700\n"
+"POT-Creation-Date: 2026-10-22 00:21+0700\n"
 "PO-Revision-Date: 2026-10-21 19:00+0700\n"
 "Last-Translator: grader maintainers\n"
 "Language-Team: English\n"
@@ -152,20 +152,34 @@ msgstr "done"
 msgid "failed"
 msgstr "failed"
 
-#: core/templates/base.html:16 problems/templates/problems/list.html:3
+#: core/templates/base.html:18 problems/templates/problems/list.html:3
 #: problems/templates/problems/list.html:5
 msgid "Problems"
 msgstr "Problems"
 
-#: core/templates/base.html:25
+#: core/templates/base.html:19 judging/templates/judging/profile.html:9
+#: judging/views.py:195
+msgid "Submissions"
+msgstr "Submissions"
+
+#: core/templates/base.html:20 judging/templates/judging/ranking.html:3
+#: judging/templates/judging/ranking.html:5
+msgid "Ranking"
+msgstr "Ranking"
+
+#: core/templates/base.html:21 judging/views.py:204
+msgid "My submissions"
+msgstr "My submissions"
+
+#: core/templates/base.html:31
 msgid "Sign out"
 msgstr "Sign out"
 
-#: core/templates/base.html:29
+#: core/templates/base.html:35
 msgid "Sign in with Google"
 msgstr "Sign in with Google"
 
-#: core/templates/base.html:49 core/templates/core/privacy.html:3
+#: core/templates/base.html:58 core/templates/core/privacy.html:3
 #: core/templates/core/privacy.html:6
 msgid "Privacy"
 msgstr "Privacy"
@@ -178,7 +192,9 @@ msgstr "Home"
 msgid ""
 "Practice with problems from past contests. Programs are judged like in the "
 "contest."
-msgstr "Practice with problems from past contests. Programs are judged like in the contest."
+msgstr ""
+"Practice with problems from past contests. Programs are judged like in the "
+"contest."
 
 #: core/templates/core/home.html:9
 msgid "New problems"
@@ -193,26 +209,36 @@ msgid ""
 "You sign in with your Google account. From Google we keep only its account "
 "number, which tells us it is the same account next time. We never ask Google "
 "for your email address, name or photo, and we don't store them."
-msgstr "You sign in with your Google account. From Google we keep only its account number, which tells us it is the same account next time. We never ask Google for your email address, name or photo, and we don't store them."
+msgstr ""
+"You sign in with your Google account. From Google we keep only its account "
+"number, which tells us it is the same account next time. We never ask Google "
+"for your email address, name or photo, and we don't store them."
 
 #: core/templates/core/privacy.html:12
 msgid ""
 "We store the username, display name and school you type in, the programs you "
 "submit and their results. Other people can see your username, display name, "
 "school and scores, but never your programs."
-msgstr "We store the username, display name and school you type in, the programs you submit and their results. Other people can see your username, display name, school and scores, but never your programs."
+msgstr ""
+"We store the username, display name and school you type in, the programs you "
+"submit and their results. Other people can see your username, display name, "
+"school and scores, but never your programs."
 
 #: core/templates/core/privacy.html:17
 msgid ""
 "Google sees that you signed in to this site. Signing out here does not sign "
 "you out of Google."
-msgstr "Google sees that you signed in to this site. Signing out here does not sign you out of Google."
+msgstr ""
+"Google sees that you signed in to this site. Signing out here does not sign "
+"you out of Google."
 
 #: core/templates/core/privacy.html:21
 msgid ""
 "To have your account and everything in it deleted, ask the person who runs "
 "this site."
-msgstr "To have your account and everything in it deleted, ask the person who runs this site."
+msgstr ""
+"To have your account and everything in it deleted, ask the person who runs "
+"this site."
 
 #: core/validators.py:25
 #, python-format
@@ -230,6 +256,57 @@ msgstr "Too many tries"
 #: core/views.py:55
 msgid "Please wait a while and try again."
 msgstr "Please wait a while and try again."
+
+#: judging/forms.py:17 judging/templates/judging/list.html:18
+#: judging/templates/judging/submission.html:10
+msgid "Language"
+msgstr "Language"
+
+#: judging/forms.py:19
+msgid "Source code"
+msgstr "Source code"
+
+#: judging/forms.py:24
+msgid "…or upload a file"
+msgstr "…or upload a file"
+
+#: judging/forms.py:38
+msgid "The file is bigger than 64 KB."
+msgstr "The file is bigger than 64 KB."
+
+#: judging/forms.py:42
+msgid "The file must be UTF-8 text."
+msgstr "The file must be UTF-8 text."
+
+#: judging/forms.py:49
+msgid "Please type or upload your code."
+msgstr "Please type or upload your code."
+
+#: judging/forms.py:51
+msgid "The code is longer than 64 KB."
+msgstr "The code is longer than 64 KB."
+
+#: judging/forms.py:53
+msgid "The code contains a NUL character."
+msgstr "The code contains a NUL character."
+
+#: judging/forms.py:61 judging/templates/judging/list.html:18
+#: judging/templates/judging/submission.html:8
+#: problems/templates/problems/list.html:8
+msgid "Problem"
+msgstr "Problem"
+
+#: judging/forms.py:62 judging/templates/judging/list.html:18
+#: judging/templates/judging/ranking.html:8
+#: judging/templates/judging/submission.html:9
+msgid "User"
+msgstr "User"
+
+#: judging/forms.py:64 judging/templates/judging/list.html:18
+#: judging/templates/judging/results.html:5
+#: judging/templates/judging/results.html:30
+msgid "Result"
+msgstr "Result"
 
 #: judging/models.py:17
 msgid "Accepted"
@@ -307,6 +384,136 @@ msgstr "rejudge"
 msgid "calibration and self-test"
 msgstr "calibration and self-test"
 
+#: judging/templates/judging/list.html:11
+msgid "Filter"
+msgstr "Filter"
+
+#: judging/templates/judging/list.html:18
+#: judging/templates/judging/submission.html:11
+msgid "Submitted"
+msgstr "Submitted"
+
+#: judging/templates/judging/list.html:18
+#: judging/templates/judging/profile.html:9
+#: judging/templates/judging/ranking.html:8
+#: judging/templates/judging/results.html:9
+#: judging/templates/judging/results.html:14
+msgid "Score"
+msgstr "Score"
+
+#: judging/templates/judging/list.html:18
+#: judging/templates/judging/results.html:30
+msgid "Time"
+msgstr "Time"
+
+#: judging/templates/judging/list.html:18
+#: judging/templates/judging/results.html:30
+msgid "Memory"
+msgstr "Memory"
+
+#: judging/templates/judging/list.html:37
+msgid "No submissions."
+msgstr "No submissions."
+
+#: judging/templates/judging/list.html:43
+msgid "Newer"
+msgstr "Newer"
+
+#: judging/templates/judging/list.html:44
+#: judging/templates/judging/ranking.html:27
+#, python-format
+msgid "Page %(number)s of %(total)s"
+msgstr "Page %(number)s of %(total)s"
+
+#: judging/templates/judging/list.html:45
+msgid "Older"
+msgstr "Older"
+
+#: judging/templates/judging/profile.html:11
+msgid "Solved"
+msgstr "Solved"
+
+#: judging/templates/judging/profile.html:18
+msgid "Attempted"
+msgstr "Attempted"
+
+#: judging/templates/judging/ranking.html:8
+msgid "School"
+msgstr "School"
+
+#: judging/templates/judging/ranking.html:21
+msgid "Nobody has scored yet."
+msgstr "Nobody has scored yet."
+
+#: judging/templates/judging/ranking.html:26
+msgid "Previous"
+msgstr "Previous"
+
+#: judging/templates/judging/ranking.html:28
+msgid "Next"
+msgstr "Next"
+
+#: judging/templates/judging/results.html:14
+msgid "Subtask"
+msgstr "Subtask"
+
+#: judging/templates/judging/results.html:24
+msgid "Compiler output"
+msgstr "Compiler output"
+
+#: judging/templates/judging/results.html:30
+msgid "Test"
+msgstr "Test"
+
+#: judging/templates/judging/submission.html:3
+#: judging/templates/judging/submission.html:6
+msgid "Submission"
+msgstr "Submission"
+
+#: judging/templates/judging/submission.html:17
+msgid "Your code"
+msgstr "Your code"
+
+#: judging/templates/judging/submission.html:17
+msgid "plain text"
+msgstr "plain text"
+
+#: judging/templates/judging/submit.html:3
+#: judging/templates/judging/submit.html:5
+#: judging/templates/judging/submit.html:18
+#: problems/templates/problems/detail.html:17
+msgid "Submit"
+msgstr "Submit"
+
+#: judging/views.py:35
+msgid "Too big"
+msgstr "Too big"
+
+#: judging/views.py:35
+msgid "Submissions can be at most 64 KB."
+msgstr "Submissions can be at most 64 KB."
+
+#: judging/views.py:56
+#, python-format
+msgid "Please wait %(seconds)d seconds between submissions."
+msgstr "Please wait %(seconds)d seconds between submissions."
+
+#: judging/views.py:63
+#, python-format
+msgid "You have %(count)d submissions waiting for the judge. Please wait."
+msgstr "You have %(count)d submissions waiting for the judge. Please wait."
+
+#: judging/views.py:70
+#, python-format
+msgid ""
+"You have reached %(count)d submissions this hour. Please come back later."
+msgstr ""
+"You have reached %(count)d submissions this hour. Please come back later."
+
+#: judging/views.py:75
+msgid "Too many submissions"
+msgstr "Too many submissions"
+
 #: problems/models.py:22
 msgid "visible"
 msgstr "visible"
@@ -356,38 +563,34 @@ msgstr "Output file"
 msgid "Tags"
 msgstr "Tags"
 
-#: problems/templates/problems/detail.html:19
+#: problems/templates/problems/detail.html:20
 msgid "Statement (PDF)"
 msgstr "Statement (PDF)"
 
-#: problems/templates/problems/detail.html:27
+#: problems/templates/problems/detail.html:28
 msgid "Files"
 msgstr "Files"
 
-#: problems/templates/problems/detail.html:42
+#: problems/templates/problems/detail.html:43
 msgid "Examples"
 msgstr "Examples"
 
-#: problems/templates/problems/detail.html:46
+#: problems/templates/problems/detail.html:47
 msgid "Input"
 msgstr "Input"
 
-#: problems/templates/problems/detail.html:46
-#: problems/templates/problems/detail.html:50
+#: problems/templates/problems/detail.html:47
+#: problems/templates/problems/detail.html:51
 msgid "download"
 msgstr "download"
 
-#: problems/templates/problems/detail.html:50
+#: problems/templates/problems/detail.html:51
 msgid "Output"
 msgstr "Output"
 
-#: problems/templates/problems/detail.html:54
+#: problems/templates/problems/detail.html:55
 msgid "This example is long; only its beginning is shown."
 msgstr "This example is long; only its beginning is shown."
-
-#: problems/templates/problems/list.html:8
-msgid "Problem"
-msgstr "Problem"
 
 #: problems/templates/problems/list.html:19
 msgid "No problems yet."

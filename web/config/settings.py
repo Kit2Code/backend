@@ -15,6 +15,10 @@ ROOT_URLCONF = env.urlconf_for_role(GRADER_ROLE)
 _BASE_URL = env.require("PUBLIC_BASE_URL" if GRADER_ROLE == "public" else "ADMIN_BASE_URL")
 _HOSTNAME, _ORIGIN = env.base_url_parts(_BASE_URL)
 ALLOWED_HOSTS = [_HOSTNAME]
+if GRADER_ROLE == "admin":
+    # The worker calls web-admin directly on judge_net, by its service name. Requests through the
+    # edge with that Host header still fail the zone check for /internal/* (see core.middleware).
+    ALLOWED_HOSTS.append(env.optional("GRADER_INTERNAL_HOST", "web-admin"))
 CSRF_TRUSTED_ORIGINS = [_ORIGIN]
 
 SECRET_KEY = env.read_secret("django_secret_key")
@@ -163,6 +167,12 @@ USE_TZ = True
 # The problem store: immutable version folders <store>/<slug>/<version>/ (read-only in the
 # public role).
 GRADER_PROBLEMS_DIR = Path(env.optional("GRADER_PROBLEMS_DIR", "/data/problems"))
+
+# Submit limits, per user (judging/views.py): seconds between submissions, submissions per hour,
+# and how many may wait for the judge at once.
+GRADER_SUBMIT_COOLDOWN_SECONDS = 10
+GRADER_SUBMIT_PER_HOUR = 120
+GRADER_SUBMIT_MAX_WAITING = 3
 
 SITE_NAME_TH = env.optional("SITE_NAME_TH", "เกรดเดอร์")
 SITE_NAME_EN = env.optional("SITE_NAME_EN", "Grader")

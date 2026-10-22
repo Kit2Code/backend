@@ -22,7 +22,11 @@ try:
     with urllib.request.urlopen(request, timeout=5) as response:
         print(json.dumps({"status": response.status, "body": response.read(65536).decode()}))
 except urllib.error.HTTPError as error:
-    print(json.dumps({"status": error.code, "body": error.read(65536).decode()}))
+    try:
+        text = error.read(65536).decode()
+    except OSError:  # the server may close the connection right after an error status
+        text = ""
+    print(json.dumps({"status": error.code, "body": text}))
 except Exception as error:
     print(json.dumps({"error": type(error).__name__}))
 """

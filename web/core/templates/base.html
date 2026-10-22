@@ -7,13 +7,19 @@
   <title>{% block title %}{% endblock %} · {{ site_name }}</title>
   <link rel="stylesheet" href="{% static 'vendor/pico/pico.classless.min.css' %}">
   <link rel="stylesheet" href="{% static 'site.css' %}">
+  {% block scripts %}{% endblock %}
 </head>
 <body>
   <header>
     <nav>
       <ul>
         <li><a href="{% if grader_role == "public" %}{% url 'home' %}{% else %}/admin/{% endif %}"><strong>{{ site_name }}</strong></a></li>
-        {% if grader_role == "public" %}<li><a href="{% url 'problems' %}">{% translate "Problems" %}</a></li>{% endif %}
+        {% if grader_role == "public" %}
+          <li><a href="{% url 'problems' %}">{% translate "Problems" %}</a></li>
+          <li><a href="{% url 'submissions' %}">{% translate "Submissions" %}</a></li>
+          <li><a href="{% url 'ranking' %}">{% translate "Ranking" %}</a></li>
+          {% if request.user.is_authenticated %}<li><a href="{% url 'my-submissions' %}">{% translate "My submissions" %}</a></li>{% endif %}
+        {% endif %}
       </ul>
       <ul>
         {% if grader_role == "public" %}

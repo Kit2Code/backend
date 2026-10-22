@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% load i18n problems %}
+{% block title %}{{ person.username }}{% endblock %}
+{% block content %}
+<hgroup>
+  <h1>{{ person.username }}</h1>
+  {% if person.display_name or person.school %}<p>{{ person.display_name }}{% if person.display_name and person.school %} · {% endif %}{{ person.school }}</p>{% endif %}
+</hgroup>
+<p>{% translate "Score" %}: {{ total|floatformat:"-2" }} · <a href="{% url 'submissions' %}?user={{ person.username|urlencode }}">{% translate "Submissions" %}</a></p>
+
+<h2 id="solved">{% translate "Solved" %} ({{ solved|length }})</h2>
+{% if solved %}
+<ul>
+  {% for row in solved %}<li><a href="{% url 'problem' row.problem.slug %}">{% problem_title row.problem %}</a></li>{% endfor %}
+</ul>
+{% else %}<p>—</p>{% endif %}
+
+<h2 id="attempted">{% translate "Attempted" %} ({{ attempted|length }})</h2>
+{% if attempted %}
+<ul>
+  {% for row in attempted %}<li><a href="{% url 'problem' row.problem.slug %}">{% problem_title row.problem %}</a>: {{ row.best_score|floatformat:"-2" }}</li>{% endfor %}
+</ul>
+{% else %}<p>—</p>{% endif %}
+{% endblock %}

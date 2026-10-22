@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load i18n judging problems %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<h1>{{ title }}</h1>
+{% if form %}
+<form method="get" class="filters">
+  {% for field in form %}
+    <label>{{ field.label }} {{ field }}</label>
+  {% endfor %}
+  <button type="submit">{% translate "Filter" %}</button>
+</form>
+{% endif %}
+
+{% if page.object_list %}
+<table>
+  <thead>
+    <tr><th>#</th><th>{% translate "Submitted" %}</th><th>{% translate "User" %}</th><th>{% translate "Problem" %}</th><th>{% translate "Language" %}</th><th>{% translate "Result" %}</th><th>{% translate "Score" %}</th><th>{% translate "Time" %}</th><th>{% translate "Memory" %}</th></tr>
+  </thead>
+  <tbody>
+  {% for submission in page.object_list %}
+    <tr>
+      <td><a href="{% url 'submission' submission.pk %}">{{ submission.pk }}</a></td>
+      <td>{{ submission.created_at|date:"Y-m-d H:i" }}</td>
+      <td>{{ submission.user.username }}</td>
+      <td><a href="{% url 'problem' submission.problem.slug %}">{% problem_title submission.problem %}</a></td>
+      <td>{{ submission.language|language_name }}</td>
+      <td>{% if submission.verdict %}{{ submission.get_verdict_display }}{% else %}{{ submission.get_status_display }}{% endif %}</td>
+      <td>{% if submission.score is not None %}{{ submission.score|floatformat:"-2" }}{% endif %}</td>
+      <td>{{ submission.max_time_ms|ms }}</td>
+      <td>{{ submission.max_memory_kb|mb }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>{% translate "No submissions." %}</p>
+{% endif %}
+
+{% if page.has_other_pages %}
+<nav>
+  <ul>
+    {% if page.has_previous %}<li><a href="?{% if query %}{{ query }}&amp;{% endif %}page={{ page.previous_page_number }}">{% translate "Newer" %}</a></li>{% endif %}
+    <li>{% blocktranslate with number=page.number total=page.paginator.num_pages %}Page {{ number }} of {{ total }}{% endblocktranslate %}</li>
+    {% if page.has_next %}<li><a href="?{% if query %}{{ query }}&amp;{% endif %}page={{ page.next_page_number }}">{% translate "Older" %}</a></li>{% endif %}
+  </ul>
+</nav>
+{% endif %}
+{% endblock %}

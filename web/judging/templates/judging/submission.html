@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% load i18n judging static problems %}
+{% block title %}{% translate "Submission" %} #{{ submission.pk }}{% endblock %}
+{% block scripts %}<script src="{% static 'vendor/htmx/htmx.min.js' %}" defer></script>{% endblock %}
+{% block content %}
+<h1>{% translate "Submission" %} #{{ submission.pk }}</h1>
+<ul>
+  <li>{% translate "Problem" %}: <a href="{% url 'problem' submission.problem.slug %}">{% problem_title submission.problem %}</a></li>
+  <li>{% translate "User" %}: {{ submission.user.username }}</li>
+  <li>{% translate "Language" %}: {{ submission.language|language_name }}</li>
+  <li>{% translate "Submitted" %}: {{ submission.created_at|date:"Y-m-d H:i:s" }}</li>
+</ul>
+
+{% include "judging/results.html" %}
+
+{% if is_author %}
+<h2>{% translate "Your code" %} <small><a href="{% url 'submission-source' submission.pk %}">{% translate "plain text" %}</a></small></h2>
+<pre><code>{{ submission.source }}</code></pre>
+{% endif %}
+{% endblock %}

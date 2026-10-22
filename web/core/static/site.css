@@ -49,3 +49,18 @@ body > header nav button {
   padding: 0.25rem 0.75rem;
   width: auto;
 }
+
+/* The filters above a list: one row on wide screens, stacked on phones. */
+form.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1rem;
+  align-items: end;
+}
+form.filters > * {
+  flex: 1 1 10rem;
+}
+form.filters > button {
+  flex: 0 0 auto;
+  width: auto;
+}

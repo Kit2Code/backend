@@ -138,6 +138,7 @@ services:
     build:
       context: ../..
       dockerfile: judge/worker/Dockerfile
+    command: ["judge-worker"]
     # Dev only for now: the narrower production profile is decided with the sandbox work.
     privileged: true
     cgroup: host
@@ -147,6 +148,7 @@ services:
       JUDGE_SLOTS: "2"
       JUDGE_BOX_CPUS: "10,11"
       JUDGE_MEM_TOTAL: "1024M"
+      WEB_INTERNAL_URL: "http://web-admin:8000"
       TZ: Asia/Bangkok
     volumes:
       # Live code, like the web roles (the image has the same code baked in). Read-only: a process
@@ -157,6 +159,7 @@ services:
       - ../../fixtures:/app/fixtures:ro
       - ../../.devdata/problems:/data/problems:ro
       - ../../.devdata/judge-cache:/data/cache
+      - ../../.devdata/secrets/worker:/run/secrets/worker:ro
     networks: [judge_net]
     healthcheck:
       test: ["CMD", "test", "-d", "/sys/fs/cgroup/grader-judge"]

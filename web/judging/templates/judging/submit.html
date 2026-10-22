@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Submit" %}: {{ problem.slug }}{% endblock %}
+{% block content %}
+<h1>{% translate "Submit" %}: <a href="{% url 'problem' problem.slug %}">{{ problem.slug }}</a></h1>
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  {{ form.non_field_errors }}
+  {{ form.language.errors }}
+  <label for="{{ form.language.id_for_label }}">{{ form.language.label }}</label>
+  {{ form.language }}
+  {{ form.source.errors }}
+  <label for="{{ form.source.id_for_label }}">{{ form.source.label }}</label>
+  {{ form.source }}
+  {{ form.file.errors }}
+  <label for="{{ form.file.id_for_label }}">{{ form.file.label }}</label>
+  {{ form.file }}
+  <button type="submit">{% translate "Submit" %}</button>
+</form>
+{% endblock %}

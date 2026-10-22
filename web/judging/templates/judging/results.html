@@ -1,0 +1,38 @@
+{% load i18n judging %}
+{# While the submission waits, htmx fetches this fragment every 2 s and swaps it in; the finished #}
+{# version has no hx-* attributes, so polling stops by itself. #}
+<section id="results"{% if waiting %} hx-get="{% url 'submission-results' submission.pk %}" hx-trigger="every 2s" hx-swap="outerHTML"{% endif %}>
+  <h2>{% translate "Result" %}</h2>
+  {% if waiting %}
+    <p aria-busy="true">{{ submission.get_status_display }}…</p>
+  {% else %}
+    <p><strong>{{ submission.get_verdict_display }}</strong>{% if submission.score is not None %} · {% translate "Score" %}: {{ submission.score|floatformat:"-2" }}{% endif %}</p>
+  {% endif %}
+
+  {% if submission.subtask_scores %}
+  <table>
+    <thead><tr><th>{% translate "Subtask" %}</th><th>{% translate "Score" %}</th></tr></thead>
+    <tbody>
+    {% for subtask in submission.subtask_scores %}
+      <tr><td>{{ subtask.name }}</td><td>{{ subtask.score|floatformat:"-2" }} / {{ subtask.points|floatformat:"-2" }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  {% if is_author and submission.verdict == "CE" and submission.compile_log %}
+  <h3>{% translate "Compiler output" %}</h3>
+  <pre><code>{{ submission.compile_log }}</code></pre>
+  {% endif %}
+
+  {% if tests %}
+  <table>
+    <thead><tr><th>{% translate "Test" %}</th><th>{% translate "Result" %}</th><th>{% translate "Time" %}</th><th>{% translate "Memory" %}</th><th></th></tr></thead>
+    <tbody>
+    {% for test in tests %}
+      <tr><td>{{ test.name }}</td><td>{{ test.get_verdict_display }}</td><td>{{ test.time_ms|ms }}</td><td>{{ test.memory_kb|mb }}</td><td>{{ test.message }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</section>
