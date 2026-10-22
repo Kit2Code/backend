@@ -9,8 +9,9 @@ It is written in Python only: Django 5.2 with server-rendered templates (plus ht
 site, and a Python judge worker that drives isolate. It runs as one Docker Compose app on a small
 home server, next to an existing CMS installation.
 
-> **Status:** early development. The repository skeleton, the dev stack and the CI checks exist;
-> problems, judging and the admin pages are still being built.
+> **Status:** early development. Students can sign in, read problems, submit and see their
+> results live, with lists, a ranking and profiles; the admin pages and the production deployment
+> are still being built.
 
 ## Quick start (development)
 

@@ -7,6 +7,7 @@ first failure), in name order.
 
 import time
 import unicodedata
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -60,11 +61,14 @@ def judge(
     slot: Slot,
     time_scale: float = 1.0,
     timeline: dict[str, float] | None = None,
+    on_test: Callable[[TestResult], None] | None = None,
 ) -> JudgeResult:
     """Judge `source` (in language `lang`) on the problem version in `problem_dir`.
 
     `timeline`, if given, gets the wall-clock times when the first test's box was ready (after its
-    memory reservation) and when the last test finished.
+    memory reservation) and when the last test finished. `on_test`, if given, is called with each
+    test's result as soon as it is known (the worker posts it as progress); if it fails, judging
+    carries on.
 
     An invalid request raises SubmissionError (or ProblemImportError for a broken problem folder).
     Anything else that goes wrong while judging (isolate failing, the disk filling up, a bug) is
@@ -113,13 +117,18 @@ def judge(
             tests.append(_test_error(name, str(error)))
         except Exception as error:
             tests.append(_test_error(name, _internal(error)))
+        if on_test is not None:
+            try:
+                on_test(tests[-1])
+            except Exception:  # noqa: S110 - progress is only a nicety; the final result counts
+                pass
     if timeline is not None:
         timeline["run_finished"] = time.time()
     return _summarise(problem, checked.test_names, tests, compiled.log, box_id)
 
 
 def run_limits(problem: Problem, lang: str, time_scale: float) -> Limits:
-    """SPEC run limits: CPU = TL x time_scale x language factor, wall = 2 x that + 1 s."""
+    """Run limits: CPU = TL x time_scale x language factor, wall = 2 x that + 1 s."""
     factor = next((f for key, f in problem.lang_time_factor.items() if key == lang), 1.0)
     cpu = problem.time_limit_ms / 1000 * time_scale * factor
     memory_kb = problem.memory_limit_mb * 1024

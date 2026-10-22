@@ -464,3 +464,55 @@ symlinked folder point at `solutions/`.
 **Choice:** neither is vendored yet. htmx comes with the submission results page; KaTeX when
 statements need math rendering.
 **Why:** nothing in the current pages uses them.
+
+## 2026-10-22: Submit limits: cooldown and waiting count from rows, hourly count in the limiter
+
+**Choice:** a submit locks the user's row (`select_for_update`), then checks: no submission of
+theirs in the last 10 s, fewer than 3 of theirs queued or judging (both read from `Submission`),
+and the hourly count through `core/ratelimit.py` (fixed one-hour windows). Only a valid form gets
+this far, so a typo doesn't use up the hour. Requests over 256 KB are refused (413) before Django
+reads the body; an uploaded file wins over the text box.
+**Why:** the limiter's fixed windows suit an hourly cap but not a cooldown (two submits 0.2 s apart
+could fall into two 10-second windows); the rows give an exact cooldown for free. The row lock
+makes two submits sent at the same moment count one after the other.
+**Alternatives:** everything in the limiter (inexact cooldown); everything from rows (would mean a
+second rate-limit mechanism for the hourly cap).
+
+## 2026-10-22: Live results by polling a fragment with htmx
+
+**Choice:** htmx 2.0.4 is vendored (replacing "htmx later" above; KaTeX is still later). While a
+submission is queued or judging, its results section carries `hx-get` + `hx-trigger="every 2s"`
+and htmx swaps in a fresh copy from `/submissions/<id>/results`; the finished copy has no `hx-*`
+attributes, so polling stops by itself. Pages and fragment are `Cache-Control: no-store`.
+Per-test times are shown rounded to 10 ms and memory to 0.1 MB; the compile log only for CE,
+and only to the submission's author, because compiler messages quote source lines.
+**Why:** no WebSockets or extra services; a 2 s poll costs one small query per open page. Finer
+time and memory figures are noise, and exact figures could help someone probe the machine.
+**Alternatives:** server-sent events (needs a long-lived connection per viewer through Cloudflare
+and gunicorn workers); a full page reload (loses the reader's scroll position).
+
+## 2026-10-22: Ranking and "solved"
+
+**Choice:** the ranking sums `UserProblemBest.best_score` over visible problems per active user in
+one grouped query (zero totals left out), ordered by total, then by the latest `reached_at` among
+the user's bests (whoever reached their total first wins), then by username. "Solved" on a profile
+means the best score equals the current version's maximum from `problem.yaml` (cached per version).
+**Why:** the covering index `upbest_rank_idx` serves the grouped query; the maximum score lives in
+the problem files, and a profile has few rows, so reading it there is cheap. Hidden problems and
+disabled users never show.
+**Alternatives:** storing a `max_score` column on the version (a migration for one number we can
+read from the cached format); dense ranks with shared places (the time tie-break makes them rare).
+
+## 2026-10-22: The internal judge API trusts the worker's token, not its numbers
+
+**Choice:** messages refuse NaN and Infinity (`allow_inf_nan=False`); scores, points, times and
+memory must be ≥ 0, below fixed caps (1 hour, a 32-bit memory column), and a score may not exceed
+its maximum (with 1e-6 slack for float sums). Anything else is 400 and nothing is stored. The claim
+builds its reply inside the same transaction as the lease, so if the reply can't be built (for
+example a `time_scale` outside (0, 10]) the claim rolls back: the job stays queued and keeps its
+tries. The worker's HTTP client never follows a redirect.
+**Why:** a single bad value (NaN never compares greater) would freeze a user's best score and the
+ranking; a bad setting would otherwise use up every queued job's tries and turn them into judge
+errors; a followed redirect would re-send the bearer token to the host in the `Location` header.
+**Alternatives:** clamping bad numbers (hides a broken worker); checking `max_score` against the
+problem files (left for later; the worker reads the same files).

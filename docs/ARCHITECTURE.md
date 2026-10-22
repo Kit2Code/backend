@@ -116,7 +116,7 @@ switch to a custom user model later without a painful data migration.
 |---|---|
 | `accounts` | `User` (username, display name, school; students have no usable password), `GoogleIdentity` (issuer + Google account id, one per user) |
 | `problems` | `Problem` (slug, titles, visible or hidden, current version, tags), `ProblemVersion` (one folder in the store, its hash and import report), `Tag` |
-| `judging` | `Submission`, `TestResult`, `JudgeJob` (the queue), `Worker`, `UserProblemBest` (best score per user and problem, for the ranking) *(used from the submissions milestone on)* |
+| `judging` | `Submission`, `TestResult`, `JudgeJob` (the queue), `Worker`, `UserProblemBest` (best score per user and problem, for the ranking) |
 | `core` | `SiteSetting` (one row: grading paused, time scale, registration open, announcement, Google client), `PauseWindow`, `AuditLog`, `RateLimitCounter`, `BackupRun`, `SetupToken` |
 
 Two queries get indexes made for them, checked with `EXPLAIN` in `web/tests/test_models.py`: the
@@ -170,6 +170,22 @@ covering index on the per-user best scores).
   downloadable. A name must be on the list; then `problems/store.py` refuses `..`, absolute paths,
   a symlink anywhere in the path, and anything that isn't a regular file. Tests, solutions,
   checkers, other grader files and `problem.yaml` are never served.
+- **Submitting** (`judging/views.py`, `/problems/<slug>/submit`, signed-in users): a language the
+  problem allows, and code typed in or uploaded (at most 64 KB as UTF-8; bodies over 256 KB are
+  refused before they are read). The submit locks the user's row, then checks the limits: 10 s
+  since their last submission and at most 3 waiting (both counted from their `Submission` rows), and
+  120 per hour (`core/ratelimit.py`). The `Submission` and its `JudgeJob` are created in one
+  transaction.
+- **Submission page** (`/submissions/<id>`): verdict, score, subtask scores, per-test results (time
+  rounded to 10 ms, memory to 0.1 MB) and, for its author only, the compiler output for a compile
+  error (it quotes source lines; others see just the verdict). While the
+  submission waits, htmx (vendored) fetches `/submissions/<id>/results` every 2 s and swaps it in;
+  the finished fragment has no htmx attributes, so polling stops. The code is shown, and served at
+  `/submissions/<id>/source`, only to its author; anyone else gets 404.
+- **Lists, ranking and profiles:** `/submissions` (everyone's, filters by problem, user and verdict,
+  50 per page, never code), `/submissions/mine`, `/ranking` (sum of best scores on visible problems,
+  ties to whoever reached their total first) and `/users/<username>` (solved = full marks on the
+  current version, and attempted). Hidden problems and disabled users never appear.
 
 ## The judge
 
@@ -203,18 +219,42 @@ kernel versions, the cgroup type and whether it is writable, `memory.max`/`memor
 judge cgroup, the container's effective capabilities, seccomp mode and AppArmor label, the
 box → CPU map with each judge CPU's SMT siblings and P/E-core kind, warnings (judge CPUs sharing a
 core, P/E mix, swap), and the read-only `isolate-check-environment` output. It only reads. The dev
-result is kept in `docs/env-dev.json`. *(planned)* The worker sends it to web-admin at start and
-every 10 minutes, for the admin System page, since the home server has no terminal.
+result is kept in `docs/env-dev.json`. The worker sends it to web-admin at start and every 10
+minutes (it is stored on the `Worker` row; the admin System page that shows it is *(planned)*),
+since the home server has no terminal.
 
-*(planned)* The worker **polls** web-admin's `/internal/*` API over `judge_net`: it claims a job,
-sends heartbeats and progress, and posts the result. The job carries everything needed (source code,
-problem version), so the worker never touches the database. Request and response bodies are
-defined once in `common/grader_common/` and shared by both sides.
+### The queue and the worker loop
+
+The queue is the `JudgeJob` table in Postgres, so restarting the web roles loses nothing. The
+worker (`judge-worker`, `grader_worker/client.py`) **polls** web-admin's internal API over
+`judge_net` with its bearer token; request and response bodies are pydantic models defined once in
+`common/grader_common/api.py` and shared by both sides. The job carries everything needed (source
+code, problem version path, time scale), so the worker never touches the database.
+
+```
+worker                                   web-admin (judging/internal.py)
+  hello {id, slots, env report}   ──►    upsert Worker
+  claim {free slots}              ──►    requeue expired leases; take the best queued job
+                                  ◄──    job (lease 60 s)  or  204 nothing to do / paused
+  heartbeat {job ids} every 10 s  ──►    extend leases; reply with jobs no longer ours
+  progress {tests so far}         ──►    store them (the page shows them live)
+  complete {result} / fail {why}  ──►    store result + best score / requeue (3 tries, then JE)
+```
+
+- **Claim** runs in one transaction: running jobs whose lease ran out go back to the queue (or
+  become a judge error after 3 tries), then `select_for_update(skip_locked=True)` picks the queued
+  job with the highest priority (fresh submissions first), oldest first, so two workers never get
+  the same job. Nothing is handed out while grading is paused or inside a pause window.
+- Progress, complete and fail are accepted only from the worker that holds the lease (else 409,
+  and the worker drops the job). Results of a job whose lease was lost are thrown away.
+- The worker judges each job in its own thread (one per slot), checks the problem path (two plain
+  folder names inside the store, no symlinks), and retries with back-off while web-admin is away.
+  If the worker dies, its jobs come back after their 60 s lease.
 
 Notes for the web side, from the sandbox audit:
 - The worker reports exact time, wall time and memory per test. A submission could encode facts
-  about a hidden test's input in how long it runs or how much it allocates, so pages should round
-  these values (and submissions are rate-limited anyway).
+  about a hidden test's input in how long it runs or how much it allocates, so pages round these
+  values (and submissions are rate-limited).
 - The shared memory budget has no queue: a waiting large step is retried every 50 ms, so with a tight
   `JUDGE_MEM_TOTAL` a big job can wait longer than a fair queue would make it.
 
@@ -250,8 +290,8 @@ graders and reference solutions (details for problem setters: [PROBLEM_FORMAT.md
 | Path | Contents |
 |---|---|
 | `pyproject.toml`, `uv.lock` | uv workspace root: ties the three Python packages together; one lockfile; ruff, mypy and pytest settings |
-| `web/` | Django project: `config/` (settings, the two URL configurations, the admin site), `accounts/` (users, Google sign-in), `core/` (zones, rate limits, site settings, base template), `problems/` (pages, files, store), `judging/` (submission and queue models), `locale/` (translations), `tests/` (`e2e/`: browser tests), `Dockerfile` |
-| `judge/worker/` | the worker package, its `Dockerfile`, `isolate.conf` and entrypoint |
+| `web/` | Django project: `config/` (settings, the two URL configurations, the admin site), `accounts/` (users, Google sign-in), `core/` (zones, rate limits, site settings, base template), `problems/` (pages, files, store), `judging/` (submissions, queue, internal API, lists, ranking), `locale/` (translations), `tests/` (`e2e/`: browser tests, including real judging and worker crashes), `Dockerfile` |
+| `judge/worker/` | the worker package (`client.py`: the job loop; `judge.py`: one submission), its `Dockerfile`, `isolate.conf` and entrypoint |
 | `common/grader_common/` | code shared by web and worker: problem format, scoring, importer (`grader-import`) |
 | `fixtures/` | small made-up problems for tests (native and CMS Italian format) |
 | `deploy/dev/compose.dev.yml` | the development stack (db, web, web-admin, worker, edge, fake-oidc) |

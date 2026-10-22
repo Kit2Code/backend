@@ -47,7 +47,7 @@ select = ["E", "F", "W", "I", "B", "UP", "S", "DJ"]
 [tool.mypy]
 python_version = "3.12"
 strict = true
-mypy_path = ["web", "judge/worker/src", "common", "judge/worker/tests/sandbox"]
+mypy_path = ["web", "judge/worker/src", "common", "judge/worker/tests/sandbox", "judge/worker/tests/unit"]
 explicit_package_bases = true
 exclude = ['^\.devdata/', '^fixtures/', '/migrations/']
 plugins = ["mypy_django_plugin.main", "pydantic.mypy"]

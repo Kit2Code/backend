@@ -27,7 +27,10 @@ and sets up the dev stack's fake Google sign-in.
 To see a problem on the dev site, import one:
 `uv run python web/manage.py import_problem fixtures/problems/aplusb --visible`. To sign in, use
 "Sign in with Google" on <http://127.0.0.1:8000>: in dev it opens a fake sign-in page
-(`127.0.0.1:8099`) where you pick a test account.
+(`127.0.0.1:8099`) where you pick a test account. Then open the problem and press "Submit": the
+dev worker (`judge-worker`) picks the job up within a couple of seconds, and the submission page
+updates as each test finishes. `docker compose -f deploy/dev/compose.dev.yml logs -f worker` shows
+what the worker is doing.
 
 ## Day-to-day commands
 
