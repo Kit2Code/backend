@@ -39,6 +39,8 @@ x-web-env: &web-env
   GRADER_SECRETS_DIR: /run/secrets/web
   GRADER_WORKER_SECRETS_DIR: /run/secrets/worker
   GRADER_DB_HOST: db
+  # The edge's app_net address: only it may say who the client is (core.ratelimit.client_ip).
+  GRADER_EDGE_ADDRESSES: "10.89.90.10"
   GRADER_STATIC_FROM_APPS: "1"
   TZ: Asia/Bangkok
 
@@ -155,14 +157,22 @@ services:
       dockerfile: judge/worker/Dockerfile
     command: ["judge-worker"]
     # The production profile (deploy/zimaos/grader.compose.yml), so every sandbox test runs under it.
-    cap_add: [SYS_ADMIN, NET_ADMIN]
-    security_opt: ["seccomp=unconfined", "apparmor=unconfined"]
-    cgroup: host
+    # Only what isolate needs (docs/DECISIONS.md, "Worker profile"); no MKNOD, no NET_RAW.
+    cap_drop: [ALL]
+    cap_add: [SYS_ADMIN, NET_ADMIN, SETUID, SETGID, CHOWN, DAC_OVERRIDE, FOWNER, SYS_CHROOT]
+    # Docker's default seccomp filter for the worker; every box adds our own (box-exec).
+    security_opt: ["apparmor=unconfined", "no-new-privileges:true"]
+    pids_limit: 512
+    cgroup: private
+    # Like production: the worker on one CPU, the boxes on JUDGE_BOX_CPUS, one memory limit for both.
+    cpuset: "9,10,11"
+    mem_limit: 1408m
     init: true
     restart: unless-stopped
     environment:
       JUDGE_SLOTS: "2"
       JUDGE_BOX_CPUS: "10,11"
+      WORKER_CPUS: "9"
       JUDGE_MEM_TOTAL: "1024M"
       WEB_INTERNAL_URL: "http://web-admin:8000"
       TZ: Asia/Bangkok
@@ -178,10 +188,12 @@ services:
       - ../../.devdata/secrets/worker:/run/secrets/worker:ro
     networks: [judge_net]
     healthcheck:
-      test: ["CMD", "test", "-d", "/sys/fs/cgroup/grader-judge"]
+      # The judge loop is going and some slot still works (grader_worker.health).
+      test: ["CMD", "judge-health"]
       interval: 5s
       timeout: 5s
       retries: 10
+      start_period: 60s
 
 networks:
   app_net:

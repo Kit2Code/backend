@@ -32,7 +32,7 @@ from pydantic import BaseModel, ValidationError
 
 from grader_common import api
 from grader_common.importer.errors import ProblemImportError
-from grader_worker import config, selftest, tasks
+from grader_worker import config, health, selftest, tasks
 from grader_worker.env_report import build_report
 from grader_worker.isolate import IsolateError
 from grader_worker.judge import MAX_MESSAGE_CHARS, SubmissionError, judge
@@ -225,6 +225,7 @@ class JudgeLoop:
         last_hello = time.monotonic()
         failures = 0
         while not self._stop.is_set():
+            self._alive()
             if time.monotonic() - last_hello > self.hello_seconds:
                 last_hello = time.monotonic()
                 self._try_hello()
@@ -246,6 +247,13 @@ class JudgeLoop:
 
     # ---- helpers ----
 
+    def _alive(self) -> None:
+        """Tell the healthcheck the loop is still going (grader_worker.health)."""
+        try:
+            health.touch_alive(self.pool.state_dir)
+        except OSError as error:
+            logger.warning("can't write the alive file: %s", error)
+
     def _backoff(self, failures: int) -> float:
         return self.retry_seconds[min(failures, len(self.retry_seconds) - 1)]
 
@@ -264,6 +272,7 @@ class JudgeLoop:
     def _say_hello_until_it_works(self) -> None:
         failures = 0
         while not self._stop.is_set() and not self._try_hello():
+            self._alive()
             self._stop.wait(self._backoff(failures))
             failures += 1
         if not self._stop.is_set():

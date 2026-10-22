@@ -95,6 +95,18 @@ because Docker silently creates an empty directory when a mounted file doesn't e
 admin role also mounts the worker's folder (named by `GRADER_WORKER_SECRETS_DIR`) to read the
 worker token; the public role never has it.
 
+In production the ops image's `secrets-init` makes the secrets once and gives each service a copy:
+`db/` (the Postgres superuser's password and the app role's), `web/` (the app role's password and
+the Django key), `worker/` (the worker token) and `backup/` (the superuser's password).
+
+**Database roles.** The web roles log in as `grader_app` (`GRADER_DB_USER`), a plain role that owns
+the database and its tables but is not a superuser, so it can't run shell commands through Postgres
+or read the server's files. The ops image's `db-init` one-shot makes it at every start, after the
+database is up and before the web roles, and hands it anything the superuser still owns. The
+superuser `grader` is used only by Postgres itself, `db-init` and the backups. Dev and CI use the
+superuser, because the tests create their own database (DECISIONS.md, "A plain database role for
+the web site").
+
 The Google client secret is typed into the admin site's **Sign-in** page (write-only: the page only
 says "set"; `manage.py set_google_client` does the same from stdin, for dev) and kept in the
 database **encrypted**
@@ -150,7 +162,9 @@ covering index on the per-user best scores).
   updated with a single `INSERT … ON CONFLICT DO UPDATE … RETURNING count`, so it is exact across
   processes. The key is a hash, so user input never reaches the table as text. The client address
   is Cloudflare's `Cf-Connecting-Ip` on the public site, otherwise the last `X-Forwarded-For` entry
-  (written by the edge), otherwise the TCP peer.
+  (written by the edge), otherwise the TCP peer. The two headers count only when the request comes
+  straight from the edge's address (`GRADER_EDGE_ADDRESSES`); from anywhere else (for example the
+  worker, which can reach web-admin directly) the TCP peer counts.
 
 ## Pages, languages and static files
 
@@ -204,19 +218,33 @@ namespace (`judge/worker/isolate.base`):
 | sandbox user/group ids | from 60000 | from 70000 |
 | box ids | from 0 | 100–109 |
 
-The worker's entrypoint (`judge/worker/entrypoint.sh`, which runs `grader_worker/setup.py`) creates
-the `grader-judge` cgroup and turns on the `cpuset`, `memory` and `pids` controllers isolate needs.
-It also caps the total memory of all sandboxes (`JUDGE_MEM_TOTAL`, no swap) and pins each box to
-its own CPU (`JUDGE_BOX_CPUS`).
+The worker runs in its **own cgroup namespace** (`cgroup: private`): it sees only its container's
+cgroup, never the host's or other containers'. Its entrypoint (`judge/worker/entrypoint.sh`, which
+runs `grader_worker/setup.py`) re-mounts that cgroup tree read-write, moves the worker's own
+processes into a leaf `worker` (pinned to `WORKER_CPUS`), creates the `grader-judge` cgroup next to
+it and turns on the `cpuset`, `memory` and `pids` controllers isolate needs (and `io`, when the host
+has it). It also caps the total memory of all sandboxes (`JUDGE_MEM_TOTAL`, no swap) and pins each
+box to its own CPU (`JUDGE_BOX_CPUS`). The container's memory limit is `JUDGE_MEM_TOTAL` plus room
+for the worker itself.
 
-isolate needs `CAP_SYS_ADMIN`, `CAP_NET_ADMIN` and write access to the host's cgroup tree, so the
-worker container gets exactly those (`cap_add`, `cgroup: host`; its entrypoint re-mounts the cgroup
-tree read-write), in dev and in production alike, not `privileged` (DECISIONS.md, "Worker profile
-outcome"). Every call to isolate has a deadline, so a stuck sandbox start becomes a judge error
-instead of a stuck judging slot. isolate itself is not setuid, because the worker already runs as
-root. Either way it is
-the most dangerous container, which is why it has no internet, no route to the database and no
-database password.
+The container drops every capability and adds back only the eight isolate needs (`SYS_ADMIN`,
+`NET_ADMIN`, `SETUID`, `SETGID`, `CHOWN`, `DAC_OVERRIDE`, `FOWNER`, `SYS_CHROOT`), with
+no-new-privileges, a process limit and Docker's default seccomp filter; not `privileged`, and no
+`MKNOD`: the boxes' `/dev` is made of bind mounts of the worker's own device files (DECISIONS.md,
+"Worker profile"). Every program in a box starts through `box-exec`
+(`judge/worker/launcher/box-exec.c`), a tiny static program that installs our own seccomp filter
+(io_uring, bpf, the key ring, perf events, ptrace, new namespaces and mounts, kernel modules all
+fail) and then runs the real program (DECISIONS.md, "Seccomp filter for sandboxed programs").
+
+While a program runs, the worker watches its box (`grader_worker/diskwatch.py`): more than
+`JUDGE_BOX_DISK_MB` kept on disk, or more than `JUDGE_BOX_WRITE_MB` written to disk, stops the run
+with OLE (DECISIONS.md, "Disk limits per box").
+
+Every call to isolate has a deadline, so a stuck sandbox start becomes a judge error instead of a
+stuck judging slot. isolate itself is not setuid, because the worker already runs as root. Either
+way it is the most dangerous container, which is why it has no internet, no route to the database
+and no database password. Its healthcheck, `judge-health` (`grader_worker/health.py`), fails when
+the judge loop stops going round or every slot is broken.
 
 `judge-env` (`grader_worker/env_report.py`) prints an **environment report** as JSON: isolate and
 kernel versions, the cgroup type and whether it is writable, `memory.max`/`memory.swap.max` of the
@@ -341,7 +369,8 @@ sign-out come from Django's auth signals. Secrets never go into the log.
 
 The production install is one ZimaOS app: `deploy/zimaos/grader.compose.yml`, with four images that
 the release workflow builds and pushes to GHCR when a `vX.Y.Z` tag is pushed
-(`scripts/build-images.sh`): `grader-web` (one image, both roles; gunicorn as an unprivileged user),
+(`scripts/build-images.sh`), only after the same checks as CI pass, printing each image's digest so
+the compose file can pin exactly those images: `grader-web` (one image, both roles; gunicorn as an unprivileged user),
 `grader-worker`, `grader-edge` and `grader-ops`. Postgres and cloudflared are the upstream images,
 pinned by digest. All data lives under `/DATA/AppData/grader/` (`postgres/`, `problems/`,
 `uploads/`, `backups/`, `judge-cache/`, `secrets/`). CPU 3 runs the services and CPUs 4–5 the
@@ -352,8 +381,12 @@ example over Tailscale) go in `GRADER_ADMIN_EXTRA_URLS`.
 `scripts/prod-smoke.sh` runs that same compose file on a development machine (images built locally,
 data in a temporary folder, a "probe" container in place of the tunnel) and checks the zones, that
 nothing but the edge's `:8090` reaches the internet, the network isolation, the secrets, a
-submission judged through the public edge, the self-test, a backup restored into a scratch
-database, and that only web-admin migrates.
+submission judged through the public edge, the worker's profile (capabilities, cgroup namespace,
+seccomp, the box launcher, its healthcheck), the self-test, a backup restored into a scratch
+database, that only web-admin migrates, and that the web roles use the plain database role.
+
+The production edge refuses to start when a Google upstream isn't `https://`
+(`GRADER_REQUIRE_HTTPS_UPSTREAMS=1`, `deploy/edge/edge-start.sh`).
 
 ## Code layout
 

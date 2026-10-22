@@ -13,6 +13,7 @@ judge-run = "grader_worker.cli:judge_run"
 judge-env = "grader_worker.cli:judge_env"
 judge-worker = "grader_worker.client:judge_worker"
 judge-selftest = "grader_worker.cli:judge_selftest"
+judge-health = "grader_worker.cli:judge_health"
 
 [build-system]
 requires = ["uv_build>=0.13,<0.14"]

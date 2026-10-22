@@ -6,6 +6,9 @@ Runs at every start of the app, before the other services, with the secrets fold
 folder with copies of only the secrets it needs, owned by the user it runs as, readable by nobody
 else. Copies and modes are written again on every start, so a mistake made by hand fixes itself.
 
+The web roles get the password of the plain database role (db_app_password, see db_init.py),
+never the superuser's.
+
 Folders, not single files, are mounted into the services: Docker turns a missing file mount into
 an empty folder, which would break the first start (docs/DECISIONS.md).
 
@@ -25,6 +28,8 @@ MASTER = ".master"
 # How each secret is made. token_urlsafe(n) gives about 1.3 × n characters.
 MAKERS: dict[str, Callable[[], str]] = {
     "db_password": lambda: secrets.token_urlsafe(32),
+    # The web roles' database role, grader_app (made by db-init; not a superuser).
+    "db_app_password": lambda: secrets.token_urlsafe(32),
     "django_secret_key": lambda: secrets.token_urlsafe(64),
     "worker_token": lambda: secrets.token_urlsafe(32),
 }
@@ -39,8 +44,9 @@ WEB_FOLDERS = (Path("/data/uploads"), Path("/data/problems"))
 # Service folder → (owner, the secrets it gets). web-admin reads the worker token too, so the
 # worker's folder belongs to the web user; the worker runs as root and can read it anyway.
 CONSUMERS: dict[str, tuple[int, tuple[str, ...]]] = {
-    "db": (POSTGRES_UID, ("db_password",)),
-    "web": (WEB_UID, ("db_password", "django_secret_key")),
+    # db-init (root, ops image) reads this folder too: it sets grader_app's password.
+    "db": (POSTGRES_UID, ("db_password", "db_app_password")),
+    "web": (WEB_UID, ("db_app_password", "django_secret_key")),
     "worker": (WEB_UID, ("worker_token",)),
     "backup": (ROOT_UID, ("db_password",)),
 }
@@ -72,6 +78,9 @@ def give_copies(root: Path, values: dict[str, str]) -> None:
         _own(folder, ROOT_UID, 0o700)  # writable while we fill it
         for name in names:
             _write(folder / name, values[name], uid)
+        for old in folder.iterdir():  # a secret this service no longer gets
+            if old.name not in names:
+                old.unlink()
         _own(folder, uid, 0o500)
         print(f"secrets-init: {folder_name}/: {', '.join(names)}")
 

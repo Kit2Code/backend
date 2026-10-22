@@ -201,3 +201,23 @@ def test_seccomp_modes(tmp_path: Path, value: str, mode: str) -> None:
     write(tmp_path, "/proc/self/status", STATUS.replace("Seccomp:\t2", f"Seccomp:\t{value}"))
     report = build_report(SETTINGS, root=tmp_path, run=fake_run, kernel="6.8.0")
     assert report["security"]["seccomp"] == mode
+
+
+@pytest.mark.parametrize(
+    ("cgroup", "namespace"),
+    [
+        ("0::/worker\n", "private"),
+        ("0::/\n", "private"),
+        ("0::/docker/0123abcd\n", "host"),
+        ("0::/system.slice/docker-0123abcd.scope\n", "host"),
+    ],
+)
+def test_the_report_says_which_cgroup_namespace_the_worker_is_in(
+    tmp_path: Path, cgroup: str, namespace: str
+) -> None:
+    fake_host(tmp_path, siblings={10: "10\n", 11: "11\n"}, swap_kb=0)
+    write(tmp_path, "/proc/self/cgroup", cgroup)
+    report = build_report(SETTINGS, root=tmp_path, run=fake_run, kernel="6.8.0")
+    assert report["cgroup"]["namespace"] == namespace
+    warned = any("cgroup namespace" in warning for warning in report["warnings"])
+    assert warned == (namespace == "host")

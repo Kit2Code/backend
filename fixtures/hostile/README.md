@@ -11,7 +11,8 @@ They are tests, not examples. Never weaken a limit to make one of them pass.
 |---|---|---|
 | `fork_bomb.c` | forks forever | TLE; never more than one process in its box; the worker still judges afterwards |
 | `write_1gb.c` | 1 GB to stdout | OLE at the 64 MB file-size limit; no file over the limit is left |
-| `write_1gb_many_files.c` | 1 GB as 32 files of 32 MB | stopped by a limit, or finishes inside the box (AC) if there is room; never JE; nothing is left after the box is cleaned |
+| `write_1gb_many_files.c` | 1 GB as 32 files of 32 MB | OLE at the box's disk-space limit (`test_hostile_disk.py`); nothing is left after the box is cleaned |
+| `disk_churn.c` | writes a 60 MB file, forces it to disk, deletes it, again and again | OLE at the box's limit on bytes written to disk (`test_hostile_disk.py`) |
 | `network.c` | TCP/UDP to `1.1.1.1:53`, TCP to `web-admin:8000`, any non-loopback interface | prints `CONTAINED` (AC) |
 | `read_secrets.c` | `/etc/shadow`, the worker's `/proc/1/*`, secrets, fixtures, problems | prints `CONTAINED` (AC) |
 | `write_outside.c` | creating files in `/`, system folders, isolate's and the worker's folders | prints `CONTAINED` (AC); no marker exists in the worker afterwards |
@@ -30,6 +31,17 @@ They are tests, not examples. Never weaken a limit to make one of them pass.
 | `compile_error_flood.cpp` | a million compile errors from one line of macros | CE within the compile limits; compile log at most 64 KB |
 | `compile_huge_binary.c` | a 1 GB initialised array, so a 1 GB executable | CE (file-size limit); compile log at most 64 KB |
 | `devices.c` | opens `/dev/kmsg`, `/dev/mem`, disks, FUSE, vsock, KVM, `/dev/net/tun`, ...; lists `/dev`; makes its own device node (`test_hostile_devices.py`) | prints `CONTAINED` (AC): `/dev` holds only `null`, `zero`, `full`, `random`, `urandom` and `shm`, nothing else opens, and those five still work |
+| `cgroup_escape.c` | writes to `cgroup.procs`, `memory.max`, `cgroup.kill`, `cgroup.freeze` (directly, climbing up, through `/proc`) and mounts its own cgroup2 (`test_hostile_cgroup.py`) | prints `CONTAINED` (AC) |
+| `mknod_dev.c` | makes device nodes for a disk, the kernel log, memory and a loop device, then opens them (`test_worker_profile.py`) | prints `CONTAINED` (AC) |
+| `seccomp_surface.c` | io_uring, bpf, userfaultfd, keyctl/add_key, perf_event_open, a new user namespace, ptrace on its parent (`test_hostile_seccomp.py`) | prints `CONTAINED` (AC): the box launcher's seccomp filter makes each call fail |
+| `proc_sys_write.c` | opens `/proc/sys/kernel/core_pattern`, `/proc/sysrq-trigger` and other kernel settings for writing; unmounts, mounts over or remounts `/proc/sys` (`test_hostile_seccomp.py`) | prints `CONTAINED` (AC) |
+| `launcher_present.c` | `ptrace(PTRACE_TRACEME)`, which only the box's own filter (box-exec) denies (`test_hostile_audit.py`) | prints `CONTAINED` (AC): proves box-exec is in front of the program |
+| `syslog_read.c` | reads the host's kernel log (`syslog` READ_ALL) | prints `CONTAINED` (AC) |
+| `clone_ns.c` | clone/clone3 with each CLONE_NEW* flag, fsopen, open_tree, move_mount, memfd_secret, pidfd_getfd, kcmp | prints `CONTAINED` (AC) |
+| `x32_syscall.c` | an x32 system call and a 32-bit `int 0x80` call | RE: the filter kills it (SIGSYS) |
+| `disk_deep_tree.c` | 2200 nested folders (longer than PATH_MAX), then 64 MB files at the bottom | OLE or TLE: a folder the watch can't read stops the box |
+| `disk_unlinked.c` | writes 64 MB to files it already deleted (still open) | OLE (bytes written) or TLE |
+| `inode_flood.c` | empty files until stopped | OLE (too many files) or TLE |
 | `whitediff_bomb.c` | 64 MB of `1 ` on one line, for white-diff in the worker (`test_hostile_whitediff.py`) | WA (or OLE/MLE), never JE, within seconds |
 
 They are judged against `problem/` (1 s, 256 MB, expected output `CONTAINED`). `symlink_file_output.c` is judged

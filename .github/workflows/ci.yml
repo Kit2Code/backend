@@ -34,6 +34,8 @@ jobs:
       GRADER_SECRETS_DIR: ${{ github.workspace }}/../ci-secrets
       GRADER_WORKER_SECRETS_DIR: ${{ github.workspace }}/../ci-secrets-worker
       GRADER_DB_HOST: 127.0.0.1
+      # Tests make requests from 127.0.0.1, standing in for the edge.
+      GRADER_EDGE_ADDRESSES: 127.0.0.1
       GRADER_ROLE: admin
       # This job has no worker container; the sandbox suite runs in its own job.
       GRADER_SKIP_SANDBOX: "1"
@@ -41,6 +43,8 @@ jobs:
       GRADER_STATIC_FROM_APPS: "1"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           version: "0.13.3"
@@ -54,8 +58,8 @@ jobs:
         run: |
           mkdir -p "$GRADER_SECRETS_DIR" "$GRADER_WORKER_SECRETS_DIR"
           echo "ci-only-throwaway" > "$GRADER_SECRETS_DIR/db_password"
-          python3 -c 'import secrets; print(secrets.token_urlsafe(48))' > "$GRADER_SECRETS_DIR/django_secret_key"
-          python3 -c 'import secrets; print(secrets.token_urlsafe(48))' > "$GRADER_WORKER_SECRETS_DIR/worker_token"
+          openssl rand -hex 48 > "$GRADER_SECRETS_DIR/django_secret_key"
+          openssl rand -hex 48 > "$GRADER_WORKER_SECRETS_DIR/worker_token"
       - name: Ruff, mypy and pytest
         run: ./scripts/check.sh
       - name: Migrations are up to date
@@ -74,6 +78,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       # Build only (no push): a broken Dockerfile shows up here, not when a release is tagged.
       - name: Build the four images
         run: scripts/build-images.sh --tag ci
@@ -85,6 +91,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: gitleaks
         # The checkout belongs to the runner user, so tell git inside the container it is safe.
         run: >-

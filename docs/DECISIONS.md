@@ -666,3 +666,128 @@ delegated subtree, dropping MKNOD/NET_RAW, Docker's default seccomp profile) are
 **Why:** NET_ADMIN only affects the worker's own network namespace, which sits on the internal
 `judge_net` with no route out; `privileged` would add every device and capability.
 **Alternatives:** `privileged: true` (the planned fallback; not needed).
+
+## 2026-10-22: Seccomp filter for sandboxed programs
+
+**Choice:** every program in a box (compilers, submissions, checkers) starts through `box-exec`
+(`judge/worker/launcher/box-exec.c`, built static into the worker image). It sets no-new-privileges,
+installs a seccomp filter and then runs the program. The filter allows native x86-64 system calls
+only (32-bit and x32 calls kill the process) and makes these fail with EPERM: io_uring, bpf,
+userfaultfd, keyctl/add_key/request_key, perf_event_open, ptrace and process_vm_*, kernel modules
+and kexec, unshare/setns/mount/umount2/pivot_root, open_by_handle_at, swap, reboot and acct; after
+the audit also syslog (the host's kernel log), the new mount API (fsopen, fsmount, open_tree,
+move_mount, …), pidfd_getfd, kcmp, process_madvise, move_pages, migrate_pages, memfd_secret,
+vmsplice, personality, quotactl and fanotify_init. `clone` with any CLONE_NEW* flag gets EPERM, and
+`clone3` gets ENOSYS (a filter can't read its flags; the C library then uses `clone`). If the
+filter can't be installed the program isn't run. The worker container itself keeps Docker's default
+seccomp profile (isolate works with it), instead of `seccomp=unconfined`.
+**Why:** these interfaces are the usual way from a local program to kernel exploits. Docker's
+default profile alone still allowed `add_key` and `perf_event_open` from a box (the hostile
+`seccomp_surface.c` showed it), and a host may run Docker without it; a filter inside the box doesn't
+depend on the host.
+**Alternatives:** a custom Docker seccomp profile file (needs a file on the host, which the ZimaOS
+install can't have); libseccomp (a library dependency for a 30-rule list).
+
+## 2026-10-22: Disk limits per box
+
+**Choice:** while a program runs in a box, the worker checks the box every 100 ms
+(`judge/worker/src/grader_worker/diskwatch.py`). It stops the run (`cgroup.kill` on the box's
+cgroup) and gives OLE when the box's files take more than `JUDGE_BOX_DISK_MB` (default 256) of disk
+space, or when its processes have written more than `JUDGE_BOX_WRITE_MB` (default 512) to disk
+during the run (the box cgroup's `io.stat`; the worker enables the io controller when the host
+offers it). Both settings must be at least twice the output limit (128 MB). A box the watch can't check is
+stopped too: a folder nested more than 2048 characters deep (or unreadable), more than 20,000 files
+and folders, or any error inside the watch. A file deleted while still open isn't in any folder; its
+data counts as written, and the box's memory and time limits bound it.
+**Why:** isolate limits each file but not a box's total, so a program could fill the NAS's disk
+with many files, or wear it out by writing and deleting over and over. Files stay on the disk, so
+a program's memory is still counted the way CMS counts it.
+**Alternatives:** the box folder on a size-limited tmpfs (simple, but the files would count as the
+program's memory, unlike CMS); disk quotas (need quota support on the host's filesystem and a host
+setting, which the ZimaOS install can't make).
+
+## 2026-10-22: Client addresses only from the edge
+
+**Choice:** the web roles use `Cf-Connecting-Ip` and `X-Forwarded-For` only when the request comes
+straight from the edge (`GRADER_EDGE_ADDRESSES`, the edge's `app_net` address); otherwise the TCP
+peer's address counts. Empty means never trust those headers.
+**Why:** the rate limits and the audit log use this address. The worker can reach web-admin directly
+on `judge_net`, and anything else that can reach a web role could otherwise pick any address for
+itself.
+**Alternatives:** trusting the headers from any private address (too wide: every container is on a
+private address).
+
+## 2026-10-22: Only https to Google from the production edge
+
+**Choice:** the edge image checks at start that the Google token and key upstreams begin with
+`https://` when `GRADER_REQUIRE_HTTPS_UPSTREAMS=1`, which the ZimaOS compose sets; it refuses to
+start otherwise.
+**Why:** the token request carries the app's Google client secret and the keys decide which sign-ins
+are trusted; a plain-http upstream would let anyone on the path read or change them. The dev stack
+and the edge tests use a plain-http stand-in for Google, so the check is a setting and not always on.
+
+## 2026-10-22: Worker healthcheck
+
+**Choice:** the judge loop touches `/run/grader-judge/alive` every time round; `judge-health` (the
+container's healthcheck) fails when that file is missing or older than 90 s, or when every slot is
+marked broken.
+**Why:** the old check (does the cgroup folder exist) stayed green while the loop hung or no slot
+could judge, so ZimaOS showed a healthy app that judged nothing.
+
+## 2026-10-22: A plain database role for the web site
+
+**Choice:** both web roles log in as `grader_app`, a role that isn't a superuser and can't make
+databases or roles. It owns the database and the tables, so web-admin's migrations work. A one-shot
+`db-init` (ops image) makes the role at every start, sets its password from the secrets, and hands
+it anything the superuser still owns. The superuser `grader` is used only by the database itself,
+`db-init` and the backups. The web secrets folder holds only `db_app_password`. Dev and CI keep
+the superuser (`GRADER_DB_USER` unset), because the tests create their own database.
+**Why:** a Postgres superuser can run shell commands in the db container (`COPY ... TO PROGRAM`) and
+read the server's files, so a bug in the web site (an SQL injection) would reach much further.
+**Alternatives:** two roles, a table owner for web-admin and a rows-only role for the public site
+(stricter, but needs a separate secret folder for web-admin; possible later).
+
+## 2026-10-22: Release safety
+
+**Choice:** the release workflow first runs the same checks as CI (a copy of CI's check job, kept
+equal by a test, read-only permissions) and pushes only if they pass. After pushing, it prints
+`ghcr.io/kit2code/grader-*:<version>@sha256:…` for each image in the run's summary
+(`scripts/build-images.sh --digests`), and the ZimaOS compose pins those digests. No checkout keeps
+the job token on disk (`persist-credentials: false`).
+**Why:** a tag on a broken commit would otherwise publish broken images; a version tag can be
+pushed again, but a digest always names the same bytes, so the NAS installs exactly what was tested.
+**Alternatives:** calling CI as a reusable workflow (less copying, but the workflow tests read each
+job's steps, which a reusable call doesn't have).
+
+## 2026-10-22: Worker profile
+
+**Choice:** the worker container runs with `cgroup: private` (its own cgroup namespace) instead of
+`cgroup: host`. Its entrypoint moves the worker into a leaf cgroup `worker` and makes
+`grader-judge` (isolate's cgroup root) next to it, inside the container's own cgroup. It drops every
+capability and adds back only `SYS_ADMIN`, `NET_ADMIN`, `SETUID`, `SETGID`, `CHOWN`,
+`DAC_OVERRIDE`, `FOWNER` and `SYS_CHROOT` (each one tested as needed; `KILL`, `MKNOD` and
+`NET_RAW` are not), with `no-new-privileges`, `pids_limit: 512` and Docker's default seccomp filter.
+The boxes' `/dev` is made of bind mounts of the worker's own `null`, `zero`, `full`, `random` and
+`urandom` instead of `mknod`. The container's memory limit is `JUDGE_MEM_TOTAL` + 384 MB.
+**Why:** this replaces "Worker profile outcome". Root inside the worker (after an escape from
+isolate) could write to the host's whole cgroup tree with `cgroup: host`, for example to lift
+another container's limits or move itself out of its own. In a private namespace it sees and can
+change only its own subtree, which Docker already limits. Every capability left out is one less tool
+after an escape.
+**Alternatives:** `cgroup: host` with a bind mount of a delegated subtree (breaks isolate);
+`privileged` (everything allowed).
+
+## 2026-10-22: Known remaining risk: /proc/sys from root in the worker
+
+**What:** someone who already has root *inside the worker container* (after escaping isolate or
+the kernel) can unmount Docker's read-only cover over `/proc/sys` in a new mount namespace and
+write host-wide kernel settings such as `kernel/core_pattern`, which leads to root on the NAS. The
+worker needs `CAP_SYS_ADMIN` and no AppArmor profile for isolate, and that is what allows it.
+**Why not fixed yet:** the fixes need either a host-side setting (an AppArmor profile loaded on the
+host, or Docker's user-namespace remapping, which changes every container on the host) or running
+isolate inside a user namespace of the worker's own, which locks those mounts but has to be tried
+with isolate's cgroups and sandbox users first. The layers in front of it stay: isolate, the box
+seccomp filter, no capabilities in the box, and a worker with no internet, no database and one
+secret.
+**Next:** a follow-up step tries the user-namespace approach.
+

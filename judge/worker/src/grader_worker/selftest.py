@@ -23,9 +23,8 @@ HOSTILE_PROBLEM = "hostile/problem"  # 1 s, 256 MB, expected output CONTAINED
 FILE_IO_PROBLEM = "hostile/file-io"  # reads in.txt, writes out.txt; the answer is the input
 APLUSB = "problems/aplusb"
 CONTAINED: tuple[VerdictCode, ...] = ("AC",)  # the program printed CONTAINED: every attempt failed
-# Stopped by a limit, or allowed to finish inside the box (AC): anything but a judge error. What
-# matters is that nothing escapes and nothing is left, as the sandbox test checks.
-STOPPED: tuple[VerdictCode, ...] = ("WA", "TLE", "OLE", "MLE", "RE", "AC")
+# Stopped by the disk limits (grader_worker.diskwatch): OLE, or TLE if the disk is slow. Never AC.
+DISK_STOPPED: tuple[VerdictCode, ...] = ("OLE", "TLE")
 
 
 @dataclass(frozen=True)
@@ -41,7 +40,14 @@ CASES = (
     Case("aplusb_before", "submissions/aplusb/ac.c", "c11", APLUSB, ("AC",)),
     Case("fork_bomb", "hostile/fork_bomb.c", "c11", HOSTILE_PROBLEM, ("TLE",)),
     Case("write_1gb", "hostile/write_1gb.c", "c11", HOSTILE_PROBLEM, ("OLE",)),
-    Case("write_1gb_many_files", "hostile/write_1gb_many_files.c", "c11", HOSTILE_PROBLEM, STOPPED),
+    Case(
+        "write_1gb_many_files",
+        "hostile/write_1gb_many_files.c",
+        "c11",
+        HOSTILE_PROBLEM,
+        DISK_STOPPED,
+    ),
+    Case("disk_churn", "hostile/disk_churn.c", "c11", HOSTILE_PROBLEM, DISK_STOPPED),
     Case("network", "hostile/network.c", "c11", HOSTILE_PROBLEM, CONTAINED),
     Case("read_secrets", "hostile/read_secrets.c", "c11", HOSTILE_PROBLEM, CONTAINED),
     Case("write_outside", "hostile/write_outside.c", "c11", HOSTILE_PROBLEM, CONTAINED),
@@ -59,6 +65,18 @@ CASES = (
     Case("memfd_shm", "hostile/memfd_shm.c", "c11", HOSTILE_PROBLEM, ("MLE", "RE", "TLE")),
     Case("affinity", "hostile/affinity.c", "c11", HOSTILE_PROBLEM, CONTAINED),
     Case("devices", "hostile/devices.c", "c11", HOSTILE_PROBLEM, CONTAINED),
+    Case("cgroup_escape", "hostile/cgroup_escape.c", "c11", HOSTILE_PROBLEM, CONTAINED),
+    Case("mknod_dev", "hostile/mknod_dev.c", "c11", HOSTILE_PROBLEM, CONTAINED),
+    Case("seccomp_surface", "hostile/seccomp_surface.c", "c11", HOSTILE_PROBLEM, CONTAINED),
+    Case("proc_sys_write", "hostile/proc_sys_write.c", "c11", HOSTILE_PROBLEM, CONTAINED),
+    # The box's own filter is in place (box-exec), and covers what Docker's filter allows.
+    Case("launcher_present", "hostile/launcher_present.c", "c11", HOSTILE_PROBLEM, CONTAINED),
+    Case("syslog_read", "hostile/syslog_read.c", "c11", HOSTILE_PROBLEM, CONTAINED),
+    Case("clone_ns", "hostile/clone_ns.c", "c11", HOSTILE_PROBLEM, CONTAINED),
+    Case("x32_syscall", "hostile/x32_syscall.c", "c11", HOSTILE_PROBLEM, ("RE",)),
+    Case("disk_deep_tree", "hostile/disk_deep_tree.c", "c11", HOSTILE_PROBLEM, DISK_STOPPED),
+    Case("disk_unlinked", "hostile/disk_unlinked.c", "c11", HOSTILE_PROBLEM, DISK_STOPPED),
+    Case("inode_flood", "hostile/inode_flood.c", "c11", HOSTILE_PROBLEM, DISK_STOPPED),
     Case(
         "whitediff_bomb", "hostile/whitediff_bomb.c", "c11", HOSTILE_PROBLEM, ("WA", "OLE", "MLE")
     ),

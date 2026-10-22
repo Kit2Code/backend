@@ -15,7 +15,8 @@ The report holds:
   the AppArmor/LSM label, so the container security profile can be checked on the real host;
 - slots, the memory ceiling, the box -> CPU map, and per judge CPU its SMT siblings, P/E kind and
   max MHz;
-- warnings: judge CPUs sharing a core, a P/E mix, swap, a missing or unwritable judge cgroup.
+- warnings: judge CPUs sharing a core, a P/E mix, swap, a missing or unwritable judge cgroup, the
+  host's cgroup namespace.
 """
 
 import json
@@ -109,6 +110,18 @@ def parse_cpu_list_or_none(text: str | None) -> list[int] | None:
         return None
 
 
+def cgroup_namespace(proc_self_cgroup: str | None) -> str | None:
+    """ "private" if the worker has its own cgroup namespace, "host" if it sees the host's.
+
+    In its own namespace the worker's processes are at the namespace root ("/") or in its leaf
+    ("/worker"); in the host's they are somewhere like /docker/<id> or /system.slice/....
+    """
+    if not proc_self_cgroup:
+        return None
+    path = proc_self_cgroup.strip().split("::", 1)[-1]
+    return "private" if path in ("/", "/worker") else "host"
+
+
 def build_report(
     settings: config.Settings,
     *,
@@ -134,6 +147,7 @@ def build_report(
     cgroup["memory_max"] = _strip(read(f"{judge_root}/memory.max"))
     cgroup["memory_swap_max"] = _strip(read(f"{judge_root}/memory.swap.max"))
     cgroup["subtree_control"] = (read(f"{judge_root}/cgroup.subtree_control") or "").split()
+    cgroup["namespace"] = cgroup_namespace(read("/proc/self/cgroup"))
 
     status = read("/proc/self/status") or ""
     cap_eff = status_field(status, "CapEff")
@@ -197,6 +211,11 @@ def _warnings(report: dict[str, Any]) -> list[str]:
         warnings.append(f"the judge cgroup {cgroup['root']} is missing or unreadable")
     if not cgroup["writable"]:
         warnings.append("/sys/fs/cgroup is not mounted writable: isolate can't create box cgroups")
+    if cgroup.get("namespace") == "host":
+        warnings.append(
+            "the worker uses the host's cgroup namespace: root in the worker could reach other "
+            "containers' cgroups (use `cgroup: private`)"
+        )
     if cgroup["memory_swap_max"] not in (None, "0"):
         warnings.append(
             f"memory.swap.max of the judge cgroup is {cgroup['memory_swap_max']}, not 0: "

@@ -217,6 +217,9 @@ def run_test(
     memory = meta.cg_mem_kb if meta.cg_mem_kb is not None else (meta.max_rss_kb or 0)
     common = {"name": name, "time": meta.time, "wall_time": meta.wall_time, "memory_kb": memory}
     run = program.limits
+    if result.disk_exceeded:
+        message = f"stopped: the program {result.disk_exceeded}"
+        return TestResult(verdict="OLE", outcome=0.0, message=message, **common)
     verdict = run_verdict(meta, run.memory_kb, output_bytes, run.fsize_kb)
     if verdict is not None:
         return TestResult(verdict=verdict.value, outcome=0.0, **common)

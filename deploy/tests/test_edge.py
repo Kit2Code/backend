@@ -69,7 +69,8 @@ except urllib.error.HTTPError as error:
     except OSError:
         text = ""
 except Exception as error:
-    print(json.dumps({"error": type(error).__name__}))
+    # The underlying cause (urllib wraps a reset or refused connection in URLError).
+    print(json.dumps({"error": type(getattr(error, "reason", error)).__name__}))
     raise SystemExit
 head = {k.lower(): v for k, v in head.items()}
 print(json.dumps({"status": status, "headers": head, "body": text}))
@@ -135,6 +136,16 @@ def send(
     return dict(json.loads(result.stdout or '{"error": "no output"}'))
 
 
+# How a refused upload can look from the client: the 413, or the connection closed while the
+# client was still sending the body.
+CUT_OFF = {"BrokenPipeError", "ConnectionResetError", "RemoteDisconnected"}
+
+
+def too_large(answer: dict[str, Any]) -> bool:
+    """The edge refused a body as too large; it never reached a backend."""
+    return answer.get("status") == 413 or answer.get("error") in CUT_OFF
+
+
 def reached(answer: dict[str, Any]) -> dict[str, Any] | None:
     """The request the backend saw, or None if the edge answered by itself."""
     if answer.get("status") != 200:
@@ -176,9 +187,8 @@ def test_ordinary_public_paths_that_look_similar_still_work() -> None:
 
 def test_public_request_bodies_are_capped() -> None:
     assert reached(send("POST", f"http://{EDGE}:8080/problems/x/submit", size=64 * 1024))
-    assert (
-        send("POST", f"http://{EDGE}:8080/problems/x/submit", size=2 * 1024 * 1024)["status"] == 413
-    )
+    answer = send("POST", f"http://{EDGE}:8080/problems/x/submit", size=2 * 1024 * 1024)
+    assert too_large(answer), answer
 
 
 # ---- the admin site (:8081) ----
@@ -202,10 +212,8 @@ def test_the_judge_api_is_never_reachable_through_the_admin_port(path: str) -> N
 
 def test_only_the_import_page_takes_big_uploads() -> None:
     big = 2 * 1024 * 1024
-    assert (
-        send("POST", f"http://{EDGE}:8081/admin/core/sitesetting/1/change/", size=big)["status"]
-        == 413
-    )
+    answer = send("POST", f"http://{EDGE}:8081/admin/core/sitesetting/1/change/", size=big)
+    assert too_large(answer), answer
     seen = reached(send("POST", f"http://{EDGE}:8081/admin/grader/import/", size=big))
     assert seen is not None and seen["body_len"] == big
 
@@ -257,7 +265,8 @@ def test_the_egress_answers_only_its_two_requests() -> None:
 
 
 def test_token_request_bodies_are_capped() -> None:
-    assert send("POST", f"http://{EDGE}:8090/token", size=20 * 1024, source="web")["status"] == 413
+    answer = send("POST", f"http://{EDGE}:8090/token", size=20 * 1024, source="web")
+    assert too_large(answer), answer
 
 
 def test_the_edge_health_listener_is_only_inside_the_container() -> None:

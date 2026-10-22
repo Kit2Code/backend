@@ -1,6 +1,7 @@
 # Release: when the owner pushes a version tag (v0.1.0, ...), build the four production images and
 # push them to GHCR as ghcr.io/kit2code/grader-{web,worker,edge,ops}:<version> (and :sha-<commit>).
-# GitHub-hosted runner only. The only credential is the job's own GITHUB_TOKEN.
+# GitHub-hosted runner only. The only credential is the job's own GITHUB_TOKEN. The checks run
+# first; the digests of the pushed images are printed in the run's summary.
 # Third-party actions are pinned to exact commits (the tag is in the comment).
 name: Release
 
@@ -13,11 +14,81 @@ permissions:
   packages: write
 
 jobs:
+  # Nothing is pushed unless the same checks as CI pass on the tagged commit (kept equal to
+  # ci.yml's check job by deploy/tests/test_release_safety.py).
+  check:
+    name: Checks (the same as CI)
+    # Only the push job may write packages.
+    permissions:
+      contents: read
+    runs-on: ubuntu-24.04
+    services:
+      db:
+        image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+        env:
+          POSTGRES_USER: grader
+          POSTGRES_DB: grader
+          # A throwaway database that lives only for this job.
+          POSTGRES_PASSWORD: ci-only-throwaway
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U grader -d grader"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      PUBLIC_BASE_URL: http://127.0.0.1:8000
+      ADMIN_BASE_URL: http://127.0.0.1:8001
+      GRADER_SECRETS_DIR: ${{ github.workspace }}/../ci-secrets
+      GRADER_WORKER_SECRETS_DIR: ${{ github.workspace }}/../ci-secrets-worker
+      GRADER_DB_HOST: 127.0.0.1
+      # Tests make requests from 127.0.0.1, standing in for the edge.
+      GRADER_EDGE_ADDRESSES: 127.0.0.1
+      GRADER_ROLE: admin
+      # This job has no worker container; the sandbox suite runs in its own job.
+      GRADER_SKIP_SANDBOX: "1"
+      # Serve static files from the apps' folders, as in dev (CI doesn't run collectstatic).
+      GRADER_STATIC_FROM_APPS: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: "0.13.3"
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends gettext
+          uv sync --frozen
+      - name: Write CI secret files
+        run: |
+          mkdir -p "$GRADER_SECRETS_DIR" "$GRADER_WORKER_SECRETS_DIR"
+          echo "ci-only-throwaway" > "$GRADER_SECRETS_DIR/db_password"
+          openssl rand -hex 48 > "$GRADER_SECRETS_DIR/django_secret_key"
+          openssl rand -hex 48 > "$GRADER_WORKER_SECRETS_DIR/worker_token"
+      - name: Ruff, mypy and pytest
+        run: ./scripts/check.sh
+      - name: Migrations are up to date
+        run: uv run python web/manage.py makemigrations --check --dry-run
+      - name: Django deploy checks, public role
+        run: uv run python web/manage.py check --deploy --fail-level WARNING
+        env:
+          GRADER_ROLE: public
+      - name: Django deploy checks, admin role
+        run: uv run python web/manage.py check --deploy --fail-level WARNING
+        env:
+          GRADER_ROLE: admin
+
   images:
     name: Build and push the images
+    needs: [check]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Version from the tag
         id: version
         run: |
@@ -38,6 +109,18 @@ jobs:
           --tag "${{ steps.version.outputs.version }}"
           --tag "sha-${GITHUB_SHA::7}"
           --source "https://github.com/${GITHUB_REPOSITORY}"
+          --digests "$RUNNER_TEMP/digests.txt"
+      - name: Image digests
+        # The exact images just pushed, to pin in deploy/zimaos/grader.compose.yml.
+        run: |
+          cat "$RUNNER_TEMP/digests.txt"
+          {
+            echo "### Image digests"
+            echo
+            echo '```'
+            cat "$RUNNER_TEMP/digests.txt"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Log out
         if: always()
         run: docker logout ghcr.io

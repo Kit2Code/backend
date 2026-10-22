@@ -5,6 +5,8 @@
 - JUDGE_BOX_CPUS: the CPUs reserved for judging, like "4,5" or "4-5". Slot i runs on the i-th one.
 - JUDGE_MEM_TOTAL: the memory ceiling for all sandboxes together, like "1024M" (default). At least
   512M, the memory a compile step reserves.
+- JUDGE_BOX_DISK_MB / JUDGE_BOX_WRITE_MB: per box, the most disk space its files may use (256) and
+  the most it may write to disk in one run (512); see grader_worker.diskwatch.
 """
 
 import re
@@ -12,7 +14,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
-from grader_worker import limits
+from grader_worker import isolate, limits
 
 FIRST_BOX = 100
 MAX_SLOTS = 10
@@ -20,7 +22,7 @@ MAX_SLOTS = 10
 # largest fixed step (compiling: 512 MB); a smaller total would make compiles wait forever.
 MIN_MEM_TOTAL = max(limits.COMPILE.memory_kb, limits.CHECKER.memory_kb) * 1024
 
-CG_ROOT = Path("/sys/fs/cgroup/grader-judge")
+CG_ROOT = isolate.CG_ROOT
 ISOLATE_CONFIG = Path("/usr/local/etc/isolate")
 ISOLATE_CONFIG_BASE = Path("/usr/local/etc/isolate.base")
 STATE_DIR = Path("/run/grader-judge")
@@ -44,6 +46,9 @@ class Settings:
     slots: int
     box_cpus: list[int]
     mem_total: int  # bytes
+    # Disk limits per box (grader_worker.diskwatch): space kept, and bytes written to disk.
+    box_disk_bytes: int = 256 << 20
+    box_write_bytes: int = 512 << 20
 
     @property
     def box_ids(self) -> list[int]:
@@ -66,13 +71,31 @@ class Settings:
         mem_total = parse_memory(env.get("JUDGE_MEM_TOTAL", "1024M"))
         if mem_total < MIN_MEM_TOTAL:
             raise ConfigError(f"JUDGE_MEM_TOTAL must be at least {MIN_MEM_TOTAL >> 20}M")
-        return cls(slots=slots, box_cpus=cpus[:slots], mem_total=mem_total)
+        disk = _megabytes(env, "JUDGE_BOX_DISK_MB", 256)
+        written = _megabytes(env, "JUDGE_BOX_WRITE_MB", 512)
+        # A program may write one file up to the output limit, so the box needs more than that.
+        least = 2 * limits.OUTPUT_FSIZE_KB // 1024
+        for name, value in (("JUDGE_BOX_DISK_MB", disk), ("JUDGE_BOX_WRITE_MB", written)):
+            if value < least << 20:
+                raise ConfigError(f"{name} must be at least {least}")
+        return cls(
+            slots=slots, box_cpus=cpus[:slots], mem_total=mem_total,
+            box_disk_bytes=disk, box_write_bytes=written,
+        )  # fmt: skip
 
     def isolate_box_lines(self) -> list[str]:
         """isolate config lines that pin each box to its CPU."""
         return [
             f"box{box}.cpus = {cpu}" for box, cpu in zip(self.box_ids, self.box_cpus, strict=True)
         ]
+
+
+def _megabytes(env: Mapping[str, str], name: str, default: int) -> int:
+    try:
+        value = int(env.get(name, str(default)))
+    except ValueError:
+        raise ConfigError(f"{name} must be a whole number of megabytes") from None
+    return value << 20
 
 
 def parse_memory(text: str) -> int:

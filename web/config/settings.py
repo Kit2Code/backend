@@ -32,6 +32,10 @@ if GRADER_ROLE == "admin":
     # edge with that Host header still fail the zone check for /internal/* (see core.middleware).
     ALLOWED_HOSTS.append(env.optional("GRADER_INTERNAL_HOST", "web-admin"))
 
+# The edge's addresses: only requests from these may say who the client is (Cf-Connecting-Ip,
+# X-Forwarded-For); see core.ratelimit.client_ip. Empty: never trust those headers.
+GRADER_EDGE_ADDRESSES = env.ip_addresses(env.optional("GRADER_EDGE_ADDRESSES", ""))
+
 SECRET_KEY = env.read_secret("django_secret_key")
 
 # The worker's bearer token for /internal/*. Only the admin role routes those URLs, so only it
@@ -91,12 +95,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
+_DB_USER, _DB_PASSWORD_SECRET = env.database_login(env.optional("GRADER_DB_USER", ""))
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": "grader",
-        "USER": "grader",
-        "PASSWORD": env.read_secret("db_password"),
+        "USER": _DB_USER,
+        "PASSWORD": env.read_secret(_DB_PASSWORD_SECRET),
         "HOST": env.require("GRADER_DB_HOST"),
         "PORT": "5432",
     }

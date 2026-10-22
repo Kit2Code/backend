@@ -84,6 +84,11 @@ def test_cpu_pinning(name: str) -> None:
     service = services()[name]
     if service.get("network_mode") == "none":
         return  # secrets-init: a one-shot that runs for a second
+    if name == "worker":
+        # The worker process on APP_CPUS (WORKER_CPUS) plus the judge CPUs for its sandboxes.
+        assert service["cpuset"] == f"{APP_CPUS},{JUDGE_BOX_CPUS}"
+        assert service["environment"]["WORKER_CPUS"] == APP_CPUS
+        return
     assert service["cpuset"] == APP_CPUS, name
 
 
@@ -123,11 +128,23 @@ def test_only_the_admin_port_is_published() -> None:
 def test_the_worker_has_the_narrow_profile_and_one_secret() -> None:
     worker = services()["worker"]
     assert "privileged" not in worker
-    # NET_ADMIN: isolate switches on the loopback interface in each sandbox's network namespace
-    # (with SYS_ADMIN alone: "SIOCSIFFLAGS on 'lo' failed: Operation not permitted").
-    assert worker["cap_add"] == ["SYS_ADMIN", "NET_ADMIN"]
-    assert worker["cgroup"] == "host"
-    assert sorted(worker["security_opt"]) == ["apparmor=unconfined", "seccomp=unconfined"]
+    # Every capability dropped, then only what isolate needs added back (M6H-02); NET_ADMIN: isolate
+    # switches on the loopback interface in each sandbox's network namespace.
+    assert worker["cap_drop"] == ["ALL"]
+    assert set(worker["cap_add"]) == {
+        "SYS_ADMIN", "NET_ADMIN", "SETUID", "SETGID", "CHOWN", "DAC_OVERRIDE", "FOWNER",
+        "SYS_CHROOT",
+    }  # fmt: skip
+    assert "no-new-privileges:true" in worker["security_opt"]
+    assert worker["pids_limit"] >= 256
+    # Its own cgroup namespace: nothing of the host's cgroups is visible (M6H-01).
+    assert worker["cgroup"] == "private"
+    # One limit for the worker and its sandboxes: JUDGE_MEM_TOTAL (1024M) + 384m.
+    assert worker["environment"]["JUDGE_MEM_TOTAL"] == "1024M"
+    assert worker["mem_limit"] == "1408m"
+    assert {"apparmor=unconfined"} <= set(worker["security_opt"])
+    # Docker's default seccomp filter stays on (M6H-03); boxes add their own (box-exec).
+    assert not any(opt.startswith("seccomp") for opt in worker["security_opt"])
     assert worker["networks"] == ["judge_net"]
     assert worker["hostname"] == "grader-worker"  # a stable worker id across updates
     mounts = [v.split(":")[1] for v in worker["volumes"]]
@@ -140,3 +157,25 @@ def test_the_casaos_metadata() -> None:
     assert meta["main"] == "edge" and meta["port_map"] == "8081" and meta["index"] == "/admin/"
     assert meta["architectures"] == ["amd64"]
     assert "en_US" in meta["title"]
+
+
+@pytest.mark.parametrize("name", ["web", "web-admin"])
+def test_the_web_roles_trust_client_addresses_only_from_the_edge(name: str) -> None:
+    edge = services()["edge"]["networks"]["app_net"]["ipv4_address"]
+    assert services()[name]["environment"]["GRADER_EDGE_ADDRESSES"] == edge
+
+
+def test_the_worker_healthcheck_checks_the_judge_loop() -> None:
+    assert services()["worker"]["healthcheck"]["test"] == ["CMD", "judge-health"]
+
+
+def test_the_web_roles_log_in_as_the_plain_database_role() -> None:
+    init = services()["db-init"]
+    assert init["command"] == ["db-init"] and init["restart"] == "no"
+    assert init["networks"] == ["db_net"]
+    assert init["depends_on"]["db"] == {"condition": "service_healthy"}
+    assert init["volumes"] == ["/DATA/AppData/grader/secrets/db:/run/secrets/db:ro"]
+    for name in ("web", "web-admin"):
+        service = services()[name]
+        assert service["environment"]["GRADER_DB_USER"] == "grader_app"
+        assert service["depends_on"]["db-init"] == {"condition": "service_completed_successfully"}

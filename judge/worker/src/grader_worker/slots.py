@@ -119,6 +119,8 @@ class Slot:
     cpu: int
     ledger: MemoryLedger
     state_dir: Path = config.STATE_DIR
+    space_limit: int | None = None  # disk limits per box (grader_worker.diskwatch)
+    write_limit: int | None = None
 
     @contextmanager
     def box(self, limits: Limits) -> Iterator[Box]:
@@ -128,7 +130,7 @@ class Slot:
         IsolateError is raised, so the step reports JE and the box is never used again.
         """
         with self.ledger.reserve(limits.memory_kb * 1024):
-            box = Box(self.box_id)
+            box = Box(self.box_id, space_limit=self.space_limit, write_limit=self.write_limit)
             try:
                 with box:
                     yield box
@@ -171,6 +173,8 @@ class SlotPool:
                         cpu=self.settings.box_cpus[index],
                         ledger=self.ledger,
                         state_dir=self.state_dir,
+                        space_limit=self.settings.box_disk_bytes,
+                        write_limit=self.settings.box_write_bytes,
                     )
                     return
                 finally:

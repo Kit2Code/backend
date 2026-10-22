@@ -5,6 +5,7 @@ mounted directory (see docs/ARCHITECTURE.md, "Secrets"). Anything missing or inv
 process at startup with a clear message instead of running half-configured.
 """
 
+import ipaddress
 import os
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -45,6 +46,8 @@ def apply_dev_defaults() -> None:
     os.environ.setdefault("GRADER_PROBLEMS_DIR", str(devdata / "problems"))
     os.environ.setdefault("GRADER_UPLOADS_DIR", str(devdata / "uploads"))
     os.environ.setdefault("GRADER_BACKUPS_DIR", str(devdata / "backups"))
+    # Tests make requests from 127.0.0.1, standing in for the edge.
+    os.environ.setdefault("GRADER_EDGE_ADDRESSES", "127.0.0.1")
 
 
 def require(name: str) -> str:
@@ -88,6 +91,34 @@ def read_secret(name: str, folder_variable: str = "GRADER_SECRETS_DIR") -> str:
     if not value:
         raise ImproperlyConfigured(f"Secret file {path} is empty.")
     return value
+
+
+# GRADER_DB_USER → the secret file with that role's password.
+DATABASE_LOGINS = {"grader": "db_password", "grader_app": "db_app_password"}
+
+
+def database_login(user: str) -> tuple[str, str]:
+    """GRADER_DB_USER → (role, password secret). Production uses grader_app, the plain role made
+    by the ops image's db-init; dev and CI the superuser grader (the tests create a database)."""
+    user = user or "grader"
+    if user not in DATABASE_LOGINS:
+        raise ImproperlyConfigured(f"GRADER_DB_USER must be one of: {', '.join(DATABASE_LOGINS)}.")
+    return user, DATABASE_LOGINS[user]
+
+
+def ip_addresses(value: str) -> frozenset[str]:
+    """GRADER_EDGE_ADDRESSES: comma-separated IP addresses, or empty for none."""
+    addresses = set()
+    for part in value.split(","):
+        if not part.strip():
+            continue
+        try:
+            addresses.add(str(ipaddress.ip_address(part.strip())))
+        except ValueError:
+            raise ImproperlyConfigured(
+                f"GRADER_EDGE_ADDRESSES must list IP addresses; {part.strip()!r} is not one."
+            ) from None
+    return frozenset(addresses)
 
 
 def base_url_parts(url: str) -> tuple[str, str]:

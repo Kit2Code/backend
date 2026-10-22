@@ -2,6 +2,8 @@
 
 from conftest import worker
 
+from grader_worker import config
+
 CG_ROOT = "/sys/fs/cgroup/grader-judge"
 
 
@@ -76,3 +78,31 @@ def test_setup_leaves_a_small_dev_folder_for_the_boxes() -> None:
     listing = worker("ls", "-A", "/var/local/lib/grader-judge-dev")
     assert listing.returncode == 0, listing.stderr
     assert set(listing.stdout.split()) == {"null", "zero", "full", "random", "urandom", "shm"}
+
+
+# --- the worker's own cgroup namespace (it never sees or touches the host's cgroups) -------------
+
+
+def test_the_worker_runs_in_its_own_cgroup_namespace() -> None:
+    # Inside a private namespace the worker's processes sit in the leaf "/worker"; with the host's
+    # namespace this would be a host path like /docker/<id> or /system.slice/docker-<id>.scope.
+    assert read("/proc/self/cgroup") == "0::/worker"
+
+
+def test_only_our_own_cgroups_are_visible() -> None:
+    listing = worker("ls", "/sys/fs/cgroup")
+    assert listing.returncode == 0, listing.stderr
+    folders = {name for name in listing.stdout.split() if "." not in name}
+    assert folders == {"worker", "grader-judge"}, folders  # no docker/, system.slice/, init.scope
+
+
+def test_no_process_is_left_in_the_namespace_root() -> None:
+    # cgroup v2 allows controllers for children only if the parent holds no processes.
+    assert read("/sys/fs/cgroup/cgroup.procs") == ""
+
+
+def test_the_worker_process_and_the_boxes_have_separate_cpus() -> None:
+    worker_cpus = config.parse_cpu_list(read("/sys/fs/cgroup/worker/cpuset.cpus.effective"))
+    box_cpus = config.parse_cpu_list(read(f"{CG_ROOT}/cpuset.cpus.effective"))
+    assert worker_cpus and box_cpus
+    assert not set(worker_cpus) & set(box_cpus)

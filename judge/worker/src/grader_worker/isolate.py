@@ -21,6 +21,7 @@ from pathlib import Path
 from types import TracebackType
 from typing import Self
 
+from grader_worker.diskwatch import MAX_ENTRIES, DiskWatch
 from grader_worker.verdicts import Meta, parse_meta
 
 FIRST_BOX, LAST_BOX = 100, 109
@@ -33,6 +34,11 @@ ADMIN_TIMEOUT_SECONDS = 60.0
 BOX_ENV = ["HOME=/box", "PATH=/usr/local/bin:/usr/bin:/bin"]
 # The box's whole /dev (made by grader_worker.setup; root-owned, outside isolate's box_root).
 BOX_DEV_DIR = "/var/local/lib/grader-judge-dev"
+# isolate's cgroup root for our boxes (cg_root in isolate.base); each box is box-<id> below it.
+CG_ROOT = Path("/sys/fs/cgroup/grader-judge")
+# Every program in a box starts through this: it installs our seccomp filter, then runs the program
+# (judge/worker/launcher/box-exec.c; under /usr, which every box sees read-only).
+BOX_LAUNCHER = "/usr/local/libexec/grader/box-exec"
 BOX_DEVICES = ("null", "zero", "full", "random", "urandom")
 _BOX_FILE_RE = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.+-]{0,127}")
 
@@ -63,6 +69,8 @@ class Limits:
 class RunResult:
     meta: Meta
     returncode: int
+    # Why the disk watch stopped the run (grader_worker.diskwatch), as a message; "" if it didn't.
+    disk_exceeded: str = ""
 
 
 def check_box_id(box_id: int) -> int:
@@ -119,10 +127,15 @@ class Box:
     IsolateError, before the box is used.
     """
 
-    def __init__(self, box_id: int) -> None:
+    def __init__(
+        self, box_id: int, *, space_limit: int | None = None, write_limit: int | None = None
+    ) -> None:
         self.box_id = check_box_id(box_id)
         self.path: Path | None = None
         self.broken = False
+        # Disk limits for each run (grader_worker.diskwatch); None: not watched.
+        self.space_limit = space_limit
+        self.write_limit = write_limit
 
     def __enter__(self) -> Self:
         # A box left over from a crash is cleaned first (isolate succeeds if there is nothing).
@@ -196,18 +209,20 @@ class Box:
         with tempfile.TemporaryDirectory(prefix="meta-") as folder:
             meta_path = os.path.join(folder, "meta")
             command = run_argv(
-                self.box_id, argv, limits, meta=meta_path, stdin=stdin, stdout=stdout, stderr=stderr
-            )
+                self.box_id, [BOX_LAUNCHER, *argv], limits, meta=meta_path,
+                stdin=stdin, stdout=stdout, stderr=stderr,
+            )  # fmt: skip
             # Without --stdin, isolate passes its own fd 0 on to the program: give it /dev/null,
             # never the worker's terminal or pipe.
             deadline = limits.wall_time + RUN_GRACE_SECONDS
-            try:
-                completed = subprocess.run(  # noqa: S603
-                    command, stdin=subprocess.DEVNULL, capture_output=True, check=False,
-                    timeout=deadline,
-                )  # fmt: skip
-            except subprocess.TimeoutExpired:
-                raise IsolateError(f"isolate did not finish within {deadline:.0f} s") from None
+            with self._disk_watch() as watch:
+                try:
+                    completed = subprocess.run(  # noqa: S603
+                        command, stdin=subprocess.DEVNULL, capture_output=True, check=False,
+                        timeout=deadline,
+                    )  # fmt: skip
+                except subprocess.TimeoutExpired:
+                    raise IsolateError(f"isolate did not finish within {deadline:.0f} s") from None
             if completed.returncode > 1:  # 0 = ran fine, 1 = the program failed, else isolate did
                 raise IsolateError(_short(completed.stderr))
             try:
@@ -215,12 +230,43 @@ class Box:
                     meta = parse_meta(f.read(64 * 1024))
             except (OSError, ValueError) as error:
                 raise IsolateError(f"bad meta file: {error}") from None
-        return RunResult(meta=meta, returncode=completed.returncode)
+        return RunResult(
+            meta=meta, returncode=completed.returncode, disk_exceeded=self._disk_message(watch)
+        )
+
+    def _disk_watch(self) -> contextlib.AbstractContextManager[DiskWatch | None]:
+        if self.path is None or self.space_limit is None:
+            return contextlib.nullcontext()
+        cgroup = CG_ROOT / f"box-{self.box_id}"
+        return DiskWatch(
+            self.path.parent,  # the box folder and isolate's tmp next to it
+            space_limit=self.space_limit,
+            write_limit=self.write_limit,
+            io_stat=cgroup / "io.stat",
+            on_exceed=lambda: _kill_cgroup(cgroup),
+        )
+
+    def _disk_message(self, watch: DiskWatch | None) -> str:
+        if watch is None or watch.exceeded is None:
+            return ""
+        if watch.exceeded == "space":
+            return f"kept more than {(self.space_limit or 0) >> 20} MB on disk"
+        if watch.exceeded == "written":
+            return f"wrote more than {(self.write_limit or 0) >> 20} MB to disk"
+        if watch.exceeded == "files":
+            return f"made more than {MAX_ENTRIES} files and folders"
+        return "made files or folders the judge can't check (e.g. nested too deep)"
 
     def _file(self, name: str) -> Path:
         if self.path is None:
             raise IsolateError("box is not initialised")
         return self.path / check_box_file(name)
+
+
+def _kill_cgroup(cgroup: Path) -> None:
+    """Stop every process in a box's cgroup at once (cgroup v2's cgroup.kill)."""
+    with contextlib.suppress(OSError):
+        (cgroup / "cgroup.kill").write_text("1\n")
 
 
 def _isolate(args: list[str], check: bool = False) -> str:

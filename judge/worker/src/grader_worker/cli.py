@@ -30,7 +30,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from grader_common.importer.errors import ProblemImportError
-from grader_worker import config, selftest
+from grader_worker import config, health, selftest
 from grader_worker.client import web_admin_ip
 from grader_worker.env_report import judge_env as judge_env  # the `judge-env` command
 from grader_worker.judge import MAX_SOURCE_BYTES, SubmissionError, judge
@@ -139,3 +139,17 @@ def judge_selftest(argv: Sequence[str] | None = None) -> int:
         return 2
     print(report.model_dump_json(indent=2))
     return 0 if report.ok else 1
+
+
+def judge_health(argv: Sequence[str] | None = None) -> int:
+    """`judge-health`: the healthcheck. 1, with the reasons, if the worker is unhealthy."""
+    del argv  # no options
+    try:
+        settings = config.Settings.from_env(os.environ)
+    except config.ConfigError as error:
+        print(f"judge-health: error: {error}", file=sys.stderr)
+        return 1
+    found = health.problems(settings, config.STATE_DIR)
+    for problem in found:
+        print(f"judge-health: {problem}", file=sys.stderr)
+    return 1 if found else 0

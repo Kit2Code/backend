@@ -14,7 +14,7 @@ services:
   # One-shot: makes the secrets the first time, then gives each service its own copies; also gives
   # the folders web-admin writes to (uploads, problems) to the web user.
   secrets-init:
-    image: ghcr.io/kit2code/grader-ops:0.1.0
+    image: ghcr.io/kit2code/grader-ops:0.1.1
     command: ["secrets-init"]
     restart: "no"
     network_mode: none
@@ -52,14 +52,32 @@ services:
       retries: 30
     logging: *logging
 
+  # One-shot: makes the database role the web site logs in as (grader_app, not a superuser) and
+  # gives it the tables; runs at every start, after the database is up.
+  db-init:
+    image: ghcr.io/kit2code/grader-ops:0.1.1
+    command: ["db-init"]
+    restart: "no"
+    networks: [db_net]
+    depends_on:
+      db: {condition: service_healthy}
+    cpuset: "3"
+    mem_limit: 64m
+    volumes:
+      - /DATA/AppData/grader/secrets/db:/run/secrets/db:ro
+    logging: *logging
+
   # The public site (GRADER_ROLE=public): reached only through the edge's :8080, from the tunnel.
   web:
-    image: ghcr.io/kit2code/grader-web:0.1.0
+    image: ghcr.io/kit2code/grader-web:0.1.1
     environment:
       GRADER_ROLE: public
       PUBLIC_BASE_URL: "https://grader.example.org"
       GRADER_SECRETS_DIR: /run/secrets/web
       GRADER_DB_HOST: db
+      GRADER_DB_USER: grader_app
+      # The edge's address: only it may tell the site who the visitor is.
+      GRADER_EDGE_ADDRESSES: "10.89.91.10"
       TZ: Asia/Bangkok
     volumes:
       - /DATA/AppData/grader/problems:/data/problems:ro
@@ -68,7 +86,7 @@ services:
       app_net: {ipv4_address: 10.89.91.20}
       db_net: {}
     depends_on:
-      secrets-init: {condition: service_completed_successfully}
+      db-init: {condition: service_completed_successfully}
     restart: unless-stopped
     cpuset: "3"
     mem_limit: 384m
@@ -83,7 +101,7 @@ services:
   # The admin site (GRADER_ROLE=admin): Django admin, admin pages, first-run setup, the judge API.
   # Only this role runs database migrations.
   web-admin:
-    image: ghcr.io/kit2code/grader-web:0.1.0
+    image: ghcr.io/kit2code/grader-web:0.1.1
     environment:
       GRADER_ROLE: admin
       ADMIN_BASE_URL: "http://192.0.2.10:8081"
@@ -93,6 +111,8 @@ services:
       GRADER_SECRETS_DIR: /run/secrets/web
       GRADER_WORKER_SECRETS_DIR: /run/secrets/worker
       GRADER_DB_HOST: db
+      GRADER_DB_USER: grader_app
+      GRADER_EDGE_ADDRESSES: "10.89.91.10"
       TZ: Asia/Bangkok
     volumes:
       - /DATA/AppData/grader/problems:/data/problems
@@ -105,7 +125,7 @@ services:
       db_net: {}
       judge_net: {}
     depends_on:
-      secrets-init: {condition: service_completed_successfully}
+      db-init: {condition: service_completed_successfully}
     restart: unless-stopped
     cpuset: "3"
     mem_limit: 384m
@@ -113,19 +133,26 @@ services:
     logging: *logging
 
   # The judge. isolate needs CAP_SYS_ADMIN (namespaces, mounts; the entrypoint also re-mounts the
-  # cgroup tree read-write), CAP_NET_ADMIN (it switches on the loopback interface in each sandbox's
-  # own network namespace) and the host's cgroup tree (`cgroup: host`). docs/DECISIONS.md, "Worker
-  # profile outcome". No internet, no database, one secret.
+  # container's cgroup tree read-write) and CAP_NET_ADMIN (it switches on the loopback interface in
+  # each sandbox's own network namespace). docs/DECISIONS.md, "Worker profile". No internet, no
+  # database, one secret.
   worker:
-    image: ghcr.io/kit2code/grader-worker:0.1.0
+    image: ghcr.io/kit2code/grader-worker:0.1.1
     hostname: grader-worker
-    cgroup: host
-    cap_add: [SYS_ADMIN, NET_ADMIN]
-    security_opt: ["seccomp=unconfined", "apparmor=unconfined"]
+    # Its own cgroup namespace: the boxes' cgroups live inside the container's, and nothing of the
+    # host's or other containers' cgroups is visible.
+    cgroup: private
+    # Only what isolate needs (docs/DECISIONS.md, "Worker profile"); no MKNOD, no NET_RAW.
+    cap_drop: [ALL]
+    cap_add: [SYS_ADMIN, NET_ADMIN, SETUID, SETGID, CHOWN, DAC_OVERRIDE, FOWNER, SYS_CHROOT]
+    # Docker's default seccomp filter for the worker; every box adds our own (box-exec).
+    security_opt: ["apparmor=unconfined", "no-new-privileges:true"]
+    pids_limit: 512
     init: true
     environment:
       JUDGE_SLOTS: "2"
       JUDGE_BOX_CPUS: "4,5"
+      WORKER_CPUS: "3"
       JUDGE_MEM_TOTAL: "1024M"
       WEB_INTERNAL_URL: "http://web-admin:8000"
       TZ: Asia/Bangkok
@@ -137,19 +164,25 @@ services:
     depends_on:
       secrets-init: {condition: service_completed_successfully}
     restart: unless-stopped
-    # The worker process itself; the sandboxes run on JUDGE_BOX_CPUS (their own cgroup).
-    cpuset: "3"
-    mem_limit: 384m
+    # The worker process on CPU 3 (WORKER_CPUS) and the sandboxes on 4,5 (JUDGE_BOX_CPUS); the memory
+    # limit covers both: JUDGE_MEM_TOTAL for the boxes plus 384m for the worker.
+    cpuset: "3,4,5"
+    mem_limit: 1408m
     healthcheck:
-      test: ["CMD", "test", "-d", "/sys/fs/cgroup/grader-judge"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
+      # The judge loop is going and some slot still works (grader_worker.health).
+      test: ["CMD", "judge-health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     logging: *logging
 
   # The only way in: :8080 public (tunnel only), :8081 admin (published), :8090 Google sign-in.
   edge:
-    image: ghcr.io/kit2code/grader-edge:0.1.0
+    image: ghcr.io/kit2code/grader-edge:0.1.1
+    environment:
+      # Refuse to start if a Google upstream isn't https (it carries the Google client secret).
+      GRADER_REQUIRE_HTTPS_UPSTREAMS: "1"
     ports: ["8081:8081"]
     networks:
       edge_net: {}
@@ -185,7 +218,7 @@ services:
 
   # Nightly database backups at BACKUP_TIME, plus "Back up now" from the admin Backups page.
   backup:
-    image: ghcr.io/kit2code/grader-ops:0.1.0
+    image: ghcr.io/kit2code/grader-ops:0.1.1
     command: ["backup-loop"]
     environment:
       BACKUP_TIME: "03:30"

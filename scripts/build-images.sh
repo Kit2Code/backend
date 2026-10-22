@@ -2,8 +2,11 @@
 # Build the four production images (and push them with --push). Used by CI (build only), by the
 # release workflow (build + push on a v* tag) and by scripts/prod-smoke.sh (local dry run).
 #
-#   scripts/build-images.sh --tag 0.1.0 [--tag sha-abc1234] [--push] [--source URL] [--list]
+#   scripts/build-images.sh --tag 0.1.0 [--tag sha-abc1234] [--push [--digests FILE]] [--source URL]
+#                           [--list]
 #
+# --digests FILE (with --push) writes one line per image, image:<first tag>@<digest> as the registry
+# reported it: the exact images to pin in deploy/zimaos/grader.compose.yml.
 # --source adds the OCI "source" label, which links each GHCR package to its repository.
 # --list only prints the image names it would build.
 set -euo pipefail
@@ -21,12 +24,14 @@ tags=()
 push=0
 list=0
 source_url=""
+digests=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --tag) tags+=("$2"); shift 2 ;;
     --push) push=1; shift ;;
     --list) list=1; shift ;;
     --source) source_url="$2"; shift 2 ;;
+    --digests) digests="$2"; shift 2 ;;
     *) echo "build-images: unknown option $1" >&2; exit 2 ;;
   esac
 done
@@ -40,6 +45,11 @@ for tag in "${tags[@]}"; do
     exit 2
   fi
 done
+
+if [ -n "$digests" ]; then
+  [ "$push" = 1 ] || { echo "build-images: --digests needs --push" >&2; exit 2; }
+  : > "$digests"
+fi
 
 cd "$(dirname "$0")/.."
 for entry in "${IMAGES[@]}"; do
@@ -55,6 +65,18 @@ for entry in "${IMAGES[@]}"; do
   echo "build-images: $name"
   docker "${args[@]}" .
   if [ "$push" = 1 ]; then
-    for tag in "${tags[@]}"; do docker push "$PREFIX/$name:$tag"; done
+    for tag in "${tags[@]}"; do
+      output="$(docker push "$PREFIX/$name:$tag")"
+      echo "$output"
+      # docker push ends with "<tag>: digest: sha256:<hex> size: <n>".
+      digest="$(grep -oE 'digest: sha256:[0-9a-f]{64}' <<<"$output" | tail -n 1 | cut -d' ' -f2 || true)"
+      if [ -z "$digest" ]; then
+        echo "build-images: no digest reported for $PREFIX/$name:$tag" >&2
+        exit 1
+      fi
+      if [ -n "$digests" ] && [ "$tag" = "${tags[0]}" ]; then
+        echo "$PREFIX/$name:$tag@$digest" >> "$digests"
+      fi
+    done
   fi
 done

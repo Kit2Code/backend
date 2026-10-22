@@ -45,7 +45,7 @@ cleanup() {
     return
   fi
   dc down --remove-orphans >/dev/null 2>&1
-  docker run --rm -v "$DATA:/x" --entrypoint sh "ghcr.io/kit2code/grader-ops:0.1.0" \
+  docker run --rm -v "$DATA:/x" --entrypoint sh "ghcr.io/kit2code/grader-ops:0.1.1" \
     -c 'rm -rf /x/* /x/.[!.]*' >/dev/null 2>&1
   rm -rf "$DATA" "$WORK"
   "${DEV[@]}" start worker >/dev/null 2>&1 || true
@@ -72,8 +72,8 @@ except Exception as error:
 '
 status_of() { echo "${1%% *}"; }
 
-echo "== build the images (ghcr.io/kit2code/grader-*:0.1.0)"
-scripts/build-images.sh --tag 0.1.0 >/dev/null || { echo "FAIL  image build"; exit 1; }
+echo "== build the images (ghcr.io/kit2code/grader-*:0.1.1)"
+scripts/build-images.sh --tag 0.1.1 >/dev/null || { echo "FAIL  image build"; exit 1; }
 
 echo "== start (data in $DATA)"
 sed "s#/DATA/AppData/grader#$DATA#g" deploy/zimaos/grader.compose.yml > "$COMPOSE_FILE"
@@ -82,7 +82,7 @@ services:
   tunnel:
     profiles: ["never"]     # no Cloudflare in the dry run; the probe plays its part
   probe:
-    image: ghcr.io/kit2code/grader-ops:0.1.0
+    image: ghcr.io/kit2code/grader-ops:0.1.1
     command: ["sleep", "infinity"]
     networks: [edge_net]
 EOF
@@ -140,20 +140,21 @@ check "the host can't reach :8090" bash -c '! curl -s -m 3 http://10.89.91.10:80
 
 echo "== secrets"
 listing() {
-  docker run --rm -v "$DATA/secrets:/s" --entrypoint sh ghcr.io/kit2code/grader-ops:0.1.0 -c \
+  docker run --rm -v "$DATA/secrets:/s" --entrypoint sh ghcr.io/kit2code/grader-ops:0.1.1 -c \
     'cd /s && find . -mindepth 1 -not -path "./.master*" -exec stat -c "%n %u %a" {} + | sort; cat .master/* | sha256sum'
 }
 first="$(listing)"
 expected="./backup 0 500
 ./backup/db_password 0 400
 ./db 70 500
+./db/db_app_password 70 400
 ./db/db_password 70 400
 ./web 10001 500
-./web/db_password 10001 400
+./web/db_app_password 10001 400
 ./web/django_secret_key 10001 400
 ./worker 10001 500
 ./worker/worker_token 10001 400"
-[ "$(echo "$first" | head -n 9)" = "$expected" ] && pass "secrets: owners and modes" || { fail "secrets: owners and modes"; echo "$first"; }
+[ "$(echo "$first" | head -n 10)" = "$expected" ] && pass "secrets: owners and modes" || { fail "secrets: owners and modes"; echo "$first"; }
 dc restart >/dev/null 2>&1; dc up -d --wait --wait-timeout 300 >/dev/null 2>&1
 [ "$(listing)" = "$first" ] && pass "secrets survive a restart unchanged" || fail "secrets changed on restart"
 
@@ -217,6 +218,19 @@ case "$answer" in "done "*" True") pass "aplusb submitted through the public edg
 echo "== the judge under the production profile"
 caps="$(in_service worker grep CapEff /proc/self/status)"
 case "$caps" in *000001ffffffffff*) fail "worker is privileged ($caps)" ;; *) pass "worker is not privileged ($caps)" ;; esac
+# The hardened profile (docs/DECISIONS.md, "Worker profile", "Seccomp filter for sandboxed programs").
+caps="$(echo "$caps" | tr -d '[:space:]')"
+[ "$caps" = "CapEff:00000000002410cb" ] && pass "worker capabilities: exactly the 8 isolate needs" || fail "worker capabilities: $caps"
+answer="$(in_service worker cat /proc/self/cgroup)"
+[ "$answer" = "0::/worker" ] && pass "worker in its own cgroup namespace (0::/worker)" || fail "worker cgroup: $answer"
+answer="$(in_service worker sh -c 'ls /sys/fs/cgroup | grep -c -e system.slice -e docker -e init.scope' || true)"
+[ "$answer" = 0 ] && pass "worker sees none of the host's cgroups" || fail "worker sees host cgroups ($answer)"
+answer="$(in_service worker grep -E '^(Seccomp|NoNewPrivs):' /proc/1/status | tr -s '[:space:]' ' ')"
+[ "$answer" = "NoNewPrivs: 1 Seccomp: 2 " ] && pass "worker: Docker's seccomp filter and no-new-privileges" || fail "worker seccomp: $answer"
+in_service worker sh -c 'test -x /usr/local/libexec/grader/box-exec && ! /usr/local/libexec/grader/box-exec 2>/dev/null' \
+  && pass "box launcher present (and refuses to run nothing)" || fail "box launcher"
+answer="$(in_service worker judge-health 2>&1 && echo ok)"
+[ "$answer" = ok ] && pass "worker healthcheck (judge-health)" || fail "worker healthcheck: $answer"
 answer="$(in_service worker cat /sys/fs/cgroup/grader-judge/cpuset.cpus)"
 [ "$answer" = "4-5" ] && pass "sandboxes pinned to CPUs 4-5" || fail "sandbox CPUs: $answer"
 # The real self-test takes well under a minute; 10 minutes means something hangs.
@@ -247,6 +261,13 @@ applied="$(echo "$logs" | grep -c '  Applying ')"
 duplicates="$(in_service db psql -U grader -d grader -At -c 'select count(*) from (select app, name from django_migrations group by app, name having count(*) > 1) d')"
 [ "$duplicates" = 0 ] && pass "no migration recorded twice (applied lines in logs: $applied)" || fail "duplicate migrations: $duplicates"
 case "$(dc logs web 2>&1)" in *"Applying "*) fail "the public web role ran a migration" ;; *) pass "only web-admin migrates" ;; esac
+# The web roles log in as grader_app, a plain role that owns the tables (docs/DECISIONS.md).
+answer="$(in_service db psql -U grader -d grader -At -c "select rolsuper, rolcreatedb, rolcreaterole from pg_roles where rolname = 'grader_app'")"
+[ "$answer" = "f|f|f" ] && pass "grader_app is a plain database role" || fail "grader_app flags: $answer"
+answer="$(in_service db psql -U grader -d grader -At -c "select count(*) from pg_tables where schemaname = 'public' and tableowner <> 'grader_app'")"
+[ "$answer" = 0 ] && pass "grader_app owns every table (migrations ran as it)" || fail "tables not owned by grader_app: $answer"
+answer="$(in_service web-admin python -c 'import django, os; os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings"); django.setup(); from django.db import connection; c = connection.cursor(); c.execute("select current_user, usesuper from pg_user where usename = current_user"); print(*c.fetchone())' 2>&1 | tail -n 1)"
+[ "$answer" = "grader_app False" ] && pass "web-admin logs in as grader_app" || fail "web-admin database user: $answer"
 
 echo
 if [ "$failures" -eq 0 ]; then echo "prod-smoke: all checks passed"; else echo "prod-smoke: $failures check(s) failed"; exit 1; fi

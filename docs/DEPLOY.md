@@ -153,13 +153,14 @@ A real restore is the same, into the real database, with the app's other service
 ```sh
 docker stop grader-web-1 grader-web-admin-1 grader-worker-1
 docker exec grader-db-1 dropdb -U grader grader
-docker exec grader-db-1 createdb -U grader grader
+docker exec grader-db-1 createdb -U grader -O grader_app grader
 docker exec grader-backup-1 sh -c 'PGPASSWORD=$(cat /run/secrets/backup/db_password) pg_restore -h db -U grader -d grader /backups/<file>'
 docker start grader-web-admin-1 grader-web-1 grader-worker-1
 ```
 
 (The `backup` container keeps running: the restore goes through it, because it has the database
-password and the backups folder.)
+password and the backups folder. `-O grader_app` gives the new database to the role the web site
+logs in as; the app's `db-init` step also hands it every restored table at the next start.)
 
 ## Contest day
 

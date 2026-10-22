@@ -13,6 +13,10 @@ RUN git clone --depth 1 --branch "$ISOLATE_TAG" https://github.com/ioi/isolate.g
     && test "$(git rev-parse HEAD)" = "$ISOLATE_COMMIT" \
     && make isolate
 
+# The launcher every box starts through: it installs our seccomp filter (judge/worker/launcher/).
+COPY judge/worker/launcher/box-exec.c /src/box-exec.c
+RUN gcc -static -O2 -Wall -Werror -o /src/box-exec /src/box-exec.c
+
 FROM ubuntu:24.04@sha256:68ee22004a9109b44973313b02ff7b1de250f1de0f5ecb628d73f579aaff33ac
 
 # libcap2/libseccomp2: isolate. build-essential, python3 (/usr/bin/python3), python3.12, zip: the
@@ -45,6 +49,7 @@ RUN uv sync --frozen --no-dev --package grader-worker
 
 COPY --from=isolate-build /src/isolate/isolate /usr/local/bin/isolate
 COPY --from=isolate-build /src/isolate/isolate-check-environment /usr/local/bin/isolate-check-environment
+COPY --from=isolate-build --chmod=0755 /src/box-exec /usr/local/libexec/grader/box-exec
 COPY judge/worker/isolate.base /usr/local/etc/isolate.base
 COPY judge/worker/vendor/testlib/testlib.h /usr/local/share/grader/testlib.h
 # What the self-test judges on the real host (grader_worker/selftest.py): the hostile programs, and

@@ -96,7 +96,10 @@ def test_each_service_gets_its_own_folder_with_its_owner_and_modes(data: Path) -
     files = listing(data)
     expected = {
         "./db": f"{POSTGRES_UID} 500", "./db/db_password": f"{POSTGRES_UID} 400",
-        "./web": f"{WEB_UID} 500", "./web/db_password": f"{WEB_UID} 400",
+        # db-init (root, in the ops image) reads the app role's password from here too.
+        "./db/db_app_password": f"{POSTGRES_UID} 400",
+        # The web roles log in as the non-superuser app role (db-init), never as the superuser.
+        "./web": f"{WEB_UID} 500", "./web/db_app_password": f"{WEB_UID} 400",
         "./web/django_secret_key": f"{WEB_UID} 400",
         # web-admin (uid 10001) reads the worker token too; the worker runs as root.
         "./worker": f"{WEB_UID} 500", "./worker/worker_token": f"{WEB_UID} 400",
@@ -104,6 +107,7 @@ def test_each_service_gets_its_own_folder_with_its_owner_and_modes(data: Path) -
     }  # fmt: skip
     for name, owner_mode in expected.items():
         assert files.get(name) == owner_mode, (name, files.get(name))
+    assert "./web/db_password" not in files
     master = {name: value for name, value in files.items() if name.startswith("./.master")}
     assert master and all(value.startswith("0 ") for value in master.values())
     assert files["./.master"] == "0 700"
@@ -112,10 +116,11 @@ def test_each_service_gets_its_own_folder_with_its_owner_and_modes(data: Path) -
 def test_the_copies_match_and_the_values_are_strong(data: Path) -> None:
     secrets_init(data)
     password = read_secret(data, "db/db_password")
-    assert (
-        password == read_secret(data, "web/db_password") == read_secret(data, "backup/db_password")
-    )
-    assert len(password) >= 32
+    assert password == read_secret(data, "backup/db_password")
+    app_password = read_secret(data, "db/db_app_password")
+    assert app_password == read_secret(data, "web/db_app_password")
+    assert len(password) >= 32 and len(app_password) >= 32
+    assert app_password != password
     assert len(read_secret(data, "web/django_secret_key")) >= 64
     assert len(read_secret(data, "worker/worker_token")) >= 32
     assert password != read_secret(data, "worker/worker_token")
@@ -132,6 +137,14 @@ def test_secrets_are_made_once_and_fixed_up_on_every_start(data: Path) -> None:
     files = listing(data)
     assert files["./web"] == f"{WEB_UID} 500"
     assert files["./web/django_secret_key"] == f"{WEB_UID} 400"
+
+
+def test_a_secret_a_service_no_longer_gets_is_removed(data: Path) -> None:
+    # Before the app role, the web roles' folder had the superuser password.
+    secrets_init(data)
+    as_root(data, "chmod 700 /x/secrets/web && cp /x/secrets/db/db_password /x/secrets/web/")
+    assert secrets_init(data).returncode == 0
+    assert "./web/db_password" not in listing(data)
 
 
 def test_secrets_are_never_printed(data: Path) -> None:
@@ -270,3 +283,63 @@ def test_the_folders_web_admin_writes_are_given_to_the_web_user(data: Path) -> N
     owners = as_root(data, "stat -c '%n %u %a' /x/uploads /x/problems").split()
     assert owners == ["/x/uploads", str(WEB_UID), "750", "/x/problems", str(WEB_UID), "750"]
     as_root(data, "rm -rf /x/uploads /x/problems")
+
+
+# ---- db-init ----
+
+APP_ROLE = "grader_app"
+
+
+def db_init(data: Path) -> subprocess.CompletedProcess[str]:
+    return docker("run", "--rm", "--network", NETWORK,
+                  "-v", f"{data / 'secrets' / 'db'}:/run/secrets/db:ro",
+                  OPS_IMAGE, "db-init", check=False)  # fmt: skip
+
+
+def as_app_role(data: Path, statement: str) -> subprocess.CompletedProcess[str]:
+    """Log in to the database as the app role, with the password the web roles get."""
+    password = read_secret(data, "web/db_app_password")
+    return docker("run", "--rm", "--network", NETWORK, "-e", f"PGPASSWORD={password}",
+                  "--entrypoint", "psql", POSTGRES, "-h", "db", "-U", APP_ROLE, "-d", "grader",
+                  "-qAt", "-v", "ON_ERROR_STOP=1", "-c", statement, check=False)  # fmt: skip
+
+
+def test_db_init_makes_a_plain_role_that_owns_the_tables(data: Path, database: str) -> None:
+    run = db_init(data)
+    assert run.returncode == 0, run.stderr
+    flags = sql(database, "SELECT rolsuper, rolcreatedb, rolcreaterole, rolcanlogin "
+                          "FROM pg_roles WHERE rolname = 'grader_app'")  # fmt: skip
+    assert flags == "f|f|f|t"
+    # Tables made before (by the superuser) are handed over, and the database too, so web-admin's
+    # migrations (as the app role) can change and add tables.
+    assert sql(database, "SELECT tableowner FROM pg_tables WHERE tablename = 'core_backuprun'") == (
+        APP_ROLE
+    )
+    assert sql(database, "SELECT pg_get_userbyid(datdba) FROM pg_database "
+                         "WHERE datname = 'grader'") == APP_ROLE  # fmt: skip
+    made = as_app_role(
+        data,
+        "CREATE TABLE judging_new (id bigint); "
+        "ALTER TABLE core_backuprun ADD COLUMN extra int; "
+        "INSERT INTO judging_new VALUES (1); SELECT count(*) FROM judging_new",
+    )
+    assert made.returncode == 0 and made.stdout.strip() == "1", made.stderr
+    # Not a superuser: no shell commands through the database.
+    shell = as_app_role(data, "COPY (SELECT 1) TO PROGRAM 'id'")
+    assert shell.returncode != 0 and "permission denied" in shell.stderr.lower()
+
+
+def test_db_init_runs_again_and_follows_a_new_password(data: Path, database: str) -> None:
+    assert db_init(data).returncode == 0
+    assert db_init(data).returncode == 0
+    as_root(data, "rm /x/secrets/.master/db_app_password")
+    assert secrets_init(data).returncode == 0
+    run = db_init(data)
+    assert run.returncode == 0, run.stderr
+    assert as_app_role(data, "SELECT 1").stdout.strip() == "1"
+
+
+def test_db_init_never_prints_a_password(data: Path, database: str) -> None:
+    run = db_init(data)
+    for name in ("db/db_password", "db/db_app_password"):
+        assert read_secret(data, name) not in run.stdout + run.stderr

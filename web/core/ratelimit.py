@@ -78,8 +78,12 @@ def client_ip(request: HttpRequest) -> str:
 
     Public role: Cloudflare puts the visitor's address in `Cf-Connecting-Ip`. Both roles: the edge
     puts the address it saw as the last `X-Forwarded-For` entry; earlier entries came from the
-    client and are ignored. Failing those, the TCP peer.
+    client and are ignored. Failing those, the TCP peer. The headers count only when the TCP peer
+    is the edge (settings.GRADER_EDGE_ADDRESSES): anyone else could write them.
     """
+    peer = str(request.META.get("REMOTE_ADDR", ""))
+    if peer not in settings.GRADER_EDGE_ADDRESSES:
+        return peer
     if settings.GRADER_ROLE == "public":
         cloudflare = _valid_ip(request.headers.get("Cf-Connecting-Ip", ""))
         if cloudflare:
@@ -89,4 +93,4 @@ def client_ip(request: HttpRequest) -> str:
         last = _valid_ip(forwarded.split(",")[-1])
         if last:
             return last
-    return str(request.META.get("REMOTE_ADDR", ""))
+    return peer
