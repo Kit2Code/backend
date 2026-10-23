@@ -186,3 +186,13 @@ def test_our_images_are_pinned_by_digest(name: str) -> None:
     # A version tag can be pushed again; a digest always names the same, tested bytes (M6H-07).
     image = services()[name]["image"]
     assert re.fullmatch(OURS.pattern + r"@sha256:[0-9a-f]{64}", image), image
+
+
+def test_the_remote_admin_is_off_until_the_owner_fills_it_in() -> None:
+    # The admin through the Cloudflare tunnel (docs/DEPLOY.md): every setting is there, empty.
+    admin = services()["web-admin"]["environment"]
+    assert admin["GRADER_CF_ACCESS_TEAM_DOMAIN"] == ""
+    assert admin["GRADER_CF_ACCESS_AUD"] == ""
+    assert services()["edge"]["environment"]["GRADER_CF_ACCESS_UPSTREAM"] == ""
+    # :8082 is reached by the tunnel over edge_net only, never published on the NAS.
+    assert all("8082" not in str(port) for port in services()["edge"].get("ports", []))

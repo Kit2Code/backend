@@ -169,6 +169,12 @@ GOOGLE_AUTHORIZE_URL = env.optional(
 )
 GOOGLE_TOKEN_URL = env.optional("GRADER_GOOGLE_TOKEN_URL", "http://edge:8090/token")
 GOOGLE_JWKS_URL = env.optional("GRADER_GOOGLE_JWKS_URL", "http://edge:8090/certs")
+# The admin site through the Cloudflare tunnel (core/cloudflare_access.py). Both empty: the
+# remote admin is off (every request through it is 404). The team domain is like
+# "myteam.cloudflareaccess.com"; the AUD tag is the Access application's "Application Audience".
+CF_ACCESS_TEAM_DOMAIN = env.optional("GRADER_CF_ACCESS_TEAM_DOMAIN", "")
+CF_ACCESS_AUD = env.optional("GRADER_CF_ACCESS_AUD", "")
+CF_ACCESS_CERTS_URL = env.optional("GRADER_CF_ACCESS_CERTS_URL", "http://edge:8090/access-certs")
 # Profile photos: the edge forwards /photo/<path> to lh3.googleusercontent.com.
 GOOGLE_PHOTO_URL = env.optional("GRADER_GOOGLE_PHOTO_URL", "http://edge:8090/photo")
 # Google documents both spellings of its issuer. The first one is what we store.

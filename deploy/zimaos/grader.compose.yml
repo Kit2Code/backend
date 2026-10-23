@@ -109,8 +109,14 @@ services:
       GRADER_ROLE: admin
       ADMIN_BASE_URL: "http://192.0.2.10:8081"
       PUBLIC_BASE_URL: "https://grader.example.org"
-      # Other addresses you open the admin site at (comma-separated), e.g. the NAS's Tailscale IP.
+      # Other addresses you open the admin site at (comma-separated), e.g. the NAS's Tailscale IP,
+      # and the remote admin's https://admin.<your domain> if you set one up.
       GRADER_ADMIN_EXTRA_URLS: ""
+      # The admin through the Cloudflare tunnel (docs/DEPLOY.md, "Admin from anywhere"): your
+      # Access team domain (like myteam.cloudflareaccess.com) and the Access application's AUD tag.
+      # Empty: off (the tunnel's admin hostname answers 404).
+      GRADER_CF_ACCESS_TEAM_DOMAIN: ""
+      GRADER_CF_ACCESS_AUD: ""
       GRADER_SECRETS_DIR: /run/secrets/web
       GRADER_WORKER_SECRETS_DIR: /run/secrets/worker
       GRADER_DB_HOST: db
@@ -180,12 +186,16 @@ services:
       start_period: 60s
     logging: *logging
 
-  # The only way in: :8080 public (tunnel only), :8081 admin (published), :8090 Google sign-in.
+  # The only way in: :8080 public (tunnel only), :8081 admin (published), :8082 admin through
+  # the tunnel (Cloudflare Access), :8090 Google sign-in and Access keys.
   edge:
     image: ghcr.io/kit2code/grader-edge:0.1.1@sha256:f3bf50ca6dd59f1cb374cd5ba26b03d58a0cf1175fe834b8c46299f83f985461
     environment:
       # Refuse to start if a Google upstream isn't https (it carries the Google client secret).
       GRADER_REQUIRE_HTTPS_UPSTREAMS: "1"
+      # The remote admin: https://<your Access team domain>, the same team as on web-admin.
+      # Empty: off.
+      GRADER_CF_ACCESS_UPSTREAM: ""
     ports: ["8081:8081"]
     networks:
       edge_net: {}

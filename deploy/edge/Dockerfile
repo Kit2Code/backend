@@ -7,7 +7,7 @@ RUN caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile \
     && caddy fmt --diff /etc/caddy/Caddyfile \
     && chown -R 65534:65534 /data /config
 USER 65534:65534
-EXPOSE 8080 8081 8090
+EXPOSE 8080 8081 8082 8090
 # Start-up checks (edge-start.sh), then Caddy.
 ENTRYPOINT ["/usr/local/bin/edge-start"]
 CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]

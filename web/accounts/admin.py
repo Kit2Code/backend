@@ -15,13 +15,13 @@ from core import audit
 
 @admin.register(User)
 class UserAdmin(AuditedModelAdmin, DjangoUserAdmin):  # type: ignore[type-arg]
-    list_display = ("username", "display_name", "school", "google_linked", "is_active", "is_staff")
+    list_display = ("username", "display_name", "google_linked", "is_active", "is_staff")
     list_filter = ("is_active", "is_staff", "is_superuser")
-    search_fields = ("username", "display_name", "school")
+    search_fields = ("username", "display_name")
     list_select_related = ("google_identity",)
     fieldsets = (
         *(DjangoUserAdmin.fieldsets or ()),
-        (_("Profile"), {"fields": ("display_name", "school")}),
+        (_("Profile"), {"fields": ("display_name",)}),
     )
     actions = ("disable", "enable", "unlink_google")
 

@@ -168,7 +168,6 @@ def _create_account(form: FirstSignInForm, account: google.GoogleAccount) -> Goo
             user = User(
                 username=form.cleaned_data["username"],
                 display_name=form.cleaned_data["display_name"],
-                school=form.cleaned_data["school"],
             )
             user.set_unusable_password()
             user.save()
@@ -198,7 +197,7 @@ def photo(request: HttpRequest, username: str) -> HttpResponse:
 
 @login_required
 def profile_settings(request: HttpRequest) -> HttpResponse:
-    """The signed-in user's display name, school and photo choice. POST with CSRF, rate-limited."""
+    """The signed-in user's display name and photo choice. POST with CSRF, rate-limited."""
     user = request.user
     if not isinstance(user, User):  # login_required already sent anonymous visitors away
         return redirect("home")

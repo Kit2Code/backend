@@ -65,3 +65,10 @@ def test_a_plain_photo_upstream_is_refused(value: str) -> None:
     result = start(STRICT, f"GRADER_GOOGLE_PHOTO_UPSTREAM={value}")
     assert result.returncode != 0
     assert "GRADER_GOOGLE_PHOTO_UPSTREAM" in result.stderr
+
+
+@pytest.mark.parametrize("value", ["http://team.cloudflareaccess.com", "team.cloudflareaccess.com"])
+def test_a_plain_access_upstream_is_refused(value: str) -> None:
+    result = start(STRICT, f"GRADER_CF_ACCESS_UPSTREAM={value}")
+    assert result.returncode != 0
+    assert "GRADER_CF_ACCESS_UPSTREAM" in result.stderr

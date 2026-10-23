@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: grader\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-23 13:19+0700\n"
+"POT-Creation-Date: 2026-10-23 13:55+0700\n"
 "PO-Revision-Date: 2026-10-21 19:00+0700\n"
 "Last-Translator: grader maintainers\n"
 "Language-Team: English\n"
@@ -39,36 +39,32 @@ msgstr "Unlink their Google accounts"
 msgid "Done."
 msgstr "Done."
 
-#: accounts/forms.py:18 accounts/forms.py:70
+#: accounts/forms.py:18 accounts/forms.py:62
 msgid "Username"
 msgstr "Username"
 
-#: accounts/forms.py:21 accounts/forms.py:73 accounts/models.py:11
+#: accounts/forms.py:21 accounts/forms.py:65 accounts/models.py:11
 #: accounts/models.py:27
 msgid "3 to 20 characters: small letters a-z, digits and _ only."
 msgstr "3 to 20 characters: small letters a-z, digits and _ only."
 
-#: accounts/forms.py:24 accounts/forms.py:48
+#: accounts/forms.py:24 accounts/forms.py:42
 msgid "Display name"
 msgstr "Display name"
 
-#: accounts/forms.py:27 accounts/forms.py:49
-msgid "School (optional)"
-msgstr "School (optional)"
-
-#: accounts/forms.py:32
+#: accounts/forms.py:26
 msgid "I have read the privacy page"
 msgstr "I have read the privacy page"
 
-#: accounts/forms.py:37 accounts/models.py:28 accounts/views.py:157
+#: accounts/forms.py:31 accounts/models.py:28 accounts/views.py:157
 msgid "That username is taken."
 msgstr "That username is taken."
 
-#: accounts/forms.py:50
+#: accounts/forms.py:43
 msgid "Show my Google profile photo"
 msgstr "Show my Google profile photo"
 
-#: accounts/forms.py:54
+#: accounts/forms.py:47
 msgid ""
 "Switching this off deletes the photo we keep. Switched on, it is fetched "
 "again the next time you sign in."
@@ -76,15 +72,15 @@ msgstr ""
 "Switching this off deletes the photo we keep. Switched on, it is fetched "
 "again the next time you sign in."
 
-#: accounts/forms.py:75
+#: accounts/forms.py:67
 msgid "Password"
 msgstr "Password"
 
-#: accounts/forms.py:76
+#: accounts/forms.py:68
 msgid "Password again"
 msgstr "Password again"
 
-#: accounts/forms.py:83
+#: accounts/forms.py:75
 msgid "The two passwords are different."
 msgstr "The two passwords are different."
 
@@ -1162,13 +1158,13 @@ msgstr ""
 
 #: core/templates/core/privacy.html:13
 msgid ""
-"We store the username, display name and school you type in, the programs you "
-"submit and their results. Other people can see your username, display name, "
-"school and scores, but never your programs."
+"We store the username and display name you type in, the programs you submit "
+"and their results. Other people can see your username, display name, photo "
+"and scores, but never your programs."
 msgstr ""
-"We store the username, display name and school you type in, the programs you "
-"submit and their results. Other people can see your username, display name, "
-"school and scores, but never your programs."
+"We store the username and display name you type in, the programs you submit "
+"and their results. Other people can see your username, display name, photo "
+"and scores, but never your programs."
 
 #: core/templates/core/privacy.html:18
 msgid ""
@@ -1355,7 +1351,7 @@ msgid "Newer"
 msgstr "Newer"
 
 #: judging/templates/judging/list.html:46
-#: judging/templates/judging/ranking.html:29
+#: judging/templates/judging/ranking.html:28
 #: problems/templates/problems/_task_results.html:36
 #, python-format
 msgid "Page %(number)s of %(total)s"
@@ -1410,20 +1406,16 @@ msgstr "Progress by group"
 msgid "Attempted"
 msgstr "Attempted"
 
-#: judging/templates/judging/ranking.html:9
-msgid "School"
-msgstr "School"
-
-#: judging/templates/judging/ranking.html:23
+#: judging/templates/judging/ranking.html:22
 msgid "Nobody has scored yet."
 msgstr "Nobody has scored yet."
 
-#: judging/templates/judging/ranking.html:28
+#: judging/templates/judging/ranking.html:27
 #: problems/templates/problems/_task_results.html:35
 msgid "Previous"
 msgstr "Previous"
 
-#: judging/templates/judging/ranking.html:30
+#: judging/templates/judging/ranking.html:29
 #: problems/templates/problems/_task_results.html:37
 msgid "Next"
 msgstr "Next"

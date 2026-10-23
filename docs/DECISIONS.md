@@ -863,3 +863,24 @@ Ranking; the account menu has the user's own submissions.
 existing navigation test asks for the link on the home page.
 **Alternatives:** only inside the account menu (signed-out visitors couldn't find the list).
 
+## 2026-10-23: The admin site through Cloudflare Access, checked by the site too
+
+**Choice:** besides the LAN and Tailscale, the admin site can be opened at its own hostname
+through the existing Cloudflare tunnel, behind a Cloudflare Access policy. A separate edge listener
+(`:8082`, zone `admin-remote`) carries this traffic, and web-admin verifies the Access token on
+every request itself (RS256, the team's keys through edge `:8090`, issuer, audience, time),
+answering 404 otherwise. Off until the owner fills in three settings.
+**Why:** the owner wants to reach the admin without Tailscale. Access alone would make the site's
+safety depend on one dashboard setting: a deleted or loosened policy would put the admin login on
+the internet. Checking the token in the site makes that failure close the door instead. A separate
+zone keeps LAN/Tailscale access exactly as it was, with no token needed there.
+**Alternatives:** Tailscale only (no new exposure, but the owner asked for this); Access only
+(simpler, fails open); checking the token in the edge (Caddy has no built-in JWT check; a plugin
+would mean a custom Caddy build).
+
+## 2026-10-23: "School" is hidden, not deleted
+
+**Choice:** school is no longer asked for or shown anywhere; the `User.school` column stays.
+**Why:** the owner doesn't want it; keeping the column needs no data migration and can be undone.
+**Alternatives:** dropping the column (deletes what users typed; can't be undone without a restore).
+

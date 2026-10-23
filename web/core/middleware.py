@@ -13,6 +13,8 @@ from django.contrib.auth.signals import user_logged_in
 from django.dispatch import receiver
 from django.http import Http404, HttpRequest, HttpResponse, HttpResponseBase
 
+from core import cloudflare_access
+
 # Paths that work without a zone header: Docker's healthcheck calls them inside the container.
 ZONE_EXEMPT_PATHS = frozenset({"/healthz"})
 
@@ -48,6 +50,9 @@ def zone_allows(request: HttpRequest) -> bool:
         return zone is None and has_worker_token(request)
     if path in ZONE_EXEMPT_PATHS:
         return True
+    if role == "admin" and zone == cloudflare_access.REMOTE_ZONE:
+        # Through the Cloudflare tunnel: only with a valid Cloudflare Access token.
+        return cloudflare_access.check(request)
     return zone == role
 
 

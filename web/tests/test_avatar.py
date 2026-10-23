@@ -261,14 +261,14 @@ def signed_in(user: User) -> EdgeClient:
     return client
 
 
-def test_settings_change_name_school_and_photo(photos: PhotoServer, alice: User) -> None:
+def test_settings_change_name_and_photo(photos: PhotoServer, alice: User) -> None:
     sign_in(EdgeClient(), photos.google, picture=PICTURE)
     client = signed_in(alice)
     assert client.get("/settings").status_code == 200
-    response = client.post("/settings", {"display_name": "Alicia", "school": "Test School"})
+    response = client.post("/settings", {"display_name": "Alicia"})
     assert response.status_code == 302
     alice.refresh_from_db()
-    assert (alice.display_name, alice.school, alice.show_photo) == ("Alicia", "Test School", False)
+    assert (alice.display_name, alice.show_photo) == ("Alicia", False)
     # Switching the photo off deletes it at once.
     assert not Avatar.objects.filter(user=alice).exists()
     assert alice.photo_updated_at is None

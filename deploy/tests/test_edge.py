@@ -109,6 +109,7 @@ def edge() -> Iterator[None]:
         "GRADER_GOOGLE_TOKEN_UPSTREAM": f"http://{GOOGLE}:8000",
         "GRADER_GOOGLE_CERTS_UPSTREAM": f"http://{GOOGLE}:8000",
         "GRADER_GOOGLE_PHOTO_UPSTREAM": f"http://{GOOGLE}:8000",
+        "GRADER_CF_ACCESS_UPSTREAM": f"http://{GOOGLE}:8000",
     }
     env_args = [arg for key, value in env.items() for arg in ("-e", f"{key}={value}")]
     docker("run", "-d", "--name", PREFIX + "edge", "--network", NETWORK, "--ip", EDGE, *env_args,
@@ -232,6 +233,64 @@ def test_the_problem_editor_takes_big_uploads_too() -> None:
         "/admin/grader/problems/12/edit/more",
     ):
         assert too_large(send("POST", f"http://{EDGE}:8081{path}", size=big)), path
+
+
+# ---- the admin site through the Cloudflare tunnel (:8082) ----
+
+
+def test_remote_admin_requests_carry_their_own_zone_and_cloudflare_headers() -> None:
+    sent = {
+        "X-Edge-Zone": "admin",
+        "X-Forwarded-Proto": "http",
+        "Cf-Access-Jwt-Assertion": "header.payload.signature",
+        "Cf-Connecting-Ip": "203.0.113.7",
+    }
+    seen = reached(send("GET", f"http://{EDGE}:8082/admin/", headers=sent))
+    assert seen is not None
+    assert seen["headers"]["x-edge-zone"] == "admin-remote"  # never "admin", whatever was sent
+    assert seen["headers"]["x-forwarded-proto"] == "https"
+    assert seen["headers"]["cf-access-jwt-assertion"] == "header.payload.signature"
+    assert seen["headers"]["cf-connecting-ip"] == "203.0.113.7"
+
+
+@pytest.mark.parametrize(
+    "path", ["/internal", "/internal/judge/claim", "/Internal/judge/claim", "//internal/x",
+             "/%69nternal/judge/claim"],
+)  # fmt: skip
+def test_the_judge_api_is_never_reachable_through_the_remote_admin(path: str) -> None:
+    answer = send("POST", f"http://{EDGE}:8082{path}", size=10)
+    assert answer.get("status") == 404, answer
+    assert reached(answer) is None
+
+
+def test_remote_admin_body_limits_match_the_admin_port() -> None:
+    big = 2 * 1024 * 1024
+    for path in ("/admin/grader/import/", "/admin/grader/problems/new"):
+        seen = reached(send("POST", f"http://{EDGE}:8082{path}", size=big))
+        assert seen is not None and seen["body_len"] == big, path
+    answer = send("POST", f"http://{EDGE}:8082/admin/core/sitesetting/1/change/", size=big)
+    assert too_large(answer), answer
+
+
+def test_remote_admin_has_the_security_headers() -> None:
+    headers = send("GET", f"http://{EDGE}:8082/healthz")["headers"]
+    assert "frame-ancestors 'none'" in headers["content-security-policy"]
+    assert headers["x-frame-options"] == "DENY"
+
+
+def test_web_admin_may_fetch_the_access_keys() -> None:
+    seen = reached(send("GET", f"http://{EDGE}:8090/access-certs?x=1", source="admin"))
+    assert seen is not None
+    assert seen["path"] == "/cdn-cgi/access/certs"  # query string dropped
+    assert seen["headers"]["host"] == f"{GOOGLE}:8000"
+
+
+def test_nobody_else_may_fetch_the_access_keys() -> None:
+    for source in ("web", "other"):
+        answer = send("GET", f"http://{EDGE}:8090/access-certs", source=source)
+        assert answer.get("status") == 404, (source, answer)
+    answer = send("POST", f"http://{EDGE}:8090/access-certs", size=10, source="admin")
+    assert answer.get("status") == 404, answer
 
 
 # ---- headers on both sites ----

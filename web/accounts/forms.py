@@ -23,12 +23,6 @@ class FirstSignInForm(forms.Form):
     display_name = forms.CharField(
         label=_("Display name"), max_length=100, validators=[no_control_characters]
     )
-    school = forms.CharField(
-        label=_("School (optional)"),
-        max_length=100,
-        required=False,
-        validators=[no_control_characters],
-    )
     accept_privacy = forms.BooleanField(label=_("I have read the privacy page"))
 
     def clean_username(self) -> str:
@@ -43,10 +37,9 @@ class ProfileSettingsForm(forms.ModelForm):  # type: ignore[type-arg]
 
     class Meta:
         model = User
-        fields = ["display_name", "school", "show_photo"]
+        fields = ["display_name", "show_photo"]
         labels = {
             "display_name": _("Display name"),
-            "school": _("School (optional)"),
             "show_photo": _("Show my Google profile photo"),
         }
         help_texts = {
@@ -59,8 +52,7 @@ class ProfileSettingsForm(forms.ModelForm):  # type: ignore[type-arg]
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.fields["display_name"].required = True
-        for name in ("display_name", "school"):
-            self.fields[name].validators.append(no_control_characters)
+        self.fields["display_name"].validators.append(no_control_characters)
 
 
 class FirstSuperuserForm(forms.Form):

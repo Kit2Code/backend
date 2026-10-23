@@ -86,6 +86,45 @@ it will refuse the requests: in the app's settings, set `web-admin` → `GRADER_
 `http://<the NAS's Tailscale address>:8081`. Several addresses are separated by commas, for example
 the Tailscale IP and the MagicDNS name: `http://100.x.y.z:8081,http://<name>.<tailnet>.ts.net:8081`.
 
+## 4b. The admin site from anywhere, through Cloudflare (optional)
+
+Instead of (or as well as) Tailscale, you can open the admin site at `https://admin.<your domain>`
+through the same Cloudflare tunnel. Cloudflare Access asks who you are first (your email gets a
+one-time code), and the grader checks Cloudflare's signed answer itself: if anything is missing or
+wrong, the address only says *Not Found*. Your admin username and password are still needed after
+that. Everything here is done in the Cloudflare dashboard and the ZimaOS app settings.
+
+1. **Protect the address first.** Cloudflare dashboard → **Zero Trust** → **Access** →
+   **Applications** → **Add an application** → **Self-hosted**.
+   - *Application name*: `grader admin`. *Session duration*: for example 24 hours.
+   - *Application domain*: subdomain `admin`, your domain (for example `example.org`).
+   - Next, add a policy: *Action* **Allow**, *Include* → **Emails** → your email (and anyone else
+     who should reach the admin). Save the application.
+   - Open the application again → **Overview** and copy the **Application Audience (AUD) Tag** (a
+     long hex string).
+   - Note your **team domain**: Zero Trust → **Settings** → **Custom Pages** (or *General*) shows
+     it as `<your team>.cloudflareaccess.com`.
+2. **Point the address at the grader.** Zero Trust → **Networks** → **Tunnels** → `grader` →
+   **Public Hostname** → **Add a public hostname**: subdomain `admin`, your domain, *Service* type
+   **HTTP**, URL **`edge:8082`**. Save. (Do step 1 first, so the address is never open without
+   Cloudflare's login; until step 3 the grader answers *Not Found* anyway.)
+3. **Tell the grader.** ZimaOS → the grader app → settings:
+
+   | Container | Setting | Value |
+   |---|---|---|
+   | `web-admin` | `GRADER_CF_ACCESS_TEAM_DOMAIN` | `<your team>.cloudflareaccess.com` (no `https://`) |
+   | `web-admin` | `GRADER_CF_ACCESS_AUD` | the AUD tag from step 1 |
+   | `web-admin` | `GRADER_ADMIN_EXTRA_URLS` | add `https://admin.<your domain>` (comma-separated with any Tailscale addresses) |
+   | `edge` | `GRADER_CF_ACCESS_UPSTREAM` | `https://<your team>.cloudflareaccess.com` |
+
+   Save; the app restarts.
+4. **Check it.** In a private browser window open `https://admin.<your domain>/admin/`: Cloudflare's
+   login page comes first, then the grader's admin login. Actions you take this way are in the
+   audit log with your Cloudflare email.
+
+To switch it off again, empty the three `GRADER_CF_ACCESS_…` settings (or delete the public
+hostname in the tunnel).
+
 ## 5. Google sign-in
 
 Students sign in with Google. The grader asks Google only for an account number (no email, name or
@@ -217,6 +256,12 @@ starting) and keep the judge's CPUs apart from the services' and from CMS's.
   its log says "role grader_app created" or "updated".
 - **The edge stops at once with "must be an https:// address".** A Google upstream setting on
   `edge` was changed to something that isn't `https://`; remove it (the defaults are Google's own).
+  For `GRADER_CF_ACCESS_UPSTREAM`, write it with `https://` in front (step 4b).
+- **`https://admin.<your domain>` says *Not Found* after Cloudflare's login.** The grader didn't
+  accept Cloudflare's answer: check the three `GRADER_CF_ACCESS_…` settings (team domain without
+  `https://` on `web-admin`, with it on `edge`; the AUD tag exactly as shown). The `web-admin` log
+  says "Cloudflare Access keys: …" if it can't fetch the keys. *Bad Request (400)* instead: add the
+  address to `GRADER_ADMIN_EXTRA_URLS`.
 
 ## First-install checklist
 
@@ -234,6 +279,8 @@ two lines: they show the install works on this machine.
 - [ ] **3.** `SETUP-LINK.txt` opened, the admin account made, and you can sign in to
   `http://<the NAS's LAN address>:8081/admin/`.
 - [ ] **4.** (Optional) the admin site opens over Tailscale too.
+- [ ] **4b.** (Optional) `https://admin.<your domain>/admin/` shows Cloudflare's login first, then
+  the grader's; in a window without the Cloudflare login it never shows the grader's page.
 - [ ] **5.** The Google client is saved on the Sign-in page and *Test sign-in config* says keys were
   received. `https://<your public hostname>` opens the public site and *Sign in with Google*
   works.

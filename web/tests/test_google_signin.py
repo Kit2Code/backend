@@ -226,11 +226,12 @@ def test_new_google_account_goes_to_the_first_sign_in_form(google: FakeGoogle) -
 def test_first_sign_in_creates_the_account(google: FakeGoogle) -> None:
     client = EdgeClient()
     sign_in(client, google, next_url="/problems/aplusb")
+    # School is no longer asked for (owner's decision, 2026-10-23): a sent value is ignored.
     response = welcome(client, username="alice_01", display_name="Alice", school="A School")
     assert response.status_code == 302
     assert response["Location"] == "/problems/aplusb"
     user = User.objects.get(username="alice_01")
-    assert (user.display_name, user.school) == ("Alice", "A School")
+    assert (user.display_name, user.school) == ("Alice", "")
     assert not user.has_usable_password()
     identity = GoogleIdentity.objects.get(user=user)
     assert (identity.issuer, identity.subject) == (GOOGLE, SUB)
@@ -478,7 +479,6 @@ def test_welcome_without_a_pending_identity_goes_back_to_sign_in() -> None:
         ({"username": "a" * 21}, "username"),
         ({"display_name": ""}, "display_name"),
         ({"display_name": "Eve‮"}, "display_name"),
-        ({"school": "School\x00"}, "school"),
         ({"accept_privacy": ""}, "accept_privacy"),
     ],
 )

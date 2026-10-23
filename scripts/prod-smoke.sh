@@ -112,6 +112,11 @@ case "$admin" in *csrfmiddlewaretoken*) pass "admin port serves the Django admin
 answer="$(curl -s -o /dev/null -w '%{http_code}' -H "Host: $ADMIN_HOST" -X POST http://127.0.0.1:8081/internal/judge/claim)"
 [ "$answer" = 404 ] && pass "admin port: /internal → 404" || fail "admin port /internal → $answer"
 check "the public port is not published on the host" bash -c '! curl -s -m 3 http://127.0.0.1:8080/'
+# The admin through the tunnel (:8082) is off until the owner sets up Cloudflare Access: even with
+# a token-looking header, the probe (the tunnel's place) gets 404.
+answer="$(in_python probe "$HTTP" GET "http://edge:8082/admin/login/" "$ADMIN_HOST" "" "Cf-Access-Jwt-Assertion:a.b.c")"
+[ "$(status_of "$answer")" = 404 ] && pass "remote admin (:8082) is off by default → 404" || fail "remote admin :8082 → ${answer:0:200}"
+check "the remote admin port is not published on the host" bash -c '! curl -s -m 3 http://127.0.0.1:8082/'
 
 echo "== no way out"
 for service in web web-admin; do
@@ -141,6 +146,8 @@ answer="$(in_python web-admin "$HTTP" POST http://10.89.91.10:8090/token "" "x")
 answer="$(dc exec -T worker python3 -c "$HTTP" GET http://10.89.91.10:8090/certs "")"
 [ "$(status_of "$answer")" = ERR ] && pass "worker can't reach :8090" || fail "worker reached :8090"
 check "the host can't reach :8090" bash -c '! curl -s -m 3 http://10.89.91.10:8090/certs'
+answer="$(in_python web-admin "$HTTP" GET http://10.89.91.10:8090/access-certs "")"
+[ "$(status_of "$answer")" = 404 ] && pass "web-admin → :8090/access-certs → 404 while not configured" || fail "web-admin /access-certs → $answer"
 
 echo "== secrets"
 listing() {

@@ -6,7 +6,7 @@
   <div class="profile-main">
     <p class="rank-title title-{{ title.key }}">{{ title.name }}</p>
     <h1 class="title-{{ title.key }}">{% if person.display_name %}{{ person.display_name }}{% else %}{{ person.username }}{% endif %}</h1>
-    <p class="handle">@{{ person.username }}{% if person.school %} · {{ person.school }}{% endif %}</p>
+    <p class="handle">@{{ person.username }}</p>
     <dl class="profile-stats">
       <div{% if standing.rank %} data-rank="{{ standing.rank }}"{% endif %}><dt>{% translate "Rank" %}</dt><dd>{% if standing.rank %}#{{ standing.rank }}{% else %}—{% endif %}</dd></div>
       <div data-score="{{ standing.total|floatformat:"-2" }}"><dt>{% translate "Score" %}</dt><dd>{{ standing.total|floatformat:"-2" }}</dd></div>

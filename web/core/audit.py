@@ -7,6 +7,7 @@ from django.contrib.auth.signals import user_logged_in, user_logged_out, user_lo
 from django.dispatch import receiver
 from django.http import HttpRequest
 
+from core import cloudflare_access
 from core.models import AuditLog
 from core.ratelimit import client_ip
 
@@ -27,12 +28,16 @@ def record(
     user = actor if actor is not None else getattr(request, "user", None)
     if user is not None and not user.is_authenticated:
         user = None
+    details = dict(details or {})
+    access_email = cloudflare_access.email_of(request)
+    if access_email:  # the admin through the Cloudflare tunnel: who Cloudflare Access let in
+        details["access_email"] = access_email
     return AuditLog.objects.create(
         actor=user,
         actor_username=user.get_username() if user is not None else "",
         action=action,
         target=str(target)[:255],
-        details=details or {},
+        details=details,
         ip=client_ip(request) or None,
     )
 

@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: grader\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-23 13:19+0700\n"
+"POT-Creation-Date: 2026-10-23 13:55+0700\n"
 "PO-Revision-Date: 2026-10-21 19:00+0700\n"
 "Last-Translator: grader maintainers\n"
 "Language-Team: Thai\n"
@@ -39,36 +39,32 @@ msgstr "ยกเลิกการเชื่อมบัญชี Google"
 msgid "Done."
 msgstr "เรียบร้อย"
 
-#: accounts/forms.py:18 accounts/forms.py:70
+#: accounts/forms.py:18 accounts/forms.py:62
 msgid "Username"
 msgstr "ชื่อผู้ใช้"
 
-#: accounts/forms.py:21 accounts/forms.py:73 accounts/models.py:11
+#: accounts/forms.py:21 accounts/forms.py:65 accounts/models.py:11
 #: accounts/models.py:27
 msgid "3 to 20 characters: small letters a-z, digits and _ only."
 msgstr "3 ถึง 20 ตัวอักษร ใช้ได้เฉพาะ a-z ตัวเล็ก ตัวเลข และ _"
 
-#: accounts/forms.py:24 accounts/forms.py:48
+#: accounts/forms.py:24 accounts/forms.py:42
 msgid "Display name"
 msgstr "ชื่อที่แสดง"
 
-#: accounts/forms.py:27 accounts/forms.py:49
-msgid "School (optional)"
-msgstr "โรงเรียน (ไม่บังคับ)"
-
-#: accounts/forms.py:32
+#: accounts/forms.py:26
 msgid "I have read the privacy page"
 msgstr "ฉันอ่านนโยบายความเป็นส่วนตัวแล้ว"
 
-#: accounts/forms.py:37 accounts/models.py:28 accounts/views.py:157
+#: accounts/forms.py:31 accounts/models.py:28 accounts/views.py:157
 msgid "That username is taken."
 msgstr "ชื่อผู้ใช้นี้มีคนใช้แล้ว"
 
-#: accounts/forms.py:50
+#: accounts/forms.py:43
 msgid "Show my Google profile photo"
 msgstr "แสดงรูปโปรไฟล์ Google ของฉัน"
 
-#: accounts/forms.py:54
+#: accounts/forms.py:47
 msgid ""
 "Switching this off deletes the photo we keep. Switched on, it is fetched "
 "again the next time you sign in."
@@ -76,15 +72,15 @@ msgstr ""
 "ปิดแล้วเราจะลบรูปที่เก็บไว้ทันที ถ้าเปิดไว้ "
 "จะดึงรูปมาใหม่ในครั้งถัดไปที่คุณเข้าสู่ระบบ"
 
-#: accounts/forms.py:75
+#: accounts/forms.py:67
 msgid "Password"
 msgstr "รหัสผ่าน"
 
-#: accounts/forms.py:76
+#: accounts/forms.py:68
 msgid "Password again"
 msgstr "รหัสผ่านอีกครั้ง"
 
-#: accounts/forms.py:83
+#: accounts/forms.py:75
 msgid "The two passwords are different."
 msgstr "รหัสผ่านทั้งสองช่องไม่ตรงกัน"
 
@@ -1151,13 +1147,13 @@ msgstr ""
 
 #: core/templates/core/privacy.html:13
 msgid ""
-"We store the username, display name and school you type in, the programs you "
-"submit and their results. Other people can see your username, display name, "
-"school and scores, but never your programs."
+"We store the username and display name you type in, the programs you submit "
+"and their results. Other people can see your username, display name, photo "
+"and scores, but never your programs."
 msgstr ""
-"เราเก็บชื่อผู้ใช้ ชื่อที่แสดง และโรงเรียนที่คุณกรอก "
-"รวมถึงโปรแกรมที่คุณส่งและผลการตรวจ คนอื่นจะเห็นชื่อผู้ใช้ ชื่อที่แสดง "
-"โรงเรียน และคะแนนของคุณ แต่จะไม่เห็นโปรแกรมของคุณ"
+"เราเก็บชื่อผู้ใช้และชื่อที่แสดงที่คุณกรอก รวมถึงโปรแกรมที่คุณส่งและผลการตรวจ "
+"คนอื่นจะเห็นชื่อผู้ใช้ ชื่อที่แสดง รูป และคะแนนของคุณ "
+"แต่จะไม่เห็นโปรแกรมของคุณ"
 
 #: core/templates/core/privacy.html:18
 msgid ""
@@ -1342,7 +1338,7 @@ msgid "Newer"
 msgstr "ใหม่กว่า"
 
 #: judging/templates/judging/list.html:46
-#: judging/templates/judging/ranking.html:29
+#: judging/templates/judging/ranking.html:28
 #: problems/templates/problems/_task_results.html:36
 #, python-format
 msgid "Page %(number)s of %(total)s"
@@ -1397,20 +1393,16 @@ msgstr "ความคืบหน้าตามกลุ่มโจทย์
 msgid "Attempted"
 msgstr "เคยลองทำ"
 
-#: judging/templates/judging/ranking.html:9
-msgid "School"
-msgstr "โรงเรียน"
-
-#: judging/templates/judging/ranking.html:23
+#: judging/templates/judging/ranking.html:22
 msgid "Nobody has scored yet."
 msgstr "ยังไม่มีใครได้คะแนน"
 
-#: judging/templates/judging/ranking.html:28
+#: judging/templates/judging/ranking.html:27
 #: problems/templates/problems/_task_results.html:35
 msgid "Previous"
 msgstr "ก่อนหน้า"
 
-#: judging/templates/judging/ranking.html:30
+#: judging/templates/judging/ranking.html:29
 #: problems/templates/problems/_task_results.html:37
 msgid "Next"
 msgstr "ถัดไป"

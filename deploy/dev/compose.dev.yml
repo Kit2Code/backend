@@ -87,6 +87,11 @@ services:
     environment:
       <<: *web-env
       GRADER_ROLE: admin
+      # The remote admin through the edge's :8082 (127.0.0.1:8002 here), with fake-oidc standing
+      # in for Cloudflare Access.
+      GRADER_ADMIN_EXTRA_URLS: "http://127.0.0.1:8002"
+      GRADER_CF_ACCESS_TEAM_DOMAIN: "dev-team.cloudflareaccess.com"
+      GRADER_CF_ACCESS_AUD: "dev-access-application"
     volumes:
       - ../../web:/app/web
       - ../../common:/app/common
@@ -115,11 +120,12 @@ services:
       GRADER_GOOGLE_CERTS_UPSTREAM: http://fake-oidc:8099
       GRADER_GOOGLE_CERTS_PATH: /certs
       GRADER_GOOGLE_PHOTO_UPSTREAM: http://fake-oidc:8099
+      GRADER_CF_ACCESS_UPSTREAM: http://fake-oidc:8099
     networks:
       app_net: {ipv4_address: 10.89.90.10}
       dev_ports: {}
       fake_google_net: {}
-    ports: ["127.0.0.1:8000:8080", "127.0.0.1:8001:8081"]
+    ports: ["127.0.0.1:8000:8080", "127.0.0.1:8001:8081", "127.0.0.1:8002:8082"]
     depends_on: [web, web-admin, fake-oidc]
     restart: unless-stopped
     healthcheck:
@@ -140,6 +146,8 @@ services:
       FAKE_OIDC_CLIENT_ID: "grader-dev.apps.example"
       FAKE_OIDC_SECRET_FILE: /run/secrets/fake-oidc/client_secret
       FAKE_OIDC_REDIRECT_URIS: "http://127.0.0.1:8000/auth/google/callback,http://localhost:8000/auth/google/callback"
+      FAKE_OIDC_ACCESS_TEAM: "dev-team.cloudflareaccess.com"
+      FAKE_OIDC_ACCESS_AUD: "dev-access-application"
     volumes:
       - ./fake-oidc:/app/fake-oidc:ro
       - ../../.devdata/secrets/fake-oidc:/run/secrets/fake-oidc:ro

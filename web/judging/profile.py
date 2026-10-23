@@ -47,7 +47,6 @@ def ranking_rows() -> QuerySet[Any, Any]:
         .values(
             "user__username",
             "user__display_name",
-            "user__school",
             "user__photo_updated_at",
             "user__show_photo",
         )

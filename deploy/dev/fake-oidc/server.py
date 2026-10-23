@@ -11,12 +11,18 @@ It speaks the parts of OpenID Connect that the grader uses, in the same shapes a
                    lh3.googleusercontent.com behind the edge's /photo route. With the `profile`
                    scope the ID token's `picture` points there, and also carries a `name`, as
                    Google's does (the grader must ignore it).
+- GET  /cdn-cgi/access/certs  stands in for a Cloudflare Access team's keys (the remote admin);
+                   the edge's :8090 /access-certs forwards here in the dev stack
+- GET  /access-token?email=…[&aud=…]  a signed Cloudflare Access token, for tests only (real
+                   Access adds it to requests itself)
 
 Settings come from environment variables:
   FAKE_OIDC_ISSUER         the `iss` of the tokens, e.g. http://127.0.0.1:8099
   FAKE_OIDC_CLIENT_ID      the only client ID accepted
   FAKE_OIDC_SECRET_FILE    file holding the only client secret accepted
   FAKE_OIDC_REDIRECT_URIS  comma-separated redirect URIs that may be used
+  FAKE_OIDC_ACCESS_TEAM    the fake Access team domain (the tokens' issuer is https://<it>)
+  FAKE_OIDC_ACCESS_AUD     the fake Access application's AUD tag
 The signing key is made fresh at every start and kept in memory only.
 """
 
@@ -49,6 +55,8 @@ ISSUER = os.environ["FAKE_OIDC_ISSUER"]
 CLIENT_ID = os.environ["FAKE_OIDC_CLIENT_ID"]
 CLIENT_SECRET = Path(os.environ["FAKE_OIDC_SECRET_FILE"]).read_text(encoding="utf-8").strip()
 REDIRECT_URIS = {uri.strip() for uri in os.environ["FAKE_OIDC_REDIRECT_URIS"].split(",")}
+ACCESS_TEAM = os.environ.get("FAKE_OIDC_ACCESS_TEAM", "")
+ACCESS_AUD = os.environ.get("FAKE_OIDC_ACCESS_AUD", "")
 
 KEY = RSAKey.generate_key(2048, parameters={"kid": "fake-" + secrets.token_hex(4), "use": "sig"})
 
@@ -101,6 +109,21 @@ def id_token(sub: str, nonce: str, scope: str = "openid") -> str:
     return jwt.encode({"alg": "RS256", "kid": KEY.kid, "typ": "JWT"}, claims, KEY)
 
 
+def access_token(email: str, aud: str | None = None) -> str:
+    """A token like the ones Cloudflare Access adds to requests (Cf-Access-Jwt-Assertion)."""
+    now = int(time.time())
+    claims = {
+        "iss": f"https://{ACCESS_TEAM}",
+        "aud": [aud or ACCESS_AUD],
+        "email": email,
+        "sub": hashlib.sha256(email.encode()).hexdigest()[:16],
+        "iat": now,
+        "nbf": now,
+        "exp": now + TOKEN_LIFETIME_S,
+    }
+    return jwt.encode({"alg": "RS256", "kid": KEY.kid, "typ": "JWT"}, claims, KEY)
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "fake-oidc"
 
@@ -138,8 +161,11 @@ class Handler(BaseHTTPRequestHandler):
         path = urlsplit(self.path).path
         if path == "/healthz":
             self.send(200, b"ok", "text/plain")
-        elif path == "/certs":
+        elif path in ("/certs", "/cdn-cgi/access/certs"):
             self.send_json(200, {"keys": [{**KEY.as_dict(private=False), "alg": "RS256"}]})
+        elif path == "/access-token":
+            query = self.query()
+            self.send_json(200, {"token": access_token(query.get("email", ""), query.get("aud"))})
         elif path == "/authorize":
             self.authorize_page(self.query())
         elif path.startswith("/a/fake-") and path.endswith("=s256-c"):

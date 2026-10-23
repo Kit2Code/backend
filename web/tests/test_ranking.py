@@ -107,10 +107,11 @@ def test_ranking_is_one_query_for_the_rows(
         assert len(ranked(get("/ranking"))) == 30
 
 
-def test_ranking_shows_display_name_and_school(problems: dict[str, Problem]) -> None:
+def test_ranking_shows_display_name_but_not_school(problems: dict[str, Problem]) -> None:
+    # School is no longer shown anywhere (owner's decision, 2026-10-23); the column stays.
     best(user("alice", display_name="Alice A.", school="Some School"), problems["aplusb"], 1, 1)
     html = get("/ranking")
-    assert "Alice A." in html and "Some School" in html
+    assert "Alice A." in html and "Some School" not in html
 
 
 def test_navigation_links_to_the_ranking() -> None:

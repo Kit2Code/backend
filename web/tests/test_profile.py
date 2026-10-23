@@ -79,7 +79,7 @@ def test_profile_shows_title_name_rank_score_and_counts(alice: User) -> None:
     html = page("/users/alice")
     assert re.search(r'<p class="rank-title title-newbie">', html)
     assert re.search(r'<h1 class="title-newbie">Alice A\.</h1>', html)
-    assert "@alice" in html and "Test School" in html
+    assert "@alice" in html and "Test School" not in html  # school is never shown
     assert re.search(r'data-rank="2"', html)
     assert re.search(r'data-score="140"', html)
     assert re.search(r'data-solved="1"', html)

@@ -1,6 +1,8 @@
 # grader-edge: the only way into the grader (docs/ARCHITECTURE.md, "One web image, two roles").
 #   :8080  public site   (only the Cloudflare tunnel reaches it, over edge_net)
 #   :8081  admin site    (published on the NAS: LAN and Tailscale)
+#   :8082  admin site through the Cloudflare tunnel (edge_net only; Cloudflare Access in front,
+#          and web-admin checks the Access token itself)
 #   :8090  Google sign-in egress (app_net only): two fixed Google URLs and profile photos
 # Each site port goes to one web role and sets X-Edge-Zone for it, replacing anything the client
 # sent; Django checks the header again (web/core/middleware.py).
@@ -71,10 +73,33 @@
 	}
 }
 
+# The admin site through the Cloudflare tunnel. Only the tunnel reaches this port (it is not
+# published on the NAS). Same blocks and limits as :8081, but its own zone, "admin-remote", which
+# web-admin accepts only together with a valid Cloudflare Access token (Cf-Access-Jwt-Assertion,
+# passed on as Cloudflare sent it; web/core/cloudflare_access.py). Cloudflare ended TLS: https.
+:8082 {
+	import security_headers
+	@internal path /internal /internal/*
+	respond @internal 404
+	@upload path_regexp ^/admin/grader/(import/|problems/new|problems/[0-9]+/edit)$
+	request_body @upload {
+		max_size 1100MB
+	}
+	@not_upload not path_regexp ^/admin/grader/(import/|problems/new|problems/[0-9]+/edit)$
+	request_body @not_upload {
+		max_size 1MB
+	}
+	reverse_proxy {$GRADER_WEB_ADMIN_UPSTREAM:web-admin:8000} {
+		header_up X-Edge-Zone admin-remote
+		header_up X-Forwarded-Proto https
+	}
+}
+
 # Google sign-in egress. Listens on the edge's app_net address only. The public web role may POST
 # /token, GET /certs and GET a profile photo (/photo/<Google's photo path>=s256-c, fetched once
-# per sign-in); web-admin may only GET /certs (the Sign-in page's test button); everyone else gets
-# 404. Query strings are dropped; bodies are capped. TLS to Google is verified.
+# per sign-in); web-admin may only GET /certs (the Sign-in page's test button) and /access-certs
+# (the Cloudflare Access team's keys, for the remote admin; 404 while no team is configured);
+# everyone else gets 404. Query strings are dropped; bodies are capped. TLS to Google is verified.
 :8090 {
 	bind {$GRADER_EDGE_APP_IP:10.89.91.10}
 
@@ -87,6 +112,18 @@
 	handle @admin_certs {
 		rewrite * {$GRADER_GOOGLE_CERTS_PATH:/oauth2/v3/certs}?
 		reverse_proxy {$GRADER_GOOGLE_CERTS_UPSTREAM:https://www.googleapis.com} {
+			header_up Host {upstream_hostport}
+		}
+	}
+	@admin_access_certs {
+		remote_ip {$GRADER_WEB_ADMIN_IP:10.89.91.21}
+		method GET
+		path /access-certs
+		expression `{env.GRADER_CF_ACCESS_UPSTREAM} != ""`
+	}
+	handle @admin_access_certs {
+		rewrite * /cdn-cgi/access/certs?
+		reverse_proxy {$GRADER_CF_ACCESS_UPSTREAM:https://access-not-configured.invalid} {
 			header_up Host {upstream_hostport}
 		}
 	}

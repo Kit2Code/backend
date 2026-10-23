@@ -12,6 +12,7 @@ How to install it on ZimaOS is in [DEPLOY.md](DEPLOY.md).
                                        blocks /admin* /internal* /setup*   │
             Google ◄── edge :8090 (three fixed paths) ◄── web (sign-in)     │
  Home LAN ───────────────────────────► edge :8081 ─► web-admin (GRADER_ROLE=admin)
+ Internet ─► Cloudflare Access ─► tunnel ─► edge :8082 ─┘ (optional; Access token checked too)
                                        blocks /internal*                  │   ▲
                                                                           │   │ /internal/* (token)
                          db (Postgres) ◄── both web roles, backup         │   │
@@ -360,7 +361,8 @@ graders and reference solutions (details for problem setters: [PROBLEM_FORMAT.md
 
 ## The admin site
 
-Only the admin role routes it (`/admin/`, on the LAN through edge `:8081`). It is the stock Django
+Only the admin role routes it (`/admin/`, on the LAN through edge `:8081`, and optionally from
+anywhere through the tunnel and edge `:8082`; see "The admin site from outside"). It is the stock Django
 admin plus our own pages, which `GraderAdminSite.get_urls()` (`web/config/admin.py`) adds inside
 the admin, so they are staff-only and look the same. Each page also needs a model permission
 (for example `change_sitesetting` for Grading), so a helper staff account can be given only some.
@@ -411,6 +413,22 @@ the admin, so they are staff-only and look the same. Each page also needs a mode
   now**, which only adds a request row for the backup service to pick up.
 - **Sign-in:** the Google client ID and write-only secret, the redirect URI to register, and a test
   button that fetches Google's keys exactly as a sign-in does.
+
+### The admin site from outside
+
+Optional (docs/DEPLOY.md, step 4b). The tunnel sends `admin.<domain>` to edge `:8082`, which is
+not published on the NAS. Cloudflare Access sits in front of that hostname: only people its policy
+allows get through, and Cloudflare adds a signed token (`Cf-Access-Jwt-Assertion`) to their
+requests. `:8082` has the same blocks and body limits as `:8081` but its own zone, `admin-remote`.
+web-admin accepts that zone only with a valid token (`core/cloudflare_access.py`): RS256 only,
+signed by one of the Access team's keys (fetched through edge `:8090 /access-certs`, kept an hour,
+fetched again early only for an unknown key id and then at most once a minute), issued by the team
+for the application's AUD tag, and current. Anything else, including missing settings, is a 404 like
+a wrong zone, so if Access is ever switched off or misconfigured the remote admin closes rather than
+opens. The staff password login, CSRF and the audit log still apply; audit rows of remote actions
+also record the Access email, and the login rate limit counts the visitor's address from
+`Cf-Connecting-Ip`. In the dev stack `fake-oidc` stands in for Access and `:8082` is
+`127.0.0.1:8002`.
 
 **Audit log.** Every admin action writes an `AuditLog` row: who, what, to what, when and from which
 IP (`core/audit.py`). Django admin edits are caught by `AuditedModelAdmin`, the base class of every

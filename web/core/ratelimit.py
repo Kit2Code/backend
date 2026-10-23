@@ -78,7 +78,8 @@ def _valid_ip(value: str) -> str | None:
 def client_ip(request: HttpRequest) -> str:
     """The address of the person making the request, as well as we can tell.
 
-    Public role: Cloudflare puts the visitor's address in `Cf-Connecting-Ip`. Both roles: the edge
+    Public role and the admin through the tunnel: Cloudflare puts the visitor's address in
+    `Cf-Connecting-Ip`. Both roles: the edge
     puts the address it saw as the last `X-Forwarded-For` entry; earlier entries came from the
     client and are ignored. Failing those, the TCP peer. The headers count only when the TCP peer
     is the edge (settings.GRADER_EDGE_ADDRESSES): anyone else could write them.
@@ -86,7 +87,10 @@ def client_ip(request: HttpRequest) -> str:
     peer = str(request.META.get("REMOTE_ADDR", ""))
     if peer not in settings.GRADER_EDGE_ADDRESSES:
         return peer
-    if settings.GRADER_ROLE == "public":
+    through_cloudflare = settings.GRADER_ROLE == "public" or (
+        request.headers.get("X-Edge-Zone") == "admin-remote"  # the admin via the tunnel (:8082)
+    )
+    if through_cloudflare:
         cloudflare = _valid_ip(request.headers.get("Cf-Connecting-Ip", ""))
         if cloudflare:
             return cloudflare
