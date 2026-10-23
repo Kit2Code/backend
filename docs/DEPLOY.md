@@ -2,7 +2,8 @@
 
 This guide installs the grader as one ZimaOS app, using only the ZimaOS dashboard, the ZimaOS Files
 app, the Cloudflare dashboard and the Google Cloud console. Two optional steps at the end (the
-restore drill and pinning other apps' CPUs) need the ZimaOS terminal; they say why.
+restore drill and pinning other apps' CPUs) need the ZimaOS terminal; they say why. If you prefer
+the terminal for everything, see [Using the terminal instead](#using-the-terminal-instead).
 
 What you end up with:
 
@@ -166,6 +167,42 @@ The app restarts; `web-admin` updates the database by itself. Your data, setting
 
 The digest (`@sha256:…`) names the exact images that release built and tested; a version tag alone
 could be pushed again later.
+
+## Using the terminal instead
+
+Every step above can also be done in the ZimaOS terminal (Settings → Terminal, or `ssh` to the NAS).
+The Cloudflare (step 1) and Google (step 5) parts stay in their dashboards. If `docker` says
+*permission denied*, put `sudo` in front of each `docker` command.
+
+**Install (instead of step 2).** Copy `deploy/zimaos/grader.compose.yml` to
+`/DATA/AppData/grader/grader.compose.yml` (with the Files app, or `scp`), then:
+
+```sh
+cd /DATA/AppData/grader
+nano grader.compose.yml   # replace the placeholders from step 2:
+                          #   PUBLIC_BASE_URL (twice), ADMIN_BASE_URL, TUNNEL_TOKEN
+docker compose -f grader.compose.yml up -d
+docker compose -f grader.compose.yml ps   # secrets-init and db-init: exited (0); the rest: healthy
+```
+
+The app may not appear in the ZimaOS dashboard's app list, or its *Settings* may not change it:
+manage it from the terminal from then on.
+
+**Setup link (step 3):** `cat /DATA/AppData/grader/uploads/SETUP-LINK.txt`
+
+**Logs:** `docker compose -f grader.compose.yml logs --tail 100 <container>` (for example `worker`).
+
+**Update:** in `grader.compose.yml`, replace each `ghcr.io/kit2code/grader-…` image with the
+matching line of the release's *Image digests* box (see
+[Updating to a new version](#updating-to-a-new-version)), then:
+
+```sh
+docker compose -f grader.compose.yml pull
+docker compose -f grader.compose.yml up -d
+```
+
+**Restart:** `docker compose -f grader.compose.yml restart`. **Stop:** `docker compose -f
+grader.compose.yml down` (data in `/DATA/AppData/grader` stays; never add `-v` out of habit).
 
 ## Backups
 
