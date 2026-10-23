@@ -17,7 +17,7 @@ services:
   # One-shot: makes the secrets the first time, then gives each service its own copies; also gives
   # the folders web-admin writes to (uploads, problems) to the web user.
   secrets-init:
-    image: ghcr.io/kit2code/grader-ops:0.1.1@sha256:a6f75f7448198b1f48ad088218ad6290869e01f2ed1dde3a6b083f1a2e6258b3
+    image: ghcr.io/kit2code/grader-ops:0.1.2@sha256:84fd986b104265ff648546c74e57947ccba776f4075e81cbc1c5f4a7f6712dcf
     command: ["secrets-init"]
     restart: "no"
     network_mode: none
@@ -58,7 +58,7 @@ services:
   # One-shot: makes the database role the web site logs in as (grader_app, not a superuser) and
   # gives it the tables; runs at every start, after the database is up.
   db-init:
-    image: ghcr.io/kit2code/grader-ops:0.1.1@sha256:a6f75f7448198b1f48ad088218ad6290869e01f2ed1dde3a6b083f1a2e6258b3
+    image: ghcr.io/kit2code/grader-ops:0.1.2@sha256:84fd986b104265ff648546c74e57947ccba776f4075e81cbc1c5f4a7f6712dcf
     command: ["db-init"]
     restart: "no"
     networks: [db_net]
@@ -72,7 +72,7 @@ services:
 
   # The public site (GRADER_ROLE=public): reached only through the edge's :8080, from the tunnel.
   web:
-    image: ghcr.io/kit2code/grader-web:0.1.1@sha256:2a85ec9b1943a81fcef3041c796afd347f48e149c8c42333473c452544b101ae
+    image: ghcr.io/kit2code/grader-web:0.1.2@sha256:3d89c89ec4c5fb2a072ea38f936b1ec4d8045009d33672c79f37c6c2adcc191c
     environment:
       GRADER_ROLE: public
       PUBLIC_BASE_URL: "https://grader.example.org"
@@ -104,7 +104,7 @@ services:
   # The admin site (GRADER_ROLE=admin): Django admin, admin pages, first-run setup, the judge API.
   # Only this role runs database migrations.
   web-admin:
-    image: ghcr.io/kit2code/grader-web:0.1.1@sha256:2a85ec9b1943a81fcef3041c796afd347f48e149c8c42333473c452544b101ae
+    image: ghcr.io/kit2code/grader-web:0.1.2@sha256:3d89c89ec4c5fb2a072ea38f936b1ec4d8045009d33672c79f37c6c2adcc191c
     environment:
       GRADER_ROLE: admin
       ADMIN_BASE_URL: "http://192.0.2.10:8081"
@@ -146,7 +146,7 @@ services:
   # each sandbox's own network namespace). docs/DECISIONS.md, "Worker profile". No internet, no
   # database, one secret.
   worker:
-    image: ghcr.io/kit2code/grader-worker:0.1.1@sha256:6a18944c95b6c8b4fa854acc40187cd53ae2ecb670c6a3685d94ff1ded39dc1c
+    image: ghcr.io/kit2code/grader-worker:0.1.2@sha256:a4eec8c640f13bb1aad32445b34163f30d6a349281de196ccd1ba198790bec67
     hostname: grader-worker
     # Its own cgroup namespace: the boxes' cgroups live inside the container's, and nothing of the
     # host's or other containers' cgroups is visible.
@@ -189,7 +189,7 @@ services:
   # The only way in: :8080 public (tunnel only), :8081 admin (published), :8082 admin through
   # the tunnel (Cloudflare Access), :8090 Google sign-in and Access keys.
   edge:
-    image: ghcr.io/kit2code/grader-edge:0.1.1@sha256:f3bf50ca6dd59f1cb374cd5ba26b03d58a0cf1175fe834b8c46299f83f985461
+    image: ghcr.io/kit2code/grader-edge:0.1.2@sha256:ec2f967e6b1fa40f3c0131685699fd8b7e04b24cfd66583c5538f3bae752523a
     environment:
       # Refuse to start if a Google upstream isn't https (it carries the Google client secret).
       GRADER_REQUIRE_HTTPS_UPSTREAMS: "1"
@@ -231,7 +231,7 @@ services:
 
   # Nightly database backups at BACKUP_TIME, plus "Back up now" from the admin Backups page.
   backup:
-    image: ghcr.io/kit2code/grader-ops:0.1.1@sha256:a6f75f7448198b1f48ad088218ad6290869e01f2ed1dde3a6b083f1a2e6258b3
+    image: ghcr.io/kit2code/grader-ops:0.1.2@sha256:84fd986b104265ff648546c74e57947ccba776f4075e81cbc1c5f4a7f6712dcf
     command: ["backup-loop"]
     environment:
       BACKUP_TIME: "03:30"
