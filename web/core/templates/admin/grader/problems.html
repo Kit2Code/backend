@@ -1,0 +1,63 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+{% block extrahead %}{{ block.super }}
+{# No inline <style> from htmx: the CSP allows no inline styles. #}
+<meta name="htmx-config" content='{"includeIndicatorStyles": false}'>
+<script src="{% static 'vendor/htmx/htmx.min.js' %}" defer></script>
+{% endblock %}
+{% block breadcrumbs %}<div class="breadcrumbs"><a href="{% url 'admin:index' %}">{% translate "Home" %}</a> &rsaquo; {{ title }}</div>{% endblock %}
+{% block content %}
+<form method="get" class="problem-filters">
+  <input type="search" name="q" value="{{ search }}" placeholder="{% translate "Search by id or title" %}" aria-label="{% translate "Search" %}">
+  <select name="group" aria-label="{% translate "Group" %}">
+    <option value="">{% translate "All groups" %}</option>
+    <option value="none"{% if group_filter == "none" %} selected{% endif %}>{% translate "No group" %}</option>
+    {% for group in groups %}<option value="{{ group.pk }}"{% if group_filter == group.pk|stringformat:"d" %} selected{% endif %}>{% if group.parent %}{{ group.parent.name_th }} / {% endif %}{{ group.name_th }}</option>{% endfor %}
+  </select>
+  <select name="state" aria-label="{% translate "State" %}">
+    <option value="">{% translate "Open and closed" %}</option>
+    <option value="open"{% if state_filter == "open" %} selected{% endif %}>{% translate "Open" %}</option>
+    <option value="closed"{% if state_filter == "closed" %} selected{% endif %}>{% translate "Closed" %}</option>
+    <option value="invalid"{% if state_filter == "invalid" %} selected{% endif %}>{% translate "Failed validation" %}</option>
+  </select>
+  <input type="submit" value="{% translate "Filter" %}">
+  <a class="button" href="{% url 'admin:grader-problem-new' %}">{% translate "New problem" %}</a>
+  <a class="button" href="{% url 'admin:grader-import' %}">{% translate "Import a problem" %}</a>
+</form>
+
+<div class="module">
+<table class="problem-table">
+  <thead><tr><th>#</th><th>{% translate "Problem" %}</th><th>{% translate "Group" %}</th><th>{% translate "Validation" %}</th><th>{% translate "Current version" %}</th><th>{% translate "Public site" %}</th></tr></thead>
+  <tbody>
+  {% for row in rows %}{% include "admin/grader/_problem_row.html" with problem=row.problem groups=row.groups can_open=row.can_open error=row.error %}{% empty %}
+    <tr><td colspan="6">{% translate "No problems found." %}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<h2 id="groups">{% translate "Groups" %}</h2>
+<div class="group-columns">
+  <div class="module">
+    <table>
+      <thead><tr><th>{% translate "Group" %}</th><th>{% translate "Short name in the address" %}</th><th>{% translate "Order" %}</th></tr></thead>
+      <tbody>
+      {% for group in groups %}
+        <tr><td>{% if group.parent %}&nbsp;&nbsp;↳ {% endif %}<a href="{% url 'admin:problems_problemgroup_change' group.pk %}">{{ group.name_th }}</a>{% if group.name_en %} <small>({{ group.name_en }})</small>{% endif %}</td><td>{{ group }}</td><td>{{ group.order }}</td></tr>
+      {% empty %}
+        <tr><td colspan="3">{% translate "No groups yet." %}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <form method="post" action="{% url 'admin:grader-add-group' %}" class="module aligned group-form">
+    {% csrf_token %}
+    <h2>{% translate "New group" %}</h2>
+    {{ group_form.non_field_errors }}
+    {% for field in group_form %}
+    <div class="form-row">{{ field.errors }}{{ field.label_tag }} {{ field }}</div>
+    {% endfor %}
+    <div class="submit-row"><input type="submit" value="{% translate "Add group" %}"></div>
+  </form>
+</div>
+{% endblock %}

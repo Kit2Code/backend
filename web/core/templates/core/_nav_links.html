@@ -1,0 +1,7 @@
+{% load i18n icons %}{% with page=request.resolver_match.url_name %}
+<li><a href="{% url 'home' %}"{% if page == "home" %} aria-current="page"{% endif %}>{% icon "house" %}{% translate "Home" %}</a></li>
+<li><a href="{% url 'problems' %}"{% if page == "problems" or page == "problem" or page == "submit" %} aria-current="page"{% endif %}>{% icon "list-checks" %}{% translate "Tasks" %}</a></li>
+<li><a href="{% url 'archive' %}"{% if page == "archive" or page == "archive-group" or page == "archive-subgroup" %} aria-current="page"{% endif %}>{% icon "folder-archive" %}{% translate "Archive" %}</a></li>
+<li><a href="{% url 'submissions' %}"{% if page == "submissions" or page == "submission" %} aria-current="page"{% endif %}>{% icon "list" %}{% translate "Submissions" %}</a></li>
+<li><a href="{% url 'ranking' %}"{% if page == "ranking" %} aria-current="page"{% endif %}>{% icon "trophy" %}{% translate "Ranking" %}</a></li>
+{% endwith %}

@@ -80,7 +80,9 @@ MIDDLEWARE = [
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        # Searched before the apps' folders: our overrides of Django admin's own templates
+        # (the admin app is listed first in INSTALLED_APPS, so app folders can't override it).
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -167,6 +169,8 @@ GOOGLE_AUTHORIZE_URL = env.optional(
 )
 GOOGLE_TOKEN_URL = env.optional("GRADER_GOOGLE_TOKEN_URL", "http://edge:8090/token")
 GOOGLE_JWKS_URL = env.optional("GRADER_GOOGLE_JWKS_URL", "http://edge:8090/certs")
+# Profile photos: the edge forwards /photo/<path> to lh3.googleusercontent.com.
+GOOGLE_PHOTO_URL = env.optional("GRADER_GOOGLE_PHOTO_URL", "http://edge:8090/photo")
 # Google documents both spellings of its issuer. The first one is what we store.
 GOOGLE_ISSUERS = env.optional(
     "GRADER_GOOGLE_ISSUERS", "https://accounts.google.com,accounts.google.com"
@@ -191,6 +195,9 @@ GRADER_UPLOADS_DIR = Path(env.optional("GRADER_UPLOADS_DIR", "/data/uploads"))
 GRADER_BACKUPS_DIR = Path(env.optional("GRADER_BACKUPS_DIR", "/data/backups"))
 # The largest problem zip the Import page takes: the importer's own limit for everything unpacked.
 GRADER_MAX_UPLOAD_BYTES = 1024**3
+# The browser problem editor takes every test file in one form (an .in and .out per test).
+# The public role keeps Django's default of 100 files per request.
+DATA_UPLOAD_MAX_NUMBER_FILES = 2100 if GRADER_ROLE == "admin" else 100
 
 # Submit limits, per user (judging/views.py): seconds between submissions, submissions per hour,
 # and how many may wait for the judge at once.

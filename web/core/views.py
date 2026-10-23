@@ -9,13 +9,14 @@ from django.views.decorators.cache import never_cache
 from accounts.forms import FirstSuperuserForm
 from core import audit, ratelimit, setup
 from core.models import SiteSetting
-from problems.views import recent_problems
+from problems.views import recent_problems, visible_problems
 
 
 def home(request: HttpRequest) -> HttpResponse:
-    """The public home page: the announcement and a way in to the problems."""
+    """The public home page: hero with the live problem count, announcement, new problems."""
     context = {
         "announcement": SiteSetting.get().announcement,
+        "problem_count": visible_problems().count(),
         "recent_problems": recent_problems(),
     }
     return render(request, "core/home.html", context)

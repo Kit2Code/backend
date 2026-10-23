@@ -791,3 +791,75 @@ seccomp filter, no capabilities in the box, and a worker with no internet, no da
 secret.
 **Next:** a follow-up step tries the user-namespace approach.
 
+## 2026-10-23: Pico + one stylesheet
+
+**Choice:** the new dark look keeps Pico (classless) as the base and puts everything else in one
+hand-written `site.css`: Pico's colour variables set to a navy palette on `:root[data-theme="dark"]`,
+plus a few small classes. Dark only. Icons are Lucide SVG files copied into
+`core/static/vendor/lucide/` and inlined by the `{% icon %}` template tag. Drop-down menus are
+`<details>` elements.
+**Why:** no Node.js and no build step; pages load nothing from other sites; the CSP allows no inline
+scripts or styles, which `<details>` and classes respect; inlined SVGs follow the text colour.
+One theme halves what has to be checked on every page.
+**Alternatives:** Tailwind or Bootstrap (needs a build step or a large file, and restyles everything
+Pico gives for free); an icon font (blurry, harder to keep small); `<img>` icons (cannot take the
+text colour); a light/dark switch (twice the checking for little gain).
+
+## 2026-10-23: Max score and limits are copied onto the problem
+
+**Choice:** `Problem` gets `max_score`, `time_limit_ms` and `memory_limit_mb`, copied from the
+current version's `problem.yaml` by `registry.make_current` (where titles and tags are already
+copied). Migration `problems/0003` fills them for existing problems from the store, and leaves NULL
+for a problem whose folder is missing; such a problem counts as never solved on the Tasks page until
+it is imported or published again. "Solved" means a best score of at least `max_score` (less a
+1e-9 allowance for float sums).
+**Why:** the Tasks page shows 50 problems, their limits, how many people solved each and the
+user's own status. With these columns it is a fixed handful of queries and reads no files, so a
+missing or slow store can't break or slow the list. The store's format cache holds only 256 files,
+and the site will have more problems than that.
+**Alternatives:** reading `problem.yaml` for each row (file reads on every page view, and an error
+page if one folder is missing); putting them on `ProblemVersion` (also correct, but the list would
+need a join for every row, and titles already live on `Problem`).
+
+## 2026-10-23: Google profile photos, kept in the database
+
+**Choice:** sign-in asks Google for `openid profile` (was `openid` only) to get the `picture`
+claim; the name in the same token is ignored. The web fetches the photo once per sign-in through a
+new edge route (`:8090/photo/<path>=s256-c`, to `lh3.googleusercontent.com` only), checks size and
+file signature, and stores the bytes in an `Avatar` table (one row per user). `/users/<name>/photo`
+serves it, with `?v=<time>` in page links so browsers may cache it. Users can switch photos off in
+`/settings`, which deletes the stored copy at once.
+**Why:** a photo makes the ranking and profile friendlier. Fetching through the edge and serving it
+ourselves keeps visitors' browsers off Google (privacy, and the CSP stays `img-src 'self'`). The
+database rather than files: the public web role has no writable volume and should not get one
+(it is the internet-facing container); photos are small (Google's 256 px JPEGs are ~10-30 KB);
+they are in the nightly backups; deleting a user deletes the photo.
+**Alternatives:** linking Google's image directly (every visitor's browser would call Google, and
+the CSP would need an outside image host); a writable avatars volume for the public role (more
+attack surface, a compose change for the ZimaOS install); asking web-admin to store it (a
+public-to-admin call path the role split avoids); resizing with Pillow (a new dependency; Google
+resizes for us with the `=s256-c` suffix).
+
+## 2026-10-23: The browser problem editor goes through the importer
+
+**Choice:** the admin's New problem / Edit pages build a native problem folder from the form and
+import it with `import_problem()`, exactly like an uploaded zip, then register it and queue
+validation. Subtasks are typed one per line ("30 1-*"), and there are three fixed slots for
+reference solutions. Editing copies the current version's folder first. The admin role accepts up
+to 2,100 files per request (Django's default is 100) so a problem's tests can be picked at once;
+the public role keeps 100.
+**Why:** one path into the store means one set of safety checks, one versioning scheme and one
+validation rule; the editor can't create a problem the importer would refuse. Plain text lines and
+fixed slots need no JavaScript and no formsets, and cover what the problem format allows.
+**Alternatives:** writing `Problem`/`ProblemVersion` rows and files directly (a second, divergent
+path into the store); formsets for subtasks and solutions (more markup and JavaScript for little
+gain).
+
+## 2026-10-23: "Submissions" stays in the public nav
+
+**Choice:** the new header keeps a "Submissions" link for everyone, next to Home, Tasks, Archive and
+Ranking; the account menu has the user's own submissions.
+**Why:** all submissions are public (without code) and a signed-out visitor should reach them; the
+existing navigation test asks for the link on the home page.
+**Alternatives:** only inside the account menu (signed-out visitors couldn't find the list).
+

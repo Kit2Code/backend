@@ -1,20 +1,22 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n icons %}
 {% block title %}{{ title }}{% endblock %}
 {% block content %}
-<hgroup>
+<hgroup class="problem-head">
   <h1>{{ title }}</h1>
   {% if format.source %}<p>{{ format.source }}</p>{% endif %}
 </hgroup>
-<ul>
-  <li>{% translate "Time limit" %}: {{ format.time_limit_ms }} {% translate "ms" %}</li>
-  <li>{% translate "Memory limit" %}: {{ format.memory_limit_mb }} MB</li>
-  <li>{% translate "Languages" %}: {{ languages|join:", " }}</li>
-  {% if format.io.input %}<li>{% translate "Input file" %}: <code>{{ format.io.input }}</code></li>{% endif %}
-  {% if format.io.output %}<li>{% translate "Output file" %}: <code>{{ format.io.output }}</code></li>{% endif %}
-  {% if tags %}<li>{% translate "Tags" %}: {% for tag in tags %}{{ tag.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</li>{% endif %}
-</ul>
-<p><a href="{% url 'submit' problem.slug %}" role="button">{% translate "Submit" %}</a></p>
+<div class="problem-bar">
+  <ul class="badges">
+    <li><span class="badge">{% icon "clock" %}{% translate "Time limit" %}: {{ format.time_limit_ms }} {% translate "ms" %}</span></li>
+    <li><span class="badge">{% icon "cpu" %}{% translate "Memory limit" %}: {{ format.memory_limit_mb }} MB</span></li>
+    <li><span class="badge">{% icon "code" %}{% translate "Languages" %}: {{ languages|join:", " }}</span></li>
+    {% if format.io.input %}<li><span class="badge">{% translate "Input file" %}: <code>{{ format.io.input }}</code></span></li>{% endif %}
+    {% if format.io.output %}<li><span class="badge">{% translate "Output file" %}: <code>{{ format.io.output }}</code></span></li>{% endif %}
+    {% if tags %}<li><span class="badge">{% translate "Tags" %}: {% for tag in tags %}{{ tag.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</span></li>{% endif %}
+  </ul>
+  <a href="{% url 'submit' problem.slug %}" role="button">{% icon "send" %}{% translate "Submit" %}</a>
+</div>
 
 {% if statement.pdfs %}
 <p>{% translate "Statement (PDF)" %}:
@@ -33,7 +35,7 @@
 {% endif %}
 
 {% if statement.html %}
-<article lang="{{ statement.language }}">
+<article class="statement" lang="{{ statement.language }}">
   {# Rendered from Markdown and cleaned by nh3 (problems/statements.py): the only |safe here. #}
   {{ statement.html|safe }}
 </article>
@@ -42,7 +44,7 @@
 {% if samples %}
 <h2>{% translate "Examples" %}</h2>
 {% for sample in samples %}
-<div class="grid">
+<div class="sample">
   <div>
     <h3>{% translate "Input" %} <small><a href="{% url 'problem-file' problem.slug 'tests/'|add:sample.name|add:'.in' %}">{% translate "download" %}</a></small></h3>
     <pre><code>{{ sample.input }}</code></pre>

@@ -58,3 +58,10 @@ def test_https_or_not_strict_starts(env: tuple[str, ...]) -> None:
 
 def test_the_zimaos_edge_is_strict() -> None:
     assert services()["edge"]["environment"]["GRADER_REQUIRE_HTTPS_UPSTREAMS"] == "1"
+
+
+@pytest.mark.parametrize("value", ["http://lh3.googleusercontent.com", "lh3.googleusercontent.com"])
+def test_a_plain_photo_upstream_is_refused(value: str) -> None:
+    result = start(STRICT, f"GRADER_GOOGLE_PHOTO_UPSTREAM={value}")
+    assert result.returncode != 0
+    assert "GRADER_GOOGLE_PHOTO_UPSTREAM" in result.stderr

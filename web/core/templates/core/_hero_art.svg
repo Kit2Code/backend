@@ -1,0 +1,23 @@
+{# Our own drawing (no outside image): a laptop with code, a passed check and a trophy. #}
+<svg class="hero-art" viewBox="0 0 400 300" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="210" cy="150" r="130" fill="#1e293b"/>
+  <circle cx="210" cy="150" r="96" fill="#172554"/>
+  <rect x="95" y="80" width="230" height="140" rx="10" fill="#0f172a" stroke="#334155" stroke-width="4"/>
+  <rect x="95" y="80" width="230" height="22" rx="10" fill="#334155"/>
+  <circle cx="112" cy="91" r="4" fill="#ef4444"/>
+  <circle cx="126" cy="91" r="4" fill="#f59e0b"/>
+  <circle cx="140" cy="91" r="4" fill="#22c55e"/>
+  <rect x="115" y="118" width="70" height="8" rx="4" fill="#3b82f6"/>
+  <rect x="195" y="118" width="45" height="8" rx="4" fill="#f97316"/>
+  <rect x="130" y="138" width="95" height="8" rx="4" fill="#94a3b8"/>
+  <rect x="130" y="158" width="60" height="8" rx="4" fill="#06b6d4"/>
+  <rect x="200" y="158" width="70" height="8" rx="4" fill="#94a3b8"/>
+  <rect x="115" y="178" width="40" height="8" rx="4" fill="#3b82f6"/>
+  <path d="M70 220 h280 l-18 22 h-244 z" fill="#334155"/>
+  <circle cx="320" cy="200" r="34" fill="#22c55e"/>
+  <path d="M304 200 l11 11 l21 -23" fill="none" stroke="#0f172a" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M60 60 h40 v18 a20 20 0 0 1 -40 0 z" fill="#f59e0b"/>
+  <path d="M60 64 h-10 a10 10 0 0 0 10 14 M100 64 h10 a10 10 0 0 1 -10 14" fill="none" stroke="#f59e0b" stroke-width="4"/>
+  <rect x="75" y="96" width="10" height="12" fill="#f59e0b"/>
+  <rect x="66" y="108" width="28" height="7" rx="2" fill="#f59e0b"/>
+</svg>

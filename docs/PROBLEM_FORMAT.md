@@ -6,11 +6,15 @@ How to package a problem for the grader. Two formats can be imported:
 - **CMS "Italian" format**: a CMS task folder with a `task.yaml`. It is converted to the native
   format on import; see [CMS Italian format](#cms-italian-format) below.
 
-Upload either one as a **zip** (on the admin site, later) or import it from the command line:
+Upload either one as a **zip** on the admin site's Import page, or import it from the command line:
 
 ```sh
 uv run grader-import path/to/problem-folder-or.zip --store .devdata/problems
 ```
+
+You can also make a native problem without a zip: the admin site's **New problem** page writes this
+format from a form (statement, test files, scoring, checker, reference solutions) and imports it
+the same way. **Edit** on the Problems page starts from the current version and saves a new one.
 
 The command prints the stored version folder, for example `.devdata/problems/aplusb/v001-d8a8e4e9`.
 Warnings go to stderr. If the problem is refused, it prints one `grader-import: error: …` line and

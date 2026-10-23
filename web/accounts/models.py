@@ -29,6 +29,10 @@ class User(AbstractUser):
     )
     display_name = models.CharField(_("display name"), max_length=100, blank=True)
     school = models.CharField(_("school"), max_length=100, blank=True)
+    # The Google profile photo: shown unless the user switches it off (then it is deleted).
+    # photo_updated_at is set while an Avatar row exists, so pages know without another query.
+    show_photo = models.BooleanField(_("show my Google photo"), default=True)
+    photo_updated_at = models.DateTimeField(null=True, blank=True, editable=False)
     # Raised by "log out everywhere": every existing session of this user stops being valid.
     session_version = models.PositiveIntegerField(default=0, editable=False)
 
@@ -68,3 +72,18 @@ class GoogleIdentity(models.Model):
 
     def __str__(self) -> str:
         return f"{self.user} ({self.issuer})"
+
+
+class Avatar(models.Model):
+    """A user's Google profile photo (JPEG or PNG, at most avatars.MAX_PHOTO_BYTES).
+
+    Kept in the database, not on disk: the public web role writes no files (docs/DECISIONS.md).
+    A separate table, so loading users never loads image bytes.
+    """
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
+    image = models.BinaryField()
+    content_type = models.CharField(max_length=20)
+
+    def __str__(self) -> str:
+        return f"photo of {self.user_id}"

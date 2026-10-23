@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load i18n icons %}
+{% block title %}{% if title %}{{ title }}{% else %}{% translate "Archive" %}{% endif %}{% endblock %}
+{% block content %}
+{% if crumbs %}
+<nav aria-label="breadcrumb">
+  <ul>
+    {% for url, name in crumbs %}<li><a href="{{ url }}">{{ name }}</a></li>{% endfor %}
+    <li>{{ title }}</li>
+  </ul>
+</nav>
+{% endif %}
+<h1>{% if title %}{{ title }}{% else %}{% translate "Archive" %}{% endif %}</h1>
+
+{% if folders %}
+{% include "problems/_folders.html" %}
+{% elif not page %}
+<p class="empty">{% translate "No problems yet." %}</p>
+{% endif %}
+
+{% if page %}
+<div id="task-results">
+  {% include "problems/_task_results.html" %}
+</div>
+{% endif %}
+{% endblock %}

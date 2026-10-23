@@ -4,18 +4,20 @@ import logging
 
 from django.conf import settings
 from django.contrib.auth import login, logout
+from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError, transaction
 from django.db.models import F
-from django.http import HttpRequest, HttpResponse
+from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext as _
-from django.views.decorators.http import require_POST
+from django.views.decorators.cache import cache_control
+from django.views.decorators.http import require_POST, require_safe
 
-from accounts import google
-from accounts.forms import FirstSignInForm
-from accounts.models import GoogleIdentity, User
+from accounts import avatars, google
+from accounts.forms import FirstSignInForm, ProfileSettingsForm
+from accounts.models import Avatar, GoogleIdentity, User
 from core import ratelimit
 from core.models import SiteSetting
 from core.views import message_page, too_many_requests
@@ -75,8 +77,11 @@ def _registration_closed(request: HttpRequest) -> HttpResponse:
     )
 
 
-def _sign_in_member(request: HttpRequest, identity: GoogleIdentity, next_url: str) -> HttpResponse:
-    """Log in the user who owns `identity`, unless an admin has disabled them."""
+def _sign_in_member(
+    request: HttpRequest, identity: GoogleIdentity, next_url: str, picture: str
+) -> HttpResponse:
+    """Log in the user who owns `identity`, unless an admin has disabled them, and refresh their
+    Google photo from the `picture` address."""
     if not identity.user.is_active:
         return message_page(
             request,
@@ -87,6 +92,7 @@ def _sign_in_member(request: HttpRequest, identity: GoogleIdentity, next_url: st
     # login() gives the session a new key, so a session id seen before sign-in is worthless.
     login(request, identity.user, backend="django.contrib.auth.backends.ModelBackend")
     GoogleIdentity.objects.filter(pk=identity.pk).update(last_login_at=timezone.now())
+    avatars.refresh(identity.user, picture)
     return redirect(next_url)
 
 
@@ -120,7 +126,7 @@ def google_callback(request: HttpRequest) -> HttpResponse:
         return _sign_in_failed(request)
     identity = _find_identity(account)
     if identity is not None:
-        return _sign_in_member(request, identity, next_url)
+        return _sign_in_member(request, identity, next_url, account.picture)
     if not SiteSetting.get().registration_open:
         return _registration_closed(request)
     google.remember_pending(request.session, account, next_url)
@@ -147,7 +153,7 @@ def welcome(request: HttpRequest) -> HttpResponse:
             identity = _create_account(form, account)
         if identity is not None:
             del request.session[google.PENDING_SESSION_KEY]
-            return _sign_in_member(request, identity, next_url)
+            return _sign_in_member(request, identity, next_url, account.picture)
         form.add_error("username", _("That username is taken."))
     return render(request, "accounts/welcome.html", {"form": form})
 
@@ -171,3 +177,41 @@ def _create_account(form: FirstSignInForm, account: google.GoogleAccount) -> Goo
             )
     except IntegrityError:
         return _find_identity(account)
+
+
+# ---- profile photo and settings (public role) ----
+
+
+@require_safe
+@cache_control(public=True, max_age=3600)
+def photo(request: HttpRequest, username: str) -> HttpResponse:
+    """A user's stored Google photo. Pages add `?v=<when it changed>`, so caching is safe."""
+    avatar = (
+        Avatar.objects.filter(user__username=username, user__is_active=True, user__show_photo=True)
+        .only("image", "content_type")
+        .first()
+    )
+    if avatar is None:
+        raise Http404
+    return HttpResponse(bytes(avatar.image), content_type=avatar.content_type)
+
+
+@login_required
+def profile_settings(request: HttpRequest) -> HttpResponse:
+    """The signed-in user's display name, school and photo choice. POST with CSRF, rate-limited."""
+    user = request.user
+    if not isinstance(user, User):  # login_required already sent anonymous visitors away
+        return redirect("home")
+    if request.method != "POST":
+        return render(
+            request, "accounts/settings.html", {"form": ProfileSettingsForm(instance=user)}
+        )
+    if not ratelimit.hit(ratelimit.PROFILE_SETTINGS, f"user:{user.pk}"):
+        return too_many_requests(request)
+    form = ProfileSettingsForm(request.POST, instance=user)
+    if not form.is_valid():
+        return render(request, "accounts/settings.html", {"form": form})
+    form.save()
+    if not user.show_photo:
+        avatars.forget(user)
+    return redirect("profile", username=user.username)

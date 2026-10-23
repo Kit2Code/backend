@@ -10,6 +10,7 @@ from django.contrib import admin
 from django.contrib.admin.apps import AdminConfig
 from django.db.models import Model
 from django.http import HttpRequest, HttpResponse
+from django.template.response import TemplateResponse
 from django.urls import URLPattern, URLResolver, path
 from django.utils.translation import gettext as _
 
@@ -62,6 +63,7 @@ class GraderAdminSite(admin.AdminSite):
         # Imported here: their models can't be loaded when this module is (see TYPE_CHECKING).
         from core import admin_views as core
         from judging import admin_views as judging
+        from problems import admin_problems
         from problems import admin_views as problems
 
         pages = [
@@ -74,6 +76,21 @@ class GraderAdminSite(admin.AdminSite):
             path("grader/calibrate/", self.admin_view(judging.calibrate_page),
                  name="grader-calibrate"),
             path("grader/import/", self.admin_view(problems.import_page), name="grader-import"),
+            path("grader/problems/", self.admin_view(admin_problems.problems_page),
+                 name="grader-problems"),
+            path("grader/problems/<int:pk>/visibility",
+                 self.admin_view(admin_problems.problem_visibility),
+                 name="grader-problem-visibility"),
+            path("grader/problems/<int:pk>/group", self.admin_view(admin_problems.problem_group),
+                 name="grader-problem-group"),
+            path("grader/problems/groups", self.admin_view(admin_problems.add_group),
+                 name="grader-add-group"),
+            path("grader/problems/new", self.admin_view(admin_problems.problem_new),
+                 name="grader-problem-new"),
+            path("grader/problems/<int:pk>/edit", self.admin_view(admin_problems.problem_edit),
+                 name="grader-problem-edit"),
+            path("grader/problems/preview", self.admin_view(admin_problems.statement_preview),
+                 name="grader-statement-preview"),
             path("grader/versions/<int:pk>/", self.admin_view(problems.version_page),
                  name="grader-version"),
             path("grader/versions/<int:pk>/publish", self.admin_view(problems.publish_version),
@@ -82,6 +99,14 @@ class GraderAdminSite(admin.AdminSite):
                  name="grader-validate"),
         ]  # fmt: skip
         return pages + super().get_urls()
+
+    def index(
+        self, request: HttpRequest, extra_context: dict[str, object] | None = None
+    ) -> TemplateResponse:
+        """The admin home page, with the dashboard (judging/dashboard.py) above the model list."""
+        from judging.dashboard import dashboard  # here: see the TYPE_CHECKING note above
+
+        return super().index(request, {**(extra_context or {}), "dashboard": dashboard()})
 
     def login(
         self, request: HttpRequest, extra_context: dict[str, object] | None = None

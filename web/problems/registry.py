@@ -39,9 +39,13 @@ def register(
 
 
 def make_current(problem: Problem, version: ProblemVersion, fmt: ProblemFormat) -> None:
-    """Point `problem` at `version`, with the titles and tags from that version's problem.yaml."""
+    """Point `problem` at `version`, with the titles, tags, maximum score and limits from that
+    version's problem.yaml."""
     problem.title_th = fmt.title.get("th", "")
     problem.title_en = fmt.title.get("en", "")
+    problem.max_score = fmt.max_score()
+    problem.time_limit_ms = fmt.time_limit_ms
+    problem.memory_limit_mb = fmt.memory_limit_mb
     problem.current_version = version
     problem.save()
     problem.tags.set([Tag.objects.get_or_create(name=name)[0] for name in fmt.tags])

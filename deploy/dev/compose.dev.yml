@@ -114,6 +114,7 @@ services:
       GRADER_GOOGLE_TOKEN_UPSTREAM: http://fake-oidc:8099
       GRADER_GOOGLE_CERTS_UPSTREAM: http://fake-oidc:8099
       GRADER_GOOGLE_CERTS_PATH: /certs
+      GRADER_GOOGLE_PHOTO_UPSTREAM: http://fake-oidc:8099
     networks:
       app_net: {ipv4_address: 10.89.90.10}
       dev_ports: {}

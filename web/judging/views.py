@@ -6,11 +6,11 @@ from django.conf import settings
 from django.contrib.auth.views import redirect_to_login
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Max, QuerySet, Sum
+from django.db.models import QuerySet
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
-from django.utils import timezone
+from django.utils import timezone, translation
 from django.utils.translation import gettext as _
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_safe
@@ -18,9 +18,13 @@ from django.views.decorators.http import require_safe
 from accounts.models import User
 from core import ratelimit
 from core.views import message_page
+from judging import charts
 from judging.forms import SubmissionFilterForm, SubmitForm
-from judging.models import JudgeJob, Submission, UserProblemBest
+from judging.models import JudgeJob, Submission
+from judging.profile import ranking_rows, solved_and_tried, standing, title_for
+from problems import archive as archive_counts
 from problems import store
+from problems.models import ProblemGroup
 from problems.views import visible_problems
 
 PAGE_SIZE = 50
@@ -205,43 +209,35 @@ def my_submissions(request: HttpRequest) -> HttpResponse:
 
 @require_safe
 def ranking(request: HttpRequest) -> HttpResponse:
-    """Users by the sum of their best scores on visible problems.
-
-    Ties go to whoever reached their total first (the latest `reached_at` among their best
-    scores), then to the username. Disabled users and zero totals are left out.
-    """
-    rows = (
-        UserProblemBest.objects.filter(problem__in=visible_problems(), user__is_active=True)
-        .values("user__username", "user__display_name", "user__school")
-        .annotate(total=Sum("best_score"), finished_at=Max("reached_at"))
-        .filter(total__gt=0)
-        .order_by("-total", "finished_at", "user__username")
-    )
-    page = Paginator(rows, RANKING_PAGE_SIZE).get_page(request.GET.get("page"))
+    """Users by the sum of their best scores on visible problems (see judging.profile)."""
+    page = Paginator(ranking_rows(), RANKING_PAGE_SIZE).get_page(request.GET.get("page"))
     return render(request, "judging/ranking.html", {"page": page})
 
 
 @require_safe
 def profile(request: HttpRequest, username: str) -> HttpResponse:
-    """A user's public page: problems solved (full marks) and attempted, on visible problems."""
+    """A user's public page: title, rank and score, a solved-over-time chart, progress per
+    group, and the problems solved (full marks) and tried, on visible problems only."""
     person = get_object_or_404(User, username=username, is_active=True)
-    bests = (
-        UserProblemBest.objects.filter(user=person, problem__in=visible_problems())
-        .select_related("problem__current_version")
-        .order_by("problem__slug")
-    )
-    solved: list[UserProblemBest] = []
-    attempted: list[UserProblemBest] = []
-    for row in bests:
-        version = row.problem.current_version
-        if version is None:  # excluded by visible_problems(); this check is for the type checker
-            continue
-        full_marks = row.best_score >= store.problem_format(version).max_score() - 1e-9
-        (solved if full_marks else attempted).append(row)
+    solved, tried = solved_and_tried(person)
+    language = translation.get_language() or "th"
+    groups = list(ProblemGroup.objects.all())
+    counts = archive_counts.count_by_group(visible_problems(), person)
     context = {
         "person": person,
+        "title": title_for(len(solved)),
+        "standing": standing(person),
         "solved": solved,
-        "attempted": attempted,
-        "total": sum(row.best_score for row in bests),
+        "attempted": tried,
+        "chart": charts.solved_over_time([timezone.localdate(row.reached_at) for row in solved]),
+        "folders": archive_counts.folders(
+            [g for g in groups if g.parent_id is None],
+            groups,
+            counts,
+            url_prefix="/archive",
+            language=language,
+            signed_in=True,
+        ),
+        "is_self": request.user.is_authenticated and request.user.pk == person.pk,
     }
     return render(request, "judging/profile.html", context)

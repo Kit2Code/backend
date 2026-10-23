@@ -1,12 +1,14 @@
 """Sign in with Google: OpenID Connect authorization-code flow with PKCE (public role only).
 
 1. `begin()` makes a random state, nonce and PKCE verifier, keeps them in the session, and gives
-   the URL of Google's sign-in page (asking for the `openid` scope only).
+   the URL of Google's sign-in page (asking for the `openid profile` scopes: `profile` is what
+   gives the ID token a `picture` claim).
 2. Google sends the browser back to our callback with `state` and a one-time `code`.
 3. `finish()` checks the state, swaps the code (plus the verifier and our client secret) for an
    ID token through the edge's :8090 listener, and verifies the token: RS256 signature with
    Google's keys (also via :8090), issuer, audience, expiry, issue time and nonce.
-4. The result is Google's issuer and account id (`sub`). We never ask for email, name or photo.
+4. The result is Google's issuer and account id (`sub`), plus the photo address (`picture`). We
+   never ask for email, and the name Google sends with `profile` is ignored, never stored.
 
 See docs/ARCHITECTURE.md, "Accounts and sign-in". Authlib builds the requests; joserfc (the JOSE
 library Authlib itself uses) checks the token.
@@ -54,10 +56,12 @@ class GoogleConfig:
 
 @dataclass(frozen=True)
 class GoogleAccount:
-    """Who signed in, as far as we are concerned: Google's issuer and account id."""
+    """Who signed in, as far as we are concerned: Google's issuer and account id, and the address
+    of their profile photo ("" if none; checked again before use, in accounts.avatars)."""
 
     issuer: str
     subject: str
+    picture: str = ""
 
 
 def load_config() -> GoogleConfig | None:
@@ -91,7 +95,7 @@ def _oauth_session(config: GoogleConfig) -> OAuth2Session:
     session = OAuth2Session(
         client_id=config.client_id,
         client_secret=config.client_secret,
-        scope="openid",
+        scope="openid profile",
         redirect_uri=settings.GOOGLE_REDIRECT_URI,
         code_challenge_method="S256",
     )
@@ -215,8 +219,13 @@ def verify_id_token(config: GoogleConfig, id_token: str, nonce: str, keys: KeySe
     azp = claims.get("azp")
     if (len(audiences) > 1 and azp is None) or (azp is not None and azp != config.client_id):
         raise SignInError("ID token is meant for another client (azp)")
+    picture = claims.get("picture")
     # Google's two issuer spellings are the same issuer: store one form.
-    return GoogleAccount(issuer=settings.GOOGLE_ISSUERS[0], subject=str(claims["sub"]))
+    return GoogleAccount(
+        issuer=settings.GOOGLE_ISSUERS[0],
+        subject=str(claims["sub"]),
+        picture=picture if isinstance(picture, str) else "",
+    )
 
 
 def finish(
@@ -239,6 +248,7 @@ def remember_pending(session: SessionBase, account: GoogleAccount, next_url: str
     session[PENDING_SESSION_KEY] = {
         "issuer": account.issuer,
         "subject": account.subject,
+        "picture": account.picture,
         "next": next_url,
         "expires": time.time() + ATTEMPT_LIFETIME_S,
     }
@@ -252,4 +262,7 @@ def pending_account(session: SessionBase) -> tuple[GoogleAccount, str] | None:
     if time.time() > float(pending["expires"]):
         del session[PENDING_SESSION_KEY]
         return None
-    return GoogleAccount(str(pending["issuer"]), str(pending["subject"])), str(pending["next"])
+    account = GoogleAccount(
+        str(pending["issuer"]), str(pending["subject"]), str(pending.get("picture", ""))
+    )
+    return account, str(pending["next"])

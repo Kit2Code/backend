@@ -1,18 +1,23 @@
 """The data model: constraints that protect the data, and the indexes the hot queries rely on."""
 
 from datetime import timedelta
+from importlib import import_module
+from pathlib import Path
 from typing import Any
 
 import pytest
+from django.apps import apps
 from django.core.exceptions import ValidationError
+from django.core.management import call_command
 from django.db import IntegrityError, connection, transaction
 from django.db.models import Max, QuerySet, Sum
 from django.utils import timezone
+from pytest_django.fixtures import Settings as SettingsWrapper
 
 from accounts.models import GoogleIdentity, User
 from core.models import PauseWindow, RateLimitCounter, SiteSetting
 from judging.models import JudgeJob, Submission, UserProblemBest
-from problems.models import Problem, ProblemVersion
+from problems.models import Problem, ProblemGroup, ProblemVersion
 
 pytestmark = pytest.mark.django_db
 
@@ -206,3 +211,119 @@ def test_rate_limit_counter_is_unique_per_key_and_window() -> None:
     RateLimitCounter.objects.create(key="login:1.2.3.4", window_start=window, count=1)
     with pytest.raises(IntegrityError), transaction.atomic():
         RateLimitCounter.objects.create(key="login:1.2.3.4", window_start=window, count=1)
+
+
+# ---- what the problem list shows without reading the store (copied from problem.yaml) ----
+
+REPO = Path(__file__).resolve().parents[2]
+SUMMARY_MIGRATION = "problems.migrations.0003_problem_summary"
+
+
+@pytest.fixture
+def store(tmp_path: Path, settings: SettingsWrapper) -> Path:
+    folder = tmp_path / "problems"
+    folder.mkdir()
+    settings.GRADER_PROBLEMS_DIR = folder
+    return folder
+
+
+def import_aplusb() -> Problem:
+    call_command("import_problem", str(REPO / "fixtures" / "problems" / "aplusb"), verbosity=0)
+    return Problem.objects.get(slug="aplusb")
+
+
+def test_a_new_problem_has_no_summary_yet() -> None:
+    problem = make_version().problem
+    assert problem.max_score is None
+    assert problem.time_limit_ms is None
+    assert problem.memory_limit_mb is None
+
+
+def test_import_copies_max_score_and_limits(store: Path) -> None:
+    problem = import_aplusb()
+    assert problem.max_score == 100
+    assert problem.time_limit_ms == 1000
+    assert problem.memory_limit_mb == 256
+
+
+def test_backfill_fills_problems_whose_version_is_in_the_store(store: Path) -> None:
+    imported = import_aplusb()
+    Problem.objects.filter(pk=imported.pk).update(
+        max_score=None, time_limit_ms=None, memory_limit_mb=None
+    )
+    missing = make_version("gone").problem  # its folder is not in the store
+    import_module(SUMMARY_MIGRATION).fill_from_store(apps, None)
+    imported.refresh_from_db()
+    missing.refresh_from_db()
+    assert (imported.max_score, imported.time_limit_ms, imported.memory_limit_mb) == (
+        100,
+        1000,
+        256,
+    )
+    assert (missing.max_score, missing.time_limit_ms, missing.memory_limit_mb) == (None, None, None)
+
+
+# ---- problem groups (two levels: TOI -> TOI20 -> problems) ----
+
+
+def make_group(slug: str, parent: ProblemGroup | None = None) -> ProblemGroup:
+    group = ProblemGroup(slug=slug, name_th=slug.upper(), parent=parent)
+    group.full_clean()
+    group.save()
+    return group
+
+
+def test_groups_nest_two_levels_only() -> None:
+    toi = make_group("toi")
+    toi20 = make_group("toi20", parent=toi)
+    with pytest.raises(ValidationError):
+        ProblemGroup(slug="deeper", name_th="x", parent=toi20).full_clean()
+
+
+def test_a_group_with_subgroups_cannot_move_under_another() -> None:
+    toi = make_group("toi")
+    make_group("toi20", parent=toi)
+    other = make_group("other-contests")
+    toi.parent = other
+    with pytest.raises(ValidationError):
+        toi.full_clean()
+
+
+def test_group_slug_is_unique_among_its_siblings() -> None:
+    toi = make_group("toi")
+    make_group("2024", parent=toi)
+    make_group("2024", parent=make_group("ioi"))  # same slug, other parent: fine
+    with pytest.raises(ValidationError):
+        make_group("toi")
+    with pytest.raises(ValidationError):
+        make_group("2024", parent=toi)
+
+
+def test_top_level_slug_is_unique_in_the_database() -> None:
+    ProblemGroup.objects.create(slug="toi", name_th="TOI")
+    with pytest.raises(IntegrityError), transaction.atomic():
+        ProblemGroup.objects.create(slug="toi", name_th="TOI again")
+
+
+def test_other_is_reserved_for_ungrouped_problems() -> None:
+    with pytest.raises(ValidationError):
+        make_group("other")
+
+
+def test_deleting_a_group_keeps_its_problems() -> None:
+    group = make_group("toi")
+    problem = make_version().problem
+    problem.group = group
+    problem.save()
+    group.delete()
+    problem.refresh_from_db()
+    assert problem.group is None
+
+
+def test_group_name_follows_the_language() -> None:
+    group = make_group("toi")
+    group.name_en = "Thailand OI"
+    assert group.name_in("en") == "Thailand OI"
+    assert group.name_in("th") == "TOI"
+    group.name_th = ""
+    assert group.name_in("th") == "Thailand OI"

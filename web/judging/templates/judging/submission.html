@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n judging static problems %}
+{% load i18n judging static problems icons %}
 {% block title %}{% translate "Submission" %} #{{ submission.pk }}{% endblock %}
 {% block scripts %}
 {# No inline <style> from htmx (we don't use its loading indicator): the CSP allows no inline styles. #}
@@ -8,11 +8,11 @@
 {% endblock %}
 {% block content %}
 <h1>{% translate "Submission" %} #{{ submission.pk }}</h1>
-<ul>
-  <li>{% translate "Problem" %}: <a href="{% url 'problem' submission.problem.slug %}">{% problem_title submission.problem %}</a></li>
-  <li>{% translate "User" %}: {{ submission.user.username }}</li>
-  <li>{% translate "Language" %}: {{ submission.language|language_name }}</li>
-  <li>{% translate "Submitted" %}: {{ submission.created_at|date:"Y-m-d H:i:s" }}</li>
+<ul class="badges">
+  <li><span class="badge">{% translate "Problem" %}: <a href="{% url 'problem' submission.problem.slug %}">{% problem_title submission.problem %}</a></span></li>
+  <li><span class="badge">{% icon "user" %}{% translate "User" %}: <a href="{% url 'profile' submission.user.username %}">{{ submission.user.username }}</a></span></li>
+  <li><span class="badge">{% icon "code" %}{% translate "Language" %}: {{ submission.language|language_name }}</span></li>
+  <li><span class="badge">{% icon "clock" %}{% translate "Submitted" %}: {{ submission.created_at|date:"Y-m-d H:i:s" }}</span></li>
 </ul>
 
 {% include "judging/results.html" %}

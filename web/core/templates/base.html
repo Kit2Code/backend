@@ -1,42 +1,28 @@
-{% load i18n static %}<!doctype html>
+{% load i18n static icons avatars %}<!doctype html>
 {% get_current_language as LANGUAGE_CODE %}
-<html lang="{{ LANGUAGE_CODE }}">
+<html lang="{{ LANGUAGE_CODE }}" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
   <title>{% block title %}{% endblock %} · {{ site_name }}</title>
   <link rel="stylesheet" href="{% static 'vendor/pico/pico.classless.min.css' %}">
   <link rel="stylesheet" href="{% static 'site.css' %}">
   {% block scripts %}{% endblock %}
 </head>
 <body>
-  <header>
+  <header class="site-header">
     <nav>
       <ul>
-        <li><a href="{% if grader_role == "public" %}{% url 'home' %}{% else %}/admin/{% endif %}"><strong>{{ site_name }}</strong></a></li>
-        {% if grader_role == "public" %}
-          <li><a href="{% url 'problems' %}">{% translate "Problems" %}</a></li>
-          <li><a href="{% url 'submissions' %}">{% translate "Submissions" %}</a></li>
-          <li><a href="{% url 'ranking' %}">{% translate "Ranking" %}</a></li>
-          {% if request.user.is_authenticated %}<li><a href="{% url 'my-submissions' %}">{% translate "My submissions" %}</a></li>{% endif %}
-        {% endif %}
+        <li><a href="{% if grader_role == "public" %}{% url 'home' %}{% else %}/admin/{% endif %}" class="brand"><strong>{{ site_name }}</strong></a></li>
       </ul>
-      <ul>
-        {% if grader_role == "public" %}
-          {% if request.user.is_authenticated %}
-            <li>{{ request.user.username }}</li>
-            <li>
-              <form method="post" action="{% url 'logout' %}">
-                {% csrf_token %}
-                <button type="submit" class="secondary">{% translate "Sign out" %}</button>
-              </form>
-            </li>
-          {% elif signin_available %}
-            <li><a href="{% url 'google-start' %}?next={{ request.get_full_path|urlencode }}">{% translate "Sign in with Google" %}</a></li>
-          {% endif %}
-        {% endif %}
+      {% if grader_role == "public" %}
+        {# Wide screens: the links in a row. Phones: the same links in a <details> menu (no JS). #}
+        <ul class="nav-links">{% include "core/_nav_links.html" %}</ul>
+      {% endif %}
+      <ul class="nav-end">
         <li>
-          <form method="post" action="{% url 'set_language' %}">
+          <form method="post" action="{% url 'set_language' %}" class="language-switch">
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ request.get_full_path }}">
             {# Each language in its own name ("English", "ไทย"), whatever the page language. #}
@@ -44,10 +30,37 @@
             {% get_available_languages as site_language_codes %}
             {% get_language_info_list for site_language_codes as site_languages %}
             {% for language in site_languages %}
-              {% if language.code != LANGUAGE_CODE %}<button type="submit" name="language" value="{{ language.code }}" class="secondary outline" lang="{{ language.code }}">{{ language.name_local }}</button>{% endif %}
+              {% if language.code != LANGUAGE_CODE %}<button type="submit" name="language" value="{{ language.code }}" class="secondary outline" lang="{{ language.code }}">{% icon "languages" %}<span class="language-name">{{ language.name_local }}</span></button>{% endif %}
             {% endfor %}
           </form>
         </li>
+        {% if grader_role == "public" %}
+          {% if request.user.is_authenticated %}
+            <li>
+              <details class="avatar-menu">
+                <summary aria-label="{% translate "Account menu" %}">{% avatar request.user.username request.user.photo_updated_at request.user.show_photo %}<span class="avatar-name">{{ request.user.username }}</span></summary>
+                <ul>
+                  <li><a href="{% url 'profile' request.user.username %}">{% icon "user" %}{% translate "My profile" %}</a></li>
+                  <li><a href="{% url 'my-submissions' %}">{% icon "list" %}{% translate "My submissions" %}</a></li>
+                  <li>
+                    <form method="post" action="{% url 'logout' %}">
+                      {% csrf_token %}
+                      <button type="submit" class="secondary">{% icon "log-out" %}{% translate "Sign out" %}</button>
+                    </form>
+                  </li>
+                </ul>
+              </details>
+            </li>
+          {% elif signin_available %}
+            <li><a href="{% url 'google-start' %}?next={{ request.get_full_path|urlencode }}" class="signin">{% translate "Sign in with Google" %}</a></li>
+          {% endif %}
+          <li>
+            <details class="nav-menu">
+              <summary aria-label="{% translate "Menu" %}">{% icon "menu" %}</summary>
+              <ul>{% include "core/_nav_links.html" %}</ul>
+            </details>
+          </li>
+        {% endif %}
       </ul>
     </nav>
   </header>

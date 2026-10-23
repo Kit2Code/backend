@@ -1,0 +1,11 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+{% comment %}
+  Extends Django admin's own base_site.html (Django finds the next one after this folder).
+  One dark theme, the same palette and font as the public site: Django's light/dark switching
+  (its theme.js and dark_mode.css) is left out, and admin-theme.css sets its colour variables.
+{% endcomment %}
+{% block dark-mode-vars %}
+  <meta name="color-scheme" content="dark">
+  <link rel="stylesheet" href="{% static 'admin-theme.css' %}">
+{% endblock %}

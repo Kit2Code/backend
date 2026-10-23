@@ -1,7 +1,7 @@
 # grader-edge: the only way into the grader (docs/ARCHITECTURE.md, "One web image, two roles").
 #   :8080  public site   (only the Cloudflare tunnel reaches it, over edge_net)
 #   :8081  admin site    (published on the NAS: LAN and Tailscale)
-#   :8090  Google sign-in egress (app_net only): exactly two fixed Google URLs
+#   :8090  Google sign-in egress (app_net only): two fixed Google URLs and profile photos
 # Each site port goes to one web role and sets X-Edge-Zone for it, replacing anything the client
 # sent; Django checks the header again (web/core/middleware.py).
 #
@@ -55,13 +55,15 @@
 	import security_headers
 	@internal path /internal /internal/*
 	respond @internal 404
-	# Problem zips may be large (the importer's own limit is 1 GiB unpacked); everything else is small.
-	@import path /admin/grader/import/
-	request_body @import {
+	# Problem zips and the browser editor's test files may be large (the importer's own limit is
+	# 1 GiB unpacked): the import page, the new-problem page and a problem's edit page. Everything
+	# else is small.
+	@upload path_regexp ^/admin/grader/(import/|problems/new|problems/[0-9]+/edit)$
+	request_body @upload {
 		max_size 1100MB
 	}
-	@not_import not path /admin/grader/import/
-	request_body @not_import {
+	@not_upload not path_regexp ^/admin/grader/(import/|problems/new|problems/[0-9]+/edit)$
+	request_body @not_upload {
 		max_size 1MB
 	}
 	reverse_proxy {$GRADER_WEB_ADMIN_UPSTREAM:web-admin:8000} {
@@ -70,8 +72,9 @@
 }
 
 # Google sign-in egress. Listens on the edge's app_net address only. The public web role may POST
-# /token and GET /certs; web-admin may only GET /certs (the Sign-in page's test button); everyone
-# else gets 404. Query strings are dropped; bodies are capped. TLS to Google is verified.
+# /token, GET /certs and GET a profile photo (/photo/<Google's photo path>=s256-c, fetched once
+# per sign-in); web-admin may only GET /certs (the Sign-in page's test button); everyone else gets
+# 404. Query strings are dropped; bodies are capped. TLS to Google is verified.
 :8090 {
 	bind {$GRADER_EDGE_APP_IP:10.89.91.10}
 
@@ -102,6 +105,22 @@
 		}
 		rewrite * /token?
 		reverse_proxy {$GRADER_GOOGLE_TOKEN_UPSTREAM:https://oauth2.googleapis.com} {
+			header_up Host {upstream_hostport}
+		}
+	}
+
+	# Only the shape of Google's photo paths (letters, digits, _ and - in "/"-separated parts) at
+	# the 256 px size the web asks for. Checked on the cleaned path and on the raw request line,
+	# so encoded dots or slashes and "//" can't turn into a different path after the check.
+	@photo {
+		method GET
+		path_regexp ^/photo(/[A-Za-z0-9_-]+)+=s256-c$
+		expression `{uri}.matches("^/photo(/[A-Za-z0-9_-]+)+=s256-c([?].*)?$")`
+	}
+	handle @photo {
+		uri strip_prefix /photo
+		rewrite * {path}?
+		reverse_proxy {$GRADER_GOOGLE_PHOTO_UPSTREAM:https://lh3.googleusercontent.com} {
 			header_up Host {upstream_hostport}
 		}
 	}

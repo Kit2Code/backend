@@ -1,24 +1,26 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n avatars %}
 {% block title %}{% translate "Ranking" %}{% endblock %}
 {% block content %}
 <h1>{% translate "Ranking" %}</h1>
 {% if page.object_list %}
-<table>
+<div class="table-scroll">
+<table class="table-ranking">
   <thead><tr><th>#</th><th>{% translate "User" %}</th><th>{% translate "School" %}</th><th>{% translate "Score" %}</th></tr></thead>
   <tbody>
-  {% for row in page.object_list %}
-    <tr>
-      <td>{{ page.start_index|add:forloop.counter0 }}</td>
-      <td><a href="{% url 'profile' row.user__username %}">{{ row.user__username }}</a>{% if row.user__display_name %} <small>{{ row.user__display_name }}</small>{% endif %}</td>
+  {% for row in page.object_list %}{% with place=page.start_index|add:forloop.counter0 %}
+    <tr{% if place <= 3 %} class="podium-{{ place }}"{% endif %}>
+      <td class="place">{{ place }}</td>
+      <td class="who">{% avatar row.user__username row.user__photo_updated_at row.user__show_photo %}<span><a href="{% url 'profile' row.user__username %}">{{ row.user__username }}</a>{% if row.user__display_name %} <small>{{ row.user__display_name }}</small>{% endif %}</span></td>
       <td>{{ row.user__school }}</td>
-      <td>{{ row.total|floatformat:"-2" }}</td>
+      <td class="total">{{ row.total|floatformat:"-2" }}</td>
     </tr>
-  {% endfor %}
+  {% endwith %}{% endfor %}
   </tbody>
 </table>
+</div>
 {% else %}
-<p>{% translate "Nobody has scored yet." %}</p>
+<p class="empty">{% translate "Nobody has scored yet." %}</p>
 {% endif %}
 {% if page.has_other_pages %}
 <nav>

@@ -1,23 +1,58 @@
 {% extends "base.html" %}
-{% load i18n problems %}
+{% load i18n problems avatars %}
 {% block title %}{{ person.username }}{% endblock %}
 {% block content %}
-<hgroup>
-  <h1>{{ person.username }}</h1>
-  {% if person.display_name or person.school %}<p>{{ person.display_name }}{% if person.display_name and person.school %} · {% endif %}{{ person.school }}</p>{% endif %}
-</hgroup>
-<p>{% translate "Score" %}: {{ total|floatformat:"-2" }} · <a href="{% url 'submissions' %}?user={{ person.username|urlencode }}">{% translate "Submissions" %}</a></p>
+<section class="profile">
+  <div class="profile-main">
+    <p class="rank-title title-{{ title.key }}">{{ title.name }}</p>
+    <h1 class="title-{{ title.key }}">{% if person.display_name %}{{ person.display_name }}{% else %}{{ person.username }}{% endif %}</h1>
+    <p class="handle">@{{ person.username }}{% if person.school %} · {{ person.school }}{% endif %}</p>
+    <dl class="profile-stats">
+      <div{% if standing.rank %} data-rank="{{ standing.rank }}"{% endif %}><dt>{% translate "Rank" %}</dt><dd>{% if standing.rank %}#{{ standing.rank }}{% else %}—{% endif %}</dd></div>
+      <div data-score="{{ standing.total|floatformat:"-2" }}"><dt>{% translate "Score" %}</dt><dd>{{ standing.total|floatformat:"-2" }}</dd></div>
+      <div data-solved="{{ solved|length }}"><dt>{% translate "Solved" context "tasks" %}</dt><dd>{{ solved|length }}</dd></div>
+      <div data-tried="{{ attempted|length }}"><dt>{% translate "Not solved yet" %}</dt><dd>{{ attempted|length }}</dd></div>
+      <div><dt>{% translate "Member since" %}</dt><dd>{{ person.date_joined|date:"Y-m-d" }}</dd></div>
+      <div><dt>{% translate "Last active" %}</dt><dd>{% if person.last_login %}{{ person.last_login|date:"Y-m-d" }}{% else %}—{% endif %}</dd></div>
+    </dl>
+    <p class="profile-links">
+      <a href="{% url 'submissions' %}?user={{ person.username|urlencode }}">{% translate "Submissions" %}</a>
+      {% if is_self %} · <a href="{% url 'settings' %}">{% translate "Settings" %}</a>{% endif %}
+    </p>
+  </div>
+  <div class="profile-photo">{% avatar person.username person.photo_updated_at person.show_photo %}</div>
+</section>
 
-<h2 id="solved">{% translate "Solved" %} ({{ solved|length }})</h2>
+{% if chart %}
+<section class="card">
+  <h2>{% translate "Problems solved over time" %}</h2>
+  <svg class="chart" viewBox="0 0 {{ chart.width }} {{ chart.height }}" role="img" aria-label="{% blocktranslate with total=chart.total first=chart.first|date:"Y-m-d" last=chart.last|date:"Y-m-d" %}{{ total }} problems solved from {{ first }} to {{ last }}{% endblocktranslate %}">
+    <line class="axis" x1="{{ chart.left }}" y1="{{ chart.bottom }}" x2="{{ chart.right }}" y2="{{ chart.bottom }}"/>
+    <line class="axis" x1="{{ chart.left }}" y1="{{ chart.top }}" x2="{{ chart.left }}" y2="{{ chart.bottom }}"/>
+    <polyline class="line" points="{{ chart.points_attribute }}"/>
+    <text x="{{ chart.left }}" y="{{ chart.height }}" class="label">{{ chart.first|date:"Y-m-d" }}</text>
+    <text x="{{ chart.right }}" y="{{ chart.height }}" class="label end">{{ chart.last|date:"Y-m-d" }}</text>
+    <text x="{{ chart.left|add:"-8" }}" y="{{ chart.top|add:"10" }}" class="label end">{{ chart.total }}</text>
+    <text x="{{ chart.left|add:"-8" }}" y="{{ chart.bottom }}" class="label end">0</text>
+  </svg>
+</section>
+{% endif %}
+
+{% if folders %}
+<h2>{% translate "Progress by group" %}</h2>
+{% include "problems/_folders.html" %}
+{% endif %}
+
+<h2 id="solved">{% translate "Solved" context "tasks" %} ({{ solved|length }})</h2>
 {% if solved %}
-<ul>
+<ul class="problem-chips">
   {% for row in solved %}<li><a href="{% url 'problem' row.problem.slug %}">{% problem_title row.problem %}</a></li>{% endfor %}
 </ul>
 {% else %}<p>—</p>{% endif %}
 
 <h2 id="attempted">{% translate "Attempted" %} ({{ attempted|length }})</h2>
 {% if attempted %}
-<ul>
+<ul class="problem-chips">
   {% for row in attempted %}<li><a href="{% url 'problem' row.problem.slug %}">{% problem_title row.problem %}</a>: {{ row.best_score|floatformat:"-2" }}</li>{% endfor %}
 </ul>
 {% else %}<p>—</p>{% endif %}

@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: grader\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-22 14:15+0700\n"
+"POT-Creation-Date: 2026-10-23 13:19+0700\n"
 "PO-Revision-Date: 2026-10-21 19:00+0700\n"
 "Last-Translator: grader maintainers\n"
 "Language-Team: Thai\n"
@@ -39,20 +39,20 @@ msgstr "ยกเลิกการเชื่อมบัญชี Google"
 msgid "Done."
 msgstr "เรียบร้อย"
 
-#: accounts/forms.py:18 accounts/forms.py:45
+#: accounts/forms.py:18 accounts/forms.py:70
 msgid "Username"
 msgstr "ชื่อผู้ใช้"
 
-#: accounts/forms.py:21 accounts/forms.py:48 accounts/models.py:11
+#: accounts/forms.py:21 accounts/forms.py:73 accounts/models.py:11
 #: accounts/models.py:27
 msgid "3 to 20 characters: small letters a-z, digits and _ only."
 msgstr "3 ถึง 20 ตัวอักษร ใช้ได้เฉพาะ a-z ตัวเล็ก ตัวเลข และ _"
 
-#: accounts/forms.py:24
+#: accounts/forms.py:24 accounts/forms.py:48
 msgid "Display name"
 msgstr "ชื่อที่แสดง"
 
-#: accounts/forms.py:27
+#: accounts/forms.py:27 accounts/forms.py:49
 msgid "School (optional)"
 msgstr "โรงเรียน (ไม่บังคับ)"
 
@@ -60,19 +60,31 @@ msgstr "โรงเรียน (ไม่บังคับ)"
 msgid "I have read the privacy page"
 msgstr "ฉันอ่านนโยบายความเป็นส่วนตัวแล้ว"
 
-#: accounts/forms.py:37 accounts/models.py:28 accounts/views.py:151
+#: accounts/forms.py:37 accounts/models.py:28 accounts/views.py:157
 msgid "That username is taken."
 msgstr "ชื่อผู้ใช้นี้มีคนใช้แล้ว"
 
 #: accounts/forms.py:50
+msgid "Show my Google profile photo"
+msgstr "แสดงรูปโปรไฟล์ Google ของฉัน"
+
+#: accounts/forms.py:54
+msgid ""
+"Switching this off deletes the photo we keep. Switched on, it is fetched "
+"again the next time you sign in."
+msgstr ""
+"ปิดแล้วเราจะลบรูปที่เก็บไว้ทันที ถ้าเปิดไว้ "
+"จะดึงรูปมาใหม่ในครั้งถัดไปที่คุณเข้าสู่ระบบ"
+
+#: accounts/forms.py:75
 msgid "Password"
 msgstr "รหัสผ่าน"
 
-#: accounts/forms.py:51
+#: accounts/forms.py:76
 msgid "Password again"
 msgstr "รหัสผ่านอีกครั้ง"
 
-#: accounts/forms.py:58
+#: accounts/forms.py:83
 msgid "The two passwords are different."
 msgstr "รหัสผ่านทั้งสองช่องไม่ตรงกัน"
 
@@ -88,13 +100,30 @@ msgstr "ชื่อที่แสดง"
 msgid "school"
 msgstr "โรงเรียน"
 
-#: accounts/models.py:61
+#: accounts/models.py:34
+msgid "show my Google photo"
+msgstr "แสดงรูป Google"
+
+#: accounts/models.py:65
 msgid "Google identity"
 msgstr "บัญชี Google ที่เชื่อมไว้"
 
-#: accounts/models.py:62
+#: accounts/models.py:66
 msgid "Google identities"
 msgstr "บัญชี Google ที่เชื่อมไว้"
+
+#: accounts/templates/accounts/settings.html:3
+#: accounts/templates/accounts/settings.html:6
+#: judging/templates/judging/profile.html:20
+msgid "Settings"
+msgstr "ตั้งค่า"
+
+#: accounts/templates/accounts/settings.html:17
+#: core/templates/admin/grader/_problem_row.html:11
+#: core/templates/admin/grader/grading.html:49
+#: core/templates/admin/grader/signin.html:13
+msgid "Save"
+msgstr "บันทึก"
 
 #: accounts/templates/accounts/welcome.html:3
 #: accounts/templates/accounts/welcome.html:6
@@ -113,43 +142,43 @@ msgstr "อ่านนโยบายความเป็นส่วนตั
 msgid "Create my account"
 msgstr "สร้างบัญชีของฉัน"
 
-#: accounts/views.py:52
+#: accounts/views.py:54
 msgid "Sign-in is not set up yet"
 msgstr "ยังไม่ได้ตั้งค่าการเข้าสู่ระบบ"
 
-#: accounts/views.py:53
+#: accounts/views.py:55
 msgid "You can still read the problems. Sign-in will be available soon."
 msgstr "ตอนนี้ยังดูโจทย์ได้ตามปกติ และจะเข้าสู่ระบบได้ในเร็ว ๆ นี้"
 
-#: accounts/views.py:61
+#: accounts/views.py:63
 msgid "Sign-in failed"
 msgstr "เข้าสู่ระบบไม่สำเร็จ"
 
-#: accounts/views.py:62
+#: accounts/views.py:64
 msgid "Signing in with Google didn't work. Please try again."
 msgstr "เข้าสู่ระบบด้วย Google ไม่สำเร็จ กรุณาลองอีกครั้ง"
 
-#: accounts/views.py:65
+#: accounts/views.py:67
 msgid "Try again"
 msgstr "ลองอีกครั้ง"
 
-#: accounts/views.py:72
+#: accounts/views.py:74
 msgid "New accounts are closed"
 msgstr "ปิดรับบัญชีใหม่"
 
-#: accounts/views.py:73
+#: accounts/views.py:75
 msgid "This site isn't accepting new accounts right now."
 msgstr "ขณะนี้เว็บไซต์ยังไม่เปิดรับบัญชีใหม่"
 
-#: accounts/views.py:83
+#: accounts/views.py:88
 msgid "Account disabled"
 msgstr "บัญชีถูกระงับ"
 
-#: accounts/views.py:84
+#: accounts/views.py:89
 msgid "This account has been disabled. Ask the person who runs this site."
 msgstr "บัญชีนี้ถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลเว็บไซต์"
 
-#: config/admin.py:95
+#: config/admin.py:120
 msgid "Too many sign-in attempts. Please wait 15 minutes and try again."
 msgstr "พยายามเข้าสู่ระบบหลายครั้งเกินไป กรุณารอ 15 นาทีแล้วลองใหม่"
 
@@ -158,10 +187,12 @@ msgid "Time scale saved."
 msgstr "บันทึกตัวคูณเวลาแล้ว"
 
 #: core/admin_views.py:76 core/templates/admin/grader/index.html:8
+#: core/templates/admin/grader/index.html:20
+#: core/templates/admin/grader/index.html:60
 msgid "Grading"
 msgstr "การตรวจ"
 
-#: core/admin_views.py:136 core/templates/admin/grader/index.html:11
+#: core/admin_views.py:136 core/templates/admin/grader/index.html:63
 msgid "Backups"
 msgstr "สำรองข้อมูล"
 
@@ -169,7 +200,7 @@ msgstr "สำรองข้อมูล"
 msgid "Saved."
 msgstr "บันทึกแล้ว"
 
-#: core/admin_views.py:195 core/templates/admin/grader/index.html:12
+#: core/admin_views.py:195 core/templates/admin/grader/index.html:64
 msgid "Sign-in"
 msgstr "การเข้าสู่ระบบ"
 
@@ -237,13 +268,50 @@ msgstr "เสร็จแล้ว"
 msgid "failed"
 msgstr "ล้มเหลว"
 
+#: core/templates/admin/grader/_problem_row.html:3
+msgid "Edit"
+msgstr "แก้ไข"
+
+#: core/templates/admin/grader/_problem_row.html:7
+#: core/templates/admin/grader/problems.html:12
+#: core/templates/admin/grader/problems.html:30
+#: core/templates/admin/grader/problems.html:43 problems/editor.py:70
+#: problems/templates/problems/list.html:39
+msgid "Group"
+msgstr "กลุ่มโจทย์"
+
+#: core/templates/admin/grader/_problem_row.html:20
+msgid "Close: hide it from the public site"
+msgstr "ปิด: ซ่อนจากเว็บไซต์สาธารณะ"
+
+#: core/templates/admin/grader/_problem_row.html:20
+#: core/templates/admin/grader/problems.html:19
+msgid "Open"
+msgstr "เปิด"
+
+#: core/templates/admin/grader/_problem_row.html:22
+msgid "Only a version that passed validation can be opened."
+msgstr "เปิดได้เฉพาะรุ่นที่ตรวจความถูกต้องผ่านแล้ว"
+
+#: core/templates/admin/grader/_problem_row.html:22
+msgid "Open: show it on the public site"
+msgstr "เปิด: แสดงบนเว็บไซต์สาธารณะ"
+
+#: core/templates/admin/grader/_problem_row.html:22
+#: core/templates/admin/grader/problems.html:20
+msgid "Closed"
+msgstr "ปิด"
+
 #: core/templates/admin/grader/backups.html:3
 #: core/templates/admin/grader/calibrate.html:4
 #: core/templates/admin/grader/grading.html:3
 #: core/templates/admin/grader/import.html:3
+#: core/templates/admin/grader/problem_form.html:8
+#: core/templates/admin/grader/problems.html:8
 #: core/templates/admin/grader/signin.html:3
 #: core/templates/admin/grader/system.html:4
-#: core/templates/admin/grader/version.html:4 core/templates/core/home.html:3
+#: core/templates/admin/grader/version.html:4
+#: core/templates/core/_nav_links.html:2 core/templates/core/home.html:3
 msgid "Home"
 msgstr "หน้าแรก"
 
@@ -253,7 +321,8 @@ msgid ""
 "files are in the server's grader backups folder; copy that folder elsewhere "
 "with the ZimaOS Backup app."
 msgstr ""
-"ฐานข้อมูลถูกสำรองทุกคืน และเมื่อกดสั่งด้านล่าง ไฟล์อยู่ในโฟลเดอร์สำรองของเกรดเดอร์บนเซิร์ฟเวอร์ "
+"ฐานข้อมูลถูกสำรองทุกคืน และเมื่อกดสั่งด้านล่าง "
+"ไฟล์อยู่ในโฟลเดอร์สำรองของเกรดเดอร์บนเซิร์ฟเวอร์ "
 "ให้คัดลอกโฟลเดอร์นั้นไปที่อื่นด้วยแอป Backup ของ ZimaOS"
 
 #: core/templates/admin/grader/backups.html:8
@@ -270,6 +339,7 @@ msgid "By"
 msgstr "โดย"
 
 #: core/templates/admin/grader/backups.html:12
+#: core/templates/admin/grader/problems.html:17
 #: core/templates/admin/grader/system.html:10
 msgid "State"
 msgstr "สถานะ"
@@ -313,8 +383,8 @@ msgid ""
 "slowest time. The suggested scale gives every reference solution twice the "
 "time it needed."
 msgstr ""
-"รันโปรแกรมเฉลยของแต่ละโจทย์ 5 ครั้งบน CPU ที่ใช้ตรวจ (ขีดจำกัดเวลา 10 เท่าของตอนแข่ง "
-"จึงไม่มีอะไรถูกตัด) และเก็บเวลาที่ช้าที่สุดของแต่ละชุดทดสอบ "
+"รันโปรแกรมเฉลยของแต่ละโจทย์ 5 ครั้งบน CPU ที่ใช้ตรวจ (ขีดจำกัดเวลา 10 "
+"เท่าของตอนแข่ง จึงไม่มีอะไรถูกตัด) และเก็บเวลาที่ช้าที่สุดของแต่ละชุดทดสอบ "
 "ตัวคูณที่แนะนำให้เวลาโปรแกรมเฉลยทุกตัวเป็นสองเท่าของที่ใช้จริง"
 
 #: core/templates/admin/grader/calibrate.html:7
@@ -357,12 +427,12 @@ msgid "not accepted in every run: left out"
 msgstr "ไม่ผ่านทุกครั้ง: ไม่นำมาคิด"
 
 #: core/templates/admin/grader/calibrate.html:26
-#: core/templates/admin/grader/index.html:10 judging/admin_views.py:161
+#: core/templates/admin/grader/index.html:62 judging/admin_views.py:168
 msgid "Calibrate"
 msgstr "วัดเวลา"
 
 #: core/templates/admin/grader/calibrate.html:29
-#: problems/templates/problems/list.html:19
+#: problems/templates/problems/archive.html:18
 msgid "No problems yet."
 msgstr "ยังไม่มีโจทย์"
 
@@ -404,7 +474,9 @@ msgstr "ช่วงเวลาหยุดตรวจ"
 msgid ""
 "Grading pauses by itself during each window, for example a CMS contest from "
 "its start until the final results."
-msgstr "การตรวจจะหยุดเองในแต่ละช่วง เช่น ระหว่างการแข่งใน CMS ตั้งแต่เริ่มจนประกาศผลสุดท้าย"
+msgstr ""
+"การตรวจจะหยุดเองในแต่ละช่วง เช่น ระหว่างการแข่งใน CMS "
+"ตั้งแต่เริ่มจนประกาศผลสุดท้าย"
 
 #: core/templates/admin/grader/grading.html:28
 msgid "From"
@@ -438,11 +510,6 @@ msgstr "เพิ่มช่วงเวลาหยุดตรวจ"
 msgid "Add"
 msgstr "เพิ่ม"
 
-#: core/templates/admin/grader/grading.html:49
-#: core/templates/admin/grader/signin.html:13
-msgid "Save"
-msgstr "บันทึก"
-
 #: core/templates/admin/grader/import.html:5
 msgid ""
 "The problem is imported hidden. Its reference solutions are then run by the "
@@ -456,17 +523,246 @@ msgid "Upload and import"
 msgstr "อัปโหลดและนำเข้า"
 
 #: core/templates/admin/grader/index.html:6
-msgid "Grader"
-msgstr "เกรดเดอร์"
+msgid "Waiting to be judged"
+msgstr "รอตรวจ"
 
 #: core/templates/admin/grader/index.html:7
+msgid "Workers online"
+msgstr "เครื่องตรวจที่ออนไลน์"
+
+#: core/templates/admin/grader/index.html:8
+msgid "Paused"
+msgstr "หยุดชั่วคราว"
+
+#: core/templates/admin/grader/index.html:8
+msgid "Running"
+msgstr "กำลังทำงาน"
+
+#: core/templates/admin/grader/index.html:9
+msgid "Submissions today"
+msgstr "การส่งวันนี้"
+
+#: core/templates/admin/grader/index.html:10
+msgid "Public problems"
+msgstr "โจทย์ที่เปิดอยู่"
+
+#: core/templates/admin/grader/index.html:11
+msgid "Hidden problems"
+msgstr "โจทย์ที่ซ่อนอยู่"
+
+#: core/templates/admin/grader/index.html:12
+msgid "Validating"
+msgstr "กำลังตรวจความถูกต้อง"
+
+#: core/templates/admin/grader/index.html:13
+#: core/templates/admin/grader/problems.html:21
+msgid "Failed validation"
+msgstr "ตรวจความถูกต้องไม่ผ่าน"
+
+#: core/templates/admin/grader/index.html:16
+msgid "Quick actions"
+msgstr "ทางลัด"
+
+#: core/templates/admin/grader/index.html:17
+#: core/templates/admin/grader/problems.html:24 problems/admin_problems.py:194
+msgid "New problem"
+msgstr "โจทย์ใหม่"
+
+#: core/templates/admin/grader/index.html:18
+#: core/templates/admin/grader/problem_form.html:8
+#: problems/admin_problems.py:113
+msgid "Problems"
+msgstr "โจทย์"
+
+#: core/templates/admin/grader/index.html:19
+#: core/templates/admin/grader/index.html:59
+#: core/templates/admin/grader/problems.html:25
 #: core/templates/admin/grader/version.html:4 problems/admin_views.py:60
 msgid "Import a problem"
 msgstr "นำเข้าโจทย์"
 
-#: core/templates/admin/grader/index.html:9 judging/admin_views.py:77
+#: core/templates/admin/grader/index.html:21
+#: core/templates/admin/grader/index.html:61 judging/admin_views.py:77
 msgid "System"
 msgstr "ระบบ"
+
+#: core/templates/admin/grader/index.html:26
+msgid "Latest submissions"
+msgstr "การส่งล่าสุด"
+
+#: core/templates/admin/grader/index.html:29 judging/forms.py:62
+#: judging/templates/judging/list.html:19
+#: judging/templates/judging/ranking.html:9
+#: judging/templates/judging/submission.html:13
+msgid "User"
+msgstr "ผู้ใช้"
+
+#: core/templates/admin/grader/index.html:29
+#: core/templates/admin/grader/problems.html:30
+#: core/templates/admin/grader/version.html:7 judging/forms.py:61
+#: judging/templates/judging/list.html:19
+#: judging/templates/judging/submission.html:12
+#: problems/templates/problems/_task_results.html:8
+msgid "Problem"
+msgstr "โจทย์"
+
+#: core/templates/admin/grader/index.html:29 judging/forms.py:64
+#: judging/templates/judging/list.html:19
+#: judging/templates/judging/results.html:5
+#: judging/templates/judging/results.html:30
+msgid "Result"
+msgstr "ผลการตรวจ"
+
+#: core/templates/admin/grader/index.html:29
+#: judging/templates/judging/list.html:19
+#: judging/templates/judging/submission.html:15
+msgid "Submitted"
+msgstr "เวลาที่ส่ง"
+
+#: core/templates/admin/grader/index.html:42
+#: judging/templates/judging/list.html:39
+msgid "No submissions."
+msgstr "ยังไม่มีการส่ง"
+
+#: core/templates/admin/grader/index.html:45
+msgid "Latest judge errors"
+msgstr "ข้อผิดพลาดของตัวตรวจล่าสุด"
+
+#: core/templates/admin/grader/index.html:50
+msgid "All judge errors"
+msgstr "ข้อผิดพลาดของตัวตรวจทั้งหมด"
+
+#: core/templates/admin/grader/index.html:51
+#: core/templates/admin/grader/system.html:80
+msgid "None."
+msgstr "ไม่มี"
+
+#: core/templates/admin/grader/index.html:58
+msgid "Grader"
+msgstr "เกรดเดอร์"
+
+#: core/templates/admin/grader/problem_form.html:10
+msgid ""
+"Saving makes a new version of the problem. Files you don't upload again are "
+"kept from the current version. A public problem keeps its current version "
+"until the new one passes validation and is published."
+msgstr ""
+"การบันทึกจะสร้างโจทย์รุ่นใหม่ ไฟล์ที่ไม่ได้อัปโหลดใหม่จะใช้ของรุ่นปัจจุบัน "
+"โจทย์ที่เปิดอยู่จะใช้รุ่นปัจจุบันต่อไปจนกว่ารุ่นใหม่จะตรวจความถูกต้องผ่านและถูกเผยแพร่"
+
+#: core/templates/admin/grader/problem_form.html:12
+msgid "Please correct the errors below."
+msgstr "กรุณาแก้ไขข้อผิดพลาดด้านล่าง"
+
+#: core/templates/admin/grader/problem_form.html:18
+msgid "The problem"
+msgstr "ข้อมูลโจทย์"
+
+#: core/templates/admin/grader/problem_form.html:25
+msgid "Statement"
+msgstr "โจทย์"
+
+#: core/templates/admin/grader/problem_form.html:29
+msgid "Preview the Thai statement"
+msgstr "ดูตัวอย่างโจทย์ภาษาไทย"
+
+#: core/templates/admin/grader/problem_form.html:30
+msgid "Preview the English statement"
+msgstr "ดูตัวอย่างโจทย์ภาษาอังกฤษ"
+
+#: core/templates/admin/grader/problem_form.html:38
+msgid "Tests and scoring"
+msgstr "ชุดทดสอบและการให้คะแนน"
+
+#: core/templates/admin/grader/problem_form.html:39
+msgid "Leave both empty to keep the current tests."
+msgstr "เว้นว่างทั้งสองช่องเพื่อใช้ชุดทดสอบเดิม"
+
+#: core/templates/admin/grader/problem_form.html:46
+#: core/templates/admin/grader/version.html:23
+msgid "Reference solutions"
+msgstr "โปรแกรมเฉลย"
+
+#: core/templates/admin/grader/problem_form.html:47
+msgid "Used to validate the problem before it can be opened."
+msgstr "ใช้ตรวจความถูกต้องของโจทย์ก่อนเปิดให้ทำ"
+
+#: core/templates/admin/grader/problem_form.html:47
+msgid "Upload none to keep the current ones; upload any to replace them all."
+msgstr "ถ้าไม่อัปโหลดจะใช้ของเดิม ถ้าอัปโหลดจะแทนที่ทั้งหมด"
+
+#: core/templates/admin/grader/problem_form.html:57
+msgid "Save and validate"
+msgstr "บันทึกและตรวจความถูกต้อง"
+
+#: core/templates/admin/grader/problems.html:11
+msgid "Search by id or title"
+msgstr "ค้นหาด้วยรหัสหรือชื่อ"
+
+#: core/templates/admin/grader/problems.html:11
+#: problems/templates/problems/list.html:25
+#: problems/templates/problems/list.html:47
+msgid "Search"
+msgstr "ค้นหา"
+
+#: core/templates/admin/grader/problems.html:13
+msgid "All groups"
+msgstr "ทุกกลุ่ม"
+
+#: core/templates/admin/grader/problems.html:14
+msgid "No group"
+msgstr "ไม่อยู่ในกลุ่ม"
+
+#: core/templates/admin/grader/problems.html:18
+msgid "Open and closed"
+msgstr "ทั้งเปิดและปิด"
+
+#: core/templates/admin/grader/problems.html:23
+#: judging/templates/judging/list.html:11
+msgid "Filter"
+msgstr "กรอง"
+
+#: core/templates/admin/grader/problems.html:30
+#: core/templates/admin/grader/version.html:9
+msgid "Validation"
+msgstr "การตรวจสอบ"
+
+#: core/templates/admin/grader/problems.html:30
+msgid "Current version"
+msgstr "รุ่นปัจจุบัน"
+
+#: core/templates/admin/grader/problems.html:30
+msgid "Public site"
+msgstr "เว็บไซต์สาธารณะ"
+
+#: core/templates/admin/grader/problems.html:33
+#: problems/templates/problems/_task_results.html:42
+msgid "No problems found."
+msgstr "ไม่พบโจทย์"
+
+#: core/templates/admin/grader/problems.html:39
+msgid "Groups"
+msgstr "กลุ่มโจทย์"
+
+#: core/templates/admin/grader/problems.html:43 problems/admin_problems.py:54
+msgid "Short name in the address"
+msgstr "ชื่อย่อในที่อยู่เว็บ"
+
+#: core/templates/admin/grader/problems.html:43 problems/admin_problems.py:57
+msgid "Order"
+msgstr "ลำดับ"
+
+#: core/templates/admin/grader/problems.html:48
+msgid "No groups yet."
+msgstr "ยังไม่มีกลุ่มโจทย์"
+
+#: core/templates/admin/grader/problems.html:55
+msgid "New group"
+msgstr "กลุ่มโจทย์ใหม่"
+
+#: core/templates/admin/grader/problems.html:60
+msgid "Add group"
+msgstr "เพิ่มกลุ่มโจทย์"
 
 #: core/templates/admin/grader/setup.html:3
 msgid "First-run setup"
@@ -480,7 +776,9 @@ msgstr "สร้างบัญชีผู้ดูแลบัญชีแร
 msgid ""
 "This page works once. After the account exists, sign in to the admin site "
 "with it."
-msgstr "หน้านี้ใช้ได้ครั้งเดียว เมื่อสร้างบัญชีแล้ว ให้ใช้บัญชีนั้นเข้าสู่ระบบหน้าผู้ดูแล"
+msgstr ""
+"หน้านี้ใช้ได้ครั้งเดียว เมื่อสร้างบัญชีแล้ว "
+"ให้ใช้บัญชีนั้นเข้าสู่ระบบหน้าผู้ดูแล"
 
 #: core/templates/admin/grader/setup.html:11
 msgid "Create account"
@@ -492,8 +790,8 @@ msgstr "ไคลเอนต์สำหรับเข้าสู่ระบ
 
 #: core/templates/admin/grader/signin.html:7
 msgid ""
-"In Google Cloud Console, create an OAuth client of type “Web application” "
-"and register this redirect URI:"
+"In Google Cloud Console, create an OAuth client of type “Web application” and"
+" register this redirect URI:"
 msgstr ""
 "ใน Google Cloud Console ให้สร้าง OAuth client ประเภท “Web application” "
 "และลงทะเบียน redirect URI นี้:"
@@ -585,7 +883,8 @@ msgid ""
 "Judges the hostile programs on this server and checks that the sandbox "
 "stopped each one. It runs even while grading is paused."
 msgstr ""
-"ตรวจโปรแกรมอันตรายบนเครื่องนี้และตรวจว่าแซนด์บ็อกซ์หยุดได้ทุกตัว ทำงานได้แม้ตอนหยุดการตรวจ"
+"ตรวจโปรแกรมอันตรายบนเครื่องนี้และตรวจว่าแซนด์บ็อกซ์หยุดได้ทุกตัว "
+"ทำงานได้แม้ตอนหยุดการตรวจ"
 
 #: core/templates/admin/grader/system.html:47
 msgid "running…"
@@ -644,17 +943,6 @@ msgstr "อะไร"
 msgid "Error"
 msgstr "ข้อผิดพลาด"
 
-#: core/templates/admin/grader/system.html:80
-msgid "None."
-msgstr "ไม่มี"
-
-#: core/templates/admin/grader/version.html:7 judging/forms.py:61
-#: judging/templates/judging/list.html:18
-#: judging/templates/judging/submission.html:8
-#: problems/templates/problems/list.html:8
-msgid "Problem"
-msgstr "โจทย์"
-
 #: core/templates/admin/grader/version.html:7
 msgid "public"
 msgstr "สาธารณะ"
@@ -670,10 +958,6 @@ msgstr "เวอร์ชัน"
 #: core/templates/admin/grader/version.html:8
 msgid "current version"
 msgstr "เวอร์ชันปัจจุบัน"
-
-#: core/templates/admin/grader/version.html:9
-msgid "Validation"
-msgstr "การตรวจสอบ"
 
 #: core/templates/admin/grader/version.html:12
 msgid "Import report"
@@ -695,21 +979,17 @@ msgstr "นำเข้าเมื่อ"
 msgid "Warnings"
 msgstr "คำเตือน"
 
-#: core/templates/admin/grader/version.html:23
-msgid "Reference solutions"
-msgstr "โปรแกรมเฉลย"
-
 #: core/templates/admin/grader/version.html:24
 msgid "The judge could not validate this version"
 msgstr "ระบบตรวจไม่สามารถตรวจสอบเวอร์ชันนี้ได้"
 
 #: core/templates/admin/grader/version.html:28 judging/forms.py:17
-#: judging/templates/judging/list.html:18
-#: judging/templates/judging/submission.html:10
+#: judging/templates/judging/list.html:19
+#: judging/templates/judging/submission.html:14 problems/editor.py:151
 msgid "Language"
 msgstr "ภาษา"
 
-#: core/templates/admin/grader/version.html:28
+#: core/templates/admin/grader/version.html:28 problems/editor.py:154
 msgid "Expected score"
 msgstr "คะแนนที่ควรได้"
 
@@ -718,9 +998,9 @@ msgid "Verdict"
 msgstr "ผลตรวจ"
 
 #: core/templates/admin/grader/version.html:28
-#: judging/templates/judging/list.html:18
-#: judging/templates/judging/profile.html:9
-#: judging/templates/judging/ranking.html:8
+#: judging/templates/judging/list.html:19
+#: judging/templates/judging/profile.html:12
+#: judging/templates/judging/ranking.html:9
 #: judging/templates/judging/results.html:9
 #: judging/templates/judging/results.html:14
 msgid "Score"
@@ -738,79 +1018,156 @@ msgstr "เผยแพร่"
 msgid "Validate again"
 msgstr "ตรวจสอบอีกครั้ง"
 
-#: core/templates/base.html:18 problems/templates/problems/list.html:3
-#: problems/templates/problems/list.html:5
-msgid "Problems"
-msgstr "โจทย์"
+#: core/templates/base.html:41
+msgid "Account menu"
+msgstr "เมนูบัญชี"
 
-#: core/templates/base.html:19 judging/templates/judging/profile.html:9
-#: judging/views.py:194
-msgid "Submissions"
-msgstr "การส่งทั้งหมด"
+#: core/templates/base.html:43
+msgid "My profile"
+msgstr "โปรไฟล์ของฉัน"
 
-#: core/templates/base.html:20 judging/templates/judging/ranking.html:3
-#: judging/templates/judging/ranking.html:5
-msgid "Ranking"
-msgstr "อันดับ"
-
-#: core/templates/base.html:21 judging/views.py:203
+#: core/templates/base.html:44 judging/views.py:207
 msgid "My submissions"
 msgstr "การส่งของฉัน"
 
-#: core/templates/base.html:31
+#: core/templates/base.html:48
 msgid "Sign out"
 msgstr "ออกจากระบบ"
 
-#: core/templates/base.html:35
+#: core/templates/base.html:55
 msgid "Sign in with Google"
 msgstr "เข้าสู่ระบบด้วย Google"
 
-#: core/templates/base.html:58 core/templates/core/privacy.html:3
+#: core/templates/base.html:59
+msgid "Menu"
+msgstr "เมนู"
+
+#: core/templates/base.html:71 core/templates/core/privacy.html:3
 #: core/templates/core/privacy.html:6
 msgid "Privacy"
 msgstr "ความเป็นส่วนตัว"
 
-#: core/templates/core/home.html:7
-msgid ""
-"Practice with problems from past contests. Programs are judged like in the "
-"contest."
-msgstr "ฝึกทำโจทย์จากการแข่งขันที่ผ่านมา โปรแกรมจะถูกตรวจแบบเดียวกับในการแข่งขัน"
+#: core/templates/core/_nav_links.html:3
+#: problems/templates/problems/list.html:3
+#: problems/templates/problems/list.html:10
+msgid "Tasks"
+msgstr "โจทย์"
+
+#: core/templates/core/_nav_links.html:4
+#: problems/templates/problems/archive.html:3
+#: problems/templates/problems/archive.html:13 problems/views.py:133
+msgid "Archive"
+msgstr "คลังโจทย์"
+
+#: core/templates/core/_nav_links.html:5
+#: judging/templates/judging/profile.html:19 judging/views.py:198
+msgid "Submissions"
+msgstr "การส่งทั้งหมด"
+
+#: core/templates/core/_nav_links.html:6
+#: judging/templates/judging/ranking.html:3
+#: judging/templates/judging/ranking.html:5
+msgid "Ranking"
+msgstr "อันดับ"
+
+#: core/templates/core/home.html:8
+msgid "Practise contest problems"
+msgstr "ฝึกทำโจทย์แข่งขัน"
 
 #: core/templates/core/home.html:9
+msgid "judged like the real contest"
+msgstr "ตรวจเหมือนสนามแข่งจริง"
+
+#: core/templates/core/home.html:11
+#, python-format
+msgid ""
+"<strong class=\"problem-count\">%(counter)s</strong> problem to try, from "
+"past contests."
+msgid_plural ""
+"<strong class=\"problem-count\">%(counter)s</strong> problems to try, from "
+"past contests."
+msgstr[0] ""
+"มีโจทย์จากการแข่งขันที่ผ่านมาให้ลองทำ <strong class=\"problem-"
+"count\">%(counter)s</strong> ข้อ"
+
+#: core/templates/core/home.html:16
+msgid "Find problems"
+msgstr "ค้นหาโจทย์"
+
+#: core/templates/core/home.html:23
+#, python-format
+msgid "Why %(site_name)s"
+msgstr "ทำไมต้อง%(site_name)s"
+
+#: core/templates/core/home.html:27
+msgid "Judged like CMS"
+msgstr "ตรวจแบบเดียวกับ CMS"
+
+#: core/templates/core/home.html:28
+msgid ""
+"The same compilers, time and memory limits, and subtask scores as in the "
+"contest."
+msgstr "คอมไพเลอร์ เวลา หน่วยความจำ และคะแนนย่อยเหมือนในการแข่งขันจริง"
+
+#: core/templates/core/home.html:32
+msgid "Problems from past contests"
+msgstr "โจทย์จากการแข่งขันที่ผ่านมา"
+
+#: core/templates/core/home.html:33
+msgid ""
+"TOI-style problems from earlier contests, sorted into groups so they are easy"
+" to find."
+msgstr "โจทย์แนว TOI จากการแข่งขันครั้งก่อน ๆ จัดเป็นหมวดหมู่ให้หาง่าย"
+
+#: core/templates/core/home.html:37
+msgid "Free, sign in with Google"
+msgstr "ฟรี เข้าสู่ระบบด้วย Google"
+
+#: core/templates/core/home.html:38
+msgid "No forms to fill in and no adverts. Sign in and start solving."
+msgstr "ไม่ต้องกรอกแบบฟอร์มยาว ๆ ไม่มีโฆษณา เข้าสู่ระบบแล้วเริ่มทำโจทย์ได้เลย"
+
+#: core/templates/core/home.html:47
 msgid "New problems"
 msgstr "โจทย์ใหม่"
 
-#: core/templates/core/home.html:14
+#: core/templates/core/home.html:51
 msgid "See all problems"
 msgstr "ดูโจทย์ทั้งหมด"
 
 #: core/templates/core/privacy.html:7
 msgid ""
-"You sign in with your Google account. From Google we keep only its account "
-"number, which tells us it is the same account next time. We never ask Google "
-"for your email address, name or photo, and we don't store them."
+"You sign in with your Google account. From Google we keep its account number,"
+" which tells us it is the same account next time, and a copy of your profile "
+"photo, which we show next to your name. We never ask Google for your email "
+"address, and we don't keep the name Google sends. You can switch the photo "
+"off in your settings; we then delete our copy at once."
 msgstr ""
 "คุณเข้าสู่ระบบด้วยบัญชี Google โดยเราเก็บจาก Google ไว้เพียงหมายเลขบัญชี "
-"เพื่อให้รู้ว่าเป็นบัญชีเดิมในครั้งต่อไป เราไม่เคยขออีเมล ชื่อ หรือรูปภาพของคุณจาก Google "
-"และไม่ได้เก็บข้อมูลเหล่านั้น"
+"เพื่อให้รู้ว่าเป็นบัญชีเดิมในครั้งต่อไป และสำเนารูปโปรไฟล์ของคุณ "
+"ซึ่งเราแสดงไว้ข้างชื่อของคุณ เราไม่เคยขออีเมลของคุณจาก Google "
+"และไม่เก็บชื่อที่ Google ส่งมา คุณปิดการแสดงรูปได้ในหน้าตั้งค่า "
+"แล้วเราจะลบสำเนารูปทันที"
 
-#: core/templates/core/privacy.html:12
+#: core/templates/core/privacy.html:13
 msgid ""
 "We store the username, display name and school you type in, the programs you "
 "submit and their results. Other people can see your username, display name, "
 "school and scores, but never your programs."
 msgstr ""
-"เราเก็บชื่อผู้ใช้ ชื่อที่แสดง และโรงเรียนที่คุณกรอก รวมถึงโปรแกรมที่คุณส่งและผลการตรวจ "
-"คนอื่นจะเห็นชื่อผู้ใช้ ชื่อที่แสดง โรงเรียน และคะแนนของคุณ แต่จะไม่เห็นโปรแกรมของคุณ"
+"เราเก็บชื่อผู้ใช้ ชื่อที่แสดง และโรงเรียนที่คุณกรอก "
+"รวมถึงโปรแกรมที่คุณส่งและผลการตรวจ คนอื่นจะเห็นชื่อผู้ใช้ ชื่อที่แสดง "
+"โรงเรียน และคะแนนของคุณ แต่จะไม่เห็นโปรแกรมของคุณ"
 
-#: core/templates/core/privacy.html:17
+#: core/templates/core/privacy.html:18
 msgid ""
 "Google sees that you signed in to this site. Signing out here does not sign "
 "you out of Google."
 msgstr ""
-"Google จะรู้ว่าคุณเข้าสู่ระบบเว็บไซต์นี้ และการออกจากระบบที่นี่ไม่ได้ทำให้คุณออกจากระบบ Google"
+"Google จะรู้ว่าคุณเข้าสู่ระบบเว็บไซต์นี้ "
+"และการออกจากระบบที่นี่ไม่ได้ทำให้คุณออกจากระบบ Google"
 
-#: core/templates/core/privacy.html:21
+#: core/templates/core/privacy.html:22
 msgid ""
 "To have your account and everything in it deleted, ask the person who runs "
 "this site."
@@ -825,11 +1182,11 @@ msgstr "ได้ไม่เกิน %(limit)d ไบต์ (ตอนนี�
 msgid "Control or invisible characters are not allowed."
 msgstr "ห้ามใช้อักขระควบคุมหรืออักขระที่มองไม่เห็น"
 
-#: core/views.py:58
+#: core/views.py:54
 msgid "Too many tries"
 msgstr "ลองหลายครั้งเกินไป"
 
-#: core/views.py:59
+#: core/views.py:55
 msgid "Please wait a while and try again."
 msgstr "กรุณารอสักครู่แล้วลองใหม่"
 
@@ -873,18 +1230,6 @@ msgstr "โค้ดยาวเกิน 64 KB"
 #: judging/forms.py:53
 msgid "The code contains a NUL character."
 msgstr "โค้ดมีอักขระ NUL"
-
-#: judging/forms.py:62 judging/templates/judging/list.html:18
-#: judging/templates/judging/ranking.html:8
-#: judging/templates/judging/submission.html:9
-msgid "User"
-msgstr "ผู้ใช้"
-
-#: judging/forms.py:64 judging/templates/judging/list.html:18
-#: judging/templates/judging/results.html:5
-#: judging/templates/judging/results.html:30
-msgid "Result"
-msgstr "ผลการตรวจ"
 
 #: judging/models.py:17
 msgid "Accepted"
@@ -950,7 +1295,7 @@ msgstr "ทดสอบระบบ"
 msgid "fresh submission"
 msgstr "การส่งใหม่"
 
-#: judging/models.py:100 problems/admin.py:28
+#: judging/models.py:100 problems/admin.py:30
 msgid "validation"
 msgstr "การตรวจสอบ"
 
@@ -962,64 +1307,111 @@ msgstr "ตรวจใหม่"
 msgid "calibration and self-test"
 msgstr "ปรับเทียบเวลาและทดสอบระบบ"
 
-#: judging/templates/judging/list.html:11
-msgid "Filter"
-msgstr "กรอง"
+#: judging/profile.py:26
+msgid "Newbie"
+msgstr "มือใหม่"
 
-#: judging/templates/judging/list.html:18
-#: judging/templates/judging/submission.html:11
-msgid "Submitted"
-msgstr "เวลาที่ส่ง"
+#: judging/profile.py:27
+msgid "Pupil"
+msgstr "นักเรียนรู้"
 
-#: judging/templates/judging/list.html:18
+#: judging/profile.py:28
+msgid "Specialist"
+msgstr "ผู้ชำนาญ"
+
+#: judging/profile.py:29
+msgid "Expert"
+msgstr "ผู้เชี่ยวชาญ"
+
+#: judging/profile.py:30
+msgid "Master"
+msgstr "ปรมาจารย์"
+
+#: judging/templates/judging/list.html:19
 #: judging/templates/judging/results.html:30
 msgid "Time"
 msgstr "เวลา"
 
-#: judging/templates/judging/list.html:18
+#: judging/templates/judging/list.html:19
 #: judging/templates/judging/results.html:30
 msgid "Memory"
 msgstr "หน่วยความจำ"
 
-#: judging/templates/judging/list.html:37
-msgid "No submissions."
-msgstr "ยังไม่มีการส่ง"
-
-#: judging/templates/judging/list.html:43
+#: judging/templates/judging/list.html:45
 msgid "Newer"
 msgstr "ใหม่กว่า"
 
-#: judging/templates/judging/list.html:44
-#: judging/templates/judging/ranking.html:27
+#: judging/templates/judging/list.html:46
+#: judging/templates/judging/ranking.html:29
+#: problems/templates/problems/_task_results.html:36
 #, python-format
 msgid "Page %(number)s of %(total)s"
 msgstr "หน้า %(number)s จาก %(total)s"
 
-#: judging/templates/judging/list.html:45
+#: judging/templates/judging/list.html:47
 msgid "Older"
 msgstr "เก่ากว่า"
 
 #: judging/templates/judging/profile.html:11
-msgid "Solved"
-msgstr "ทำได้เต็ม"
+msgid "Rank"
+msgstr "อันดับ"
 
-#: judging/templates/judging/profile.html:18
+#: judging/templates/judging/profile.html:13
+#: judging/templates/judging/profile.html:46
+#: problems/templates/problems/_task_results.html:24
+#: problems/templates/problems/list.html:15
+#: problems/templates/problems/list.html:32
+msgctxt "tasks"
+msgid "Solved"
+msgstr "ผ่านแล้ว"
+
+#: judging/templates/judging/profile.html:14
+#: problems/templates/problems/_task_results.html:24
+#: problems/templates/problems/list.html:16
+#: problems/templates/problems/list.html:33
+msgid "Not solved yet"
+msgstr "ยังไม่ผ่าน"
+
+#: judging/templates/judging/profile.html:15
+msgid "Member since"
+msgstr "เป็นสมาชิกตั้งแต่"
+
+#: judging/templates/judging/profile.html:16
+msgid "Last active"
+msgstr "ใช้งานล่าสุด"
+
+#: judging/templates/judging/profile.html:28
+msgid "Problems solved over time"
+msgstr "จำนวนโจทย์ที่ผ่านตามเวลา"
+
+#: judging/templates/judging/profile.html:29
+#, python-format
+msgid "%(total)s problems solved from %(first)s to %(last)s"
+msgstr "ผ่านแล้ว %(total)s ข้อ ตั้งแต่ %(first)s ถึง %(last)s"
+
+#: judging/templates/judging/profile.html:42
+msgid "Progress by group"
+msgstr "ความคืบหน้าตามกลุ่มโจทย์"
+
+#: judging/templates/judging/profile.html:53
 msgid "Attempted"
 msgstr "เคยลองทำ"
 
-#: judging/templates/judging/ranking.html:8
+#: judging/templates/judging/ranking.html:9
 msgid "School"
 msgstr "โรงเรียน"
 
-#: judging/templates/judging/ranking.html:21
+#: judging/templates/judging/ranking.html:23
 msgid "Nobody has scored yet."
 msgstr "ยังไม่มีใครได้คะแนน"
 
-#: judging/templates/judging/ranking.html:26
+#: judging/templates/judging/ranking.html:28
+#: problems/templates/problems/_task_results.html:35
 msgid "Previous"
 msgstr "ก่อนหน้า"
 
-#: judging/templates/judging/ranking.html:28
+#: judging/templates/judging/ranking.html:30
+#: problems/templates/problems/_task_results.html:37
 msgid "Next"
 msgstr "ถัดไป"
 
@@ -1032,66 +1424,101 @@ msgid "Compiler output"
 msgstr "ข้อความจากคอมไพเลอร์"
 
 #: judging/templates/judging/submission.html:3
-#: judging/templates/judging/submission.html:6
+#: judging/templates/judging/submission.html:10
 msgid "Submission"
 msgstr "การส่ง"
 
-#: judging/templates/judging/submission.html:17
+#: judging/templates/judging/submission.html:21
 msgid "Your code"
 msgstr "โค้ดของคุณ"
 
-#: judging/templates/judging/submission.html:17
+#: judging/templates/judging/submission.html:21
 msgid "plain text"
 msgstr "ข้อความล้วน"
 
 #: judging/templates/judging/submit.html:3
 #: judging/templates/judging/submit.html:5
 #: judging/templates/judging/submit.html:18
-#: problems/templates/problems/detail.html:17
+#: problems/templates/problems/_task_results.html:11
+#: problems/templates/problems/_task_results.html:26
+#: problems/templates/problems/detail.html:18
 msgid "Submit"
 msgstr "ส่ง"
 
-#: judging/views.py:35
+#: judging/views.py:39
 msgid "Too big"
 msgstr "ใหญ่เกินไป"
 
-#: judging/views.py:35
+#: judging/views.py:39
 msgid "Submissions can be at most 64 KB."
 msgstr "ส่งได้ไม่เกิน 64 KB"
 
-#: judging/views.py:56
+#: judging/views.py:60
 #, python-format
 msgid "Please wait %(seconds)d seconds between submissions."
 msgstr "กรุณารอ %(seconds)d วินาทีก่อนส่งครั้งต่อไป"
 
-#: judging/views.py:63
+#: judging/views.py:67
 #, python-format
 msgid "You have %(count)d submissions waiting for the judge. Please wait."
 msgstr "คุณมีการส่ง %(count)d ครั้งที่รอตรวจอยู่ กรุณารอสักครู่"
 
-#: judging/views.py:70
+#: judging/views.py:74
 #, python-format
 msgid ""
 "You have reached %(count)d submissions this hour. Please come back later."
 msgstr "คุณส่งครบ %(count)d ครั้งในชั่วโมงนี้แล้ว กรุณากลับมาใหม่ภายหลัง"
 
-#: judging/views.py:75
+#: judging/views.py:79
 msgid "Too many submissions"
 msgstr "ส่งบ่อยเกินไป"
 
-#: problems/admin.py:33
+#: problems/admin.py:35
 msgid "Publish the selected problems"
 msgstr "เผยแพร่โจทย์ที่เลือก"
 
-#: problems/admin.py:46
+#: problems/admin.py:43
 #, python-format
 msgid ""
 "Not published (the current version has not passed validation): %(slugs)s"
 msgstr "ไม่ได้เผยแพร่ (เวอร์ชันปัจจุบันยังไม่ผ่านการตรวจสอบ): %(slugs)s"
 
-#: problems/admin.py:49
+#: problems/admin.py:46
 msgid "Hide the selected problems"
 msgstr "ซ่อนโจทย์ที่เลือก"
+
+#: problems/admin_problems.py:47
+msgid "Inside group"
+msgstr "อยู่ในกลุ่ม"
+
+#: problems/admin_problems.py:55
+msgid "Name (Thai)"
+msgstr "ชื่อ (ไทย)"
+
+#: problems/admin_problems.py:56
+msgid "Name (English)"
+msgstr "ชื่อ (อังกฤษ)"
+
+#: problems/admin_problems.py:147
+msgid "It can't be opened: its current version has not passed validation."
+msgstr "เปิดไม่ได้: รุ่นปัจจุบันยังตรวจความถูกต้องไม่ผ่าน"
+
+#: problems/admin_problems.py:184
+msgid "Group added."
+msgstr "เพิ่มกลุ่มโจทย์แล้ว"
+
+#: problems/admin_problems.py:194
+#, python-format
+msgid "Edit %(slug)s"
+msgstr "แก้ไข %(slug)s"
+
+#: problems/admin_problems.py:239
+msgid "A problem with this short name exists already: <a href=\"{}\">edit it</a>."
+msgstr "มีโจทย์ชื่อย่อนี้อยู่แล้ว: <a href=\"{}\">แก้ไขโจทย์นั้น</a>"
+
+#: problems/admin_problems.py:256
+msgid "This problem has no version to start from: import it first."
+msgstr "โจทย์นี้ยังไม่มีรุ่นให้เริ่มแก้ไข: ให้นำเข้าก่อน"
 
 #: problems/admin_views.py:36
 msgid "Problem zip (native or CMS Italian format)"
@@ -1110,80 +1537,324 @@ msgstr "เผยแพร่ได้เฉพาะเวอร์ชันท
 msgid "Published."
 msgstr "เผยแพร่แล้ว"
 
-#: problems/models.py:22
-msgid "visible"
-msgstr "แสดงให้เห็น"
+#: problems/editor.py:62
+msgid "Short name (slug)"
+msgstr "ชื่อย่อ (slug)"
 
-#: problems/models.py:50
-msgid "imported"
-msgstr "นำเข้าแล้ว"
+#: problems/editor.py:63
+msgid "The web address: a-z, 0-9, _ and -. It can't change later."
+msgstr "ใช้ในที่อยู่เว็บ: a-z, 0-9, _ และ - เปลี่ยนภายหลังไม่ได้"
 
-#: problems/models.py:51
-msgid "validating"
-msgstr "กำลังตรวจสอบ"
+#: problems/editor.py:65
+msgid "Title (Thai)"
+msgstr "ชื่อโจทย์ (ไทย)"
 
-#: problems/models.py:52
-msgid "valid"
-msgstr "ใช้ได้"
+#: problems/editor.py:67
+msgid "Title (English)"
+msgstr "ชื่อโจทย์ (อังกฤษ)"
 
-#: problems/models.py:53
-msgid "invalid"
-msgstr "ใช้ไม่ได้"
-
-#: problems/templates/problems/detail.html:10
-msgid "Time limit"
-msgstr "เวลาที่กำหนด"
-
-#: problems/templates/problems/detail.html:10
-msgid "ms"
-msgstr "มิลลิวินาที"
-
-#: problems/templates/problems/detail.html:11
-msgid "Memory limit"
-msgstr "หน่วยความจำที่กำหนด"
-
-#: problems/templates/problems/detail.html:12
-msgid "Languages"
-msgstr "ภาษาที่ใช้ได้"
-
-#: problems/templates/problems/detail.html:13
-msgid "Input file"
-msgstr "ไฟล์ข้อมูลเข้า"
-
-#: problems/templates/problems/detail.html:14
-msgid "Output file"
-msgstr "ไฟล์ผลลัพธ์"
-
-#: problems/templates/problems/detail.html:15
-#: problems/templates/problems/list.html:8
+#: problems/editor.py:73 problems/templates/problems/detail.html:16
 msgid "Tags"
 msgstr "หมวดหมู่"
 
-#: problems/templates/problems/detail.html:20
+#: problems/editor.py:73
+msgid "Separated by commas."
+msgstr "คั่นด้วยจุลภาค"
+
+#: problems/editor.py:76
+msgid "Time limit (ms)"
+msgstr "เวลาที่กำหนด (มิลลิวินาที)"
+
+#: problems/editor.py:79
+msgid "Memory limit (MB)"
+msgstr "หน่วยความจำที่กำหนด (MB)"
+
+#: problems/editor.py:82 problems/templates/problems/detail.html:13
+msgid "Languages"
+msgstr "ภาษาที่ใช้ได้"
+
+#: problems/editor.py:87
+msgid "Statement in Markdown (Thai)"
+msgstr "โจทย์แบบ Markdown (ไทย)"
+
+#: problems/editor.py:90
+msgid "Statement in Markdown (English)"
+msgstr "โจทย์แบบ Markdown (อังกฤษ)"
+
+#: problems/editor.py:94
+msgid "Statement PDF (Thai)"
+msgstr "โจทย์ PDF (ไทย)"
+
+#: problems/editor.py:96
+msgid "Statement PDF (English)"
+msgstr "โจทย์ PDF (อังกฤษ)"
+
+#: problems/editor.py:99
+msgid "Test files"
+msgstr "ไฟล์ชุดทดสอบ"
+
+#: problems/editor.py:101
+msgid "Pick every <name>.in and <name>.out file at once."
+msgstr "เลือกไฟล์ <ชื่อ>.in และ <ชื่อ>.out ทั้งหมดพร้อมกัน"
+
+#: problems/editor.py:104
+msgid "…or one zip of the tests"
+msgstr "…หรือไฟล์ zip ของชุดทดสอบหนึ่งไฟล์"
+
+#: problems/editor.py:106
+msgid "The .in and .out files, at the top or in a tests/ folder."
+msgstr "ไฟล์ .in และ .out ที่ระดับบนสุด หรือในโฟลเดอร์ tests/"
+
+#: problems/editor.py:109
+msgid "Sample tests"
+msgstr "ชุดทดสอบตัวอย่าง"
+
+#: problems/editor.py:111
+msgid "Test names shown on the problem page, separated by commas."
+msgstr "ชื่อชุดทดสอบที่แสดงในหน้าโจทย์ คั่นด้วยจุลภาค"
+
+#: problems/editor.py:114
+msgid "Scoring"
+msgstr "การให้คะแนน"
+
+#: problems/editor.py:116
+msgid "Sum: every test is worth the same"
+msgstr "รวมคะแนน: ทุกชุดทดสอบมีค่าเท่ากัน"
+
+#: problems/editor.py:117
+msgid "Subtasks: each scores its points if all its tests pass"
+msgstr "ปัญหาย่อย: ได้คะแนนเมื่อผ่านทุกชุดทดสอบในปัญหาย่อยนั้น"
+
+#: problems/editor.py:120
+msgid "Total points"
+msgstr "คะแนนเต็ม"
+
+#: problems/editor.py:122
+msgid "Subtasks"
+msgstr "ปัญหาย่อย"
+
+#: problems/editor.py:126
+msgid ""
+"One subtask per line: its points, then its test names or patterns, for "
+"example \"30 1-*\" or \"70 1-* 2-*\"."
+msgstr ""
+"บรรทัดละหนึ่งปัญหาย่อย: คะแนน ตามด้วยชื่อหรือรูปแบบชื่อชุดทดสอบ เช่น \"30 "
+"1-*\" หรือ \"70 1-* 2-*\""
+
+#: problems/editor.py:131
+msgid "Checker"
+msgstr "ตัวตรวจคำตอบ"
+
+#: problems/editor.py:133
+msgid "Compare the output (CMS white-diff)"
+msgstr "เทียบผลลัพธ์ (CMS white-diff)"
+
+#: problems/editor.py:134
+msgid "CMS-style checker"
+msgstr "ตัวตรวจแบบ CMS"
+
+#: problems/editor.py:135
+msgid "testlib checker"
+msgstr "ตัวตรวจแบบ testlib"
+
+#: problems/editor.py:138
+msgid "checker.cpp"
+msgstr "checker.cpp"
+
+#: problems/editor.py:148
+#, python-format
+msgid "Reference solution %(n)d"
+msgstr "เฉลยที่ %(n)d"
+
+#: problems/editor.py:155
+msgid "Empty: run it and report the score only."
+msgstr "เว้นว่าง: รันและรายงานคะแนนเท่านั้น"
+
+#: problems/editor.py:161
+msgid "Give a title in Thai or English."
+msgstr "ใส่ชื่อโจทย์ภาษาไทยหรืออังกฤษ"
+
+#: problems/editor.py:163
+msgid "Add the tests: .in and .out files, or a zip."
+msgstr "เพิ่มชุดทดสอบ: ไฟล์ .in และ .out หรือไฟล์ zip"
+
+#: problems/editor.py:165
+msgid "Give either the test files or a zip, not both."
+msgstr "ใส่ไฟล์ชุดทดสอบหรือไฟล์ zip อย่างใดอย่างหนึ่ง"
+
+#: problems/editor.py:167
+msgid "Sum scoring needs the total points."
+msgstr "การรวมคะแนนต้องใส่คะแนนเต็ม"
+
+#: problems/editor.py:184
+msgid "A solution must be a .c, .cpp or .py file."
+msgstr "เฉลยต้องเป็นไฟล์ .c, .cpp หรือ .py"
+
+#: problems/editor.py:188
+msgid "This solution's file doesn't match its language."
+msgstr "ไฟล์เฉลยนี้ไม่ตรงกับภาษาที่เลือก"
+
+#: problems/editor.py:203
+#, python-format
+msgid "Subtask line %(n)d: write the points, then test names or patterns."
+msgstr "ปัญหาย่อยบรรทัดที่ %(n)d: ใส่คะแนน ตามด้วยชื่อหรือรูปแบบชื่อชุดทดสอบ"
+
+#: problems/editor.py:208
+msgid "Subtask scoring needs at least one subtask line."
+msgstr "การให้คะแนนแบบปัญหาย่อยต้องมีอย่างน้อยหนึ่งบรรทัด"
+
+#: problems/editor.py:313
+msgid "Write a statement in Markdown, or upload a statement PDF."
+msgstr "เขียนโจทย์แบบ Markdown หรืออัปโหลดโจทย์ PDF"
+
+#: problems/editor.py:331
+#, python-format
+msgid "%(name)s is not a test file: use <name>.in and <name>.out."
+msgstr "%(name)s ไม่ใช่ไฟล์ชุดทดสอบ: ใช้ <ชื่อ>.in และ <ชื่อ>.out"
+
+#: problems/editor.py:334 problems/editor.py:349
+#, python-format
+msgid "%(name)s is there twice."
+msgstr "มี %(name)s ซ้ำสองไฟล์"
+
+#: problems/editor.py:352
+msgid "The zip has no .in and .out files."
+msgstr "ไฟล์ zip ไม่มีไฟล์ .in และ .out"
+
+#: problems/editor.py:366
+msgid "A cms or testlib checker needs its checker.cpp file."
+msgstr "ตัวตรวจแบบ cms หรือ testlib ต้องมีไฟล์ checker.cpp"
+
+#: problems/models.py:46
+msgid "This name is kept for problems with no group."
+msgstr "ชื่อนี้สงวนไว้สำหรับโจทย์ที่ไม่อยู่ในกลุ่มใด"
+
+#: problems/models.py:50
+msgid "Groups go two levels deep at most."
+msgstr "กลุ่มโจทย์ซ้อนกันได้ไม่เกินสองชั้น"
+
+#: problems/models.py:52
+msgid "A group with subgroups must stay at the top."
+msgstr "กลุ่มที่มีกลุ่มย่อยต้องอยู่ชั้นบนสุด"
+
+#: problems/models.py:67
+msgid "visible"
+msgstr "แสดงให้เห็น"
+
+#: problems/models.py:104
+msgid "imported"
+msgstr "นำเข้าแล้ว"
+
+#: problems/models.py:105
+msgid "validating"
+msgstr "กำลังตรวจสอบ"
+
+#: problems/models.py:106
+msgid "valid"
+msgstr "ใช้ได้"
+
+#: problems/models.py:107
+msgid "invalid"
+msgstr "ใช้ไม่ได้"
+
+#: problems/templates/problems/_folders.html:6
+#, python-format
+msgid "%(percent)s%% solved"
+msgstr "ผ่านแล้ว %(percent)s%%"
+
+#: problems/templates/problems/_folders.html:10
+#, python-format
+msgid "%(counter)s problem"
+msgid_plural "%(counter)s problems"
+msgstr[0] "%(counter)s ข้อ"
+
+#: problems/templates/problems/_task_results.html:9
+msgid "Passes"
+msgstr "ผ่าน"
+
+#: problems/templates/problems/_task_results.html:10
+#: problems/templates/problems/list.html:29
+msgid "Status"
+msgstr "สถานะ"
+
+#: problems/templates/problems/_task_results.html:20
+#, python-format
+msgid "%(seconds)s s"
+msgstr "%(seconds)s วินาที"
+
+#: problems/templates/problems/_task_results.html:24
+#: problems/templates/problems/list.html:17
+#: problems/templates/problems/list.html:34
+msgid "Not submitted"
+msgstr "ยังไม่ได้ส่ง"
+
+#: problems/templates/problems/_task_results.html:33
+msgid "Pages"
+msgstr "หน้า"
+
+#: problems/templates/problems/detail.html:11
+msgid "Time limit"
+msgstr "เวลาที่กำหนด"
+
+#: problems/templates/problems/detail.html:11
+msgid "ms"
+msgstr "มิลลิวินาที"
+
+#: problems/templates/problems/detail.html:12
+msgid "Memory limit"
+msgstr "หน่วยความจำที่กำหนด"
+
+#: problems/templates/problems/detail.html:14
+msgid "Input file"
+msgstr "ไฟล์ข้อมูลเข้า"
+
+#: problems/templates/problems/detail.html:15
+msgid "Output file"
+msgstr "ไฟล์ผลลัพธ์"
+
+#: problems/templates/problems/detail.html:22
 msgid "Statement (PDF)"
 msgstr "โจทย์ (PDF)"
 
-#: problems/templates/problems/detail.html:28
+#: problems/templates/problems/detail.html:30
 msgid "Files"
 msgstr "ไฟล์"
 
-#: problems/templates/problems/detail.html:43
+#: problems/templates/problems/detail.html:45
 msgid "Examples"
 msgstr "ตัวอย่าง"
 
-#: problems/templates/problems/detail.html:47
+#: problems/templates/problems/detail.html:49
 msgid "Input"
 msgstr "ข้อมูลเข้า"
 
-#: problems/templates/problems/detail.html:47
-#: problems/templates/problems/detail.html:51
+#: problems/templates/problems/detail.html:49
+#: problems/templates/problems/detail.html:53
 msgid "download"
 msgstr "ดาวน์โหลด"
 
-#: problems/templates/problems/detail.html:51
+#: problems/templates/problems/detail.html:53
 msgid "Output"
 msgstr "ผลลัพธ์"
 
-#: problems/templates/problems/detail.html:55
+#: problems/templates/problems/detail.html:57
 msgid "This example is long; only its beginning is shown."
 msgstr "ตัวอย่างนี้ยาว จึงแสดงเฉพาะส่วนต้น"
+
+#: problems/templates/problems/list.html:13
+#: problems/templates/problems/list.html:31
+#: problems/templates/problems/list.html:41
+msgid "All"
+msgstr "ทั้งหมด"
+
+#: problems/templates/problems/list.html:18
+msgid "Solved today"
+msgstr "ผ่านวันนี้"
+
+#: problems/templates/problems/list.html:26
+msgid "Name or id of a problem"
+msgstr "ชื่อหรือรหัสโจทย์"
+
+#: problems/views.py:117 problems/views.py:138
+msgid "Other"
+msgstr "อื่น ๆ"

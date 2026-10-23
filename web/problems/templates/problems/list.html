@@ -1,21 +1,53 @@
 {% extends "base.html" %}
-{% load i18n problems %}
-{% block title %}{% translate "Problems" %}{% endblock %}
+{% load i18n static icons %}
+{% block title %}{% translate "Tasks" %}{% endblock %}
+{% block scripts %}
+{# No inline <style> from htmx (we don't use its loading indicator): the CSP allows no inline styles. #}
+<meta name="htmx-config" content='{"includeIndicatorStyles": false}'>
+<script src="{% static 'vendor/htmx/htmx.min.js' %}" defer></script>
+{% endblock %}
 {% block content %}
-<h1>{% translate "Problems" %}</h1>
-{% if problems %}
-<table>
-  <thead><tr><th>{% translate "Problem" %}</th><th>{% translate "Tags" %}</th></tr></thead>
-  <tbody>
-  {% for problem in problems %}
-    <tr>
-      <td><a href="{% url 'problem' problem.slug %}">{% problem_title problem %}</a></td>
-      <td>{% for tag in problem.tags.all %}<small>{{ tag.name }}</small>{% if not forloop.last %}, {% endif %}{% endfor %}</td>
-    </tr>
-  {% endfor %}
-  </tbody>
-</table>
-{% else %}
-<p>{% translate "No problems yet." %}</p>
-{% endif %}
+<h1>{% translate "Tasks" %}</h1>
+
+<div class="stats">
+  <div class="stat stat-all">{% icon "list" %}<span>{% translate "All" %}</span><strong>{{ counts.all }}</strong></div>
+  {% if signed_in %}
+  <div class="stat stat-solved">{% icon "check" %}<span>{% translate "Solved" context "tasks" %}</span><strong>{{ counts.solved }}</strong></div>
+  <div class="stat stat-tried">{% icon "x" %}<span>{% translate "Not solved yet" %}</span><strong>{{ counts.tried }}</strong></div>
+  <div class="stat stat-untried">{% icon "circle" %}<span>{% translate "Not submitted" %}</span><strong>{{ counts.untried }}</strong></div>
+  <div class="stat stat-today">{% icon "trophy" %}<span>{% translate "Solved today" %}</span><strong>{{ counts.today }}</strong></div>
+  {% endif %}
+</div>
+
+{# Works as a plain GET form; with JavaScript, htmx swaps in only the results as you type. #}
+<form method="get" action="{% url 'problems' %}" class="task-search" role="search"
+      hx-get="{% url 'problems' %}" hx-trigger="submit, input delay:300ms, change" hx-target="#task-results" hx-push-url="true">
+  <label>{% translate "Search" %}
+    <input type="search" name="q" value="{{ search }}" maxlength="100" placeholder="{% translate "Name or id of a problem" %}">
+  </label>
+  {% if signed_in %}
+  <label>{% translate "Status" %}
+    <select name="status">
+      <option value="">{% translate "All" %}</option>
+      <option value="solved"{% if status == "solved" %} selected{% endif %}>{% translate "Solved" context "tasks" %}</option>
+      <option value="tried"{% if status == "tried" %} selected{% endif %}>{% translate "Not solved yet" %}</option>
+      <option value="untried"{% if status == "untried" %} selected{% endif %}>{% translate "Not submitted" %}</option>
+    </select>
+  </label>
+  {% endif %}
+  {% if group_choices %}
+  <label>{% translate "Group" %}
+    <select name="group">
+      <option value="">{% translate "All" %}</option>
+      {% for value, label in group_choices %}<option value="{{ value }}"{% if value == group %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </label>
+  {% endif %}
+  {% if request.GET.sort %}<input type="hidden" name="sort" value="{{ request.GET.sort }}">{% endif %}
+  <button type="submit">{% icon "search" %}{% translate "Search" %}</button>
+</form>
+
+<div id="task-results">
+  {% include "problems/_task_results.html" %}
+</div>
 {% endblock %}

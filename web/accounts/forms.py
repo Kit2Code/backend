@@ -38,6 +38,31 @@ class FirstSignInForm(forms.Form):
         return username
 
 
+class ProfileSettingsForm(forms.ModelForm):  # type: ignore[type-arg]
+    """The signed-in user's own settings: how others see them, and whether to show their photo."""
+
+    class Meta:
+        model = User
+        fields = ["display_name", "school", "show_photo"]
+        labels = {
+            "display_name": _("Display name"),
+            "school": _("School (optional)"),
+            "show_photo": _("Show my Google profile photo"),
+        }
+        help_texts = {
+            "show_photo": _(
+                "Switching this off deletes the photo we keep. Switched on, it is fetched again "
+                "the next time you sign in."
+            ),
+        }
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.fields["display_name"].required = True
+        for name in ("display_name", "school"):
+            self.fields[name].validators.append(no_control_characters)
+
+
 class FirstSuperuserForm(forms.Form):
     """First-run setup: the first admin account's username and password."""
 

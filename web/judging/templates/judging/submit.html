@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n icons %}
 {% block title %}{% translate "Submit" %}: {{ problem.slug }}{% endblock %}
 {% block content %}
 <h1>{% translate "Submit" %}: <a href="{% url 'problem' problem.slug %}">{{ problem.slug }}</a></h1>
-<form method="post" enctype="multipart/form-data">
+<form method="post" enctype="multipart/form-data" class="card submit-form">
   {% csrf_token %}
   {{ form.non_field_errors }}
   {{ form.language.errors }}
@@ -15,6 +15,6 @@
   {{ form.file.errors }}
   <label for="{{ form.file.id_for_label }}">{{ form.file.label }}</label>
   {{ form.file }}
-  <button type="submit">{% translate "Submit" %}</button>
+  <button type="submit">{% icon "send" %}{% translate "Submit" %}</button>
 </form>
 {% endblock %}

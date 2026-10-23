@@ -7,6 +7,10 @@ It speaks the parts of OpenID Connect that the grader uses, in the same shapes a
 - POST /token      swaps the code for tokens. Checks the client secret, the redirect URI and the
                    PKCE code verifier, and returns an RS256-signed ID token carrying the `nonce`
 - GET  /certs      the public signing key (JWKS)
+- GET  /a/<id>=s256-c  a test user's profile photo (a small PNG), standing in for
+                   lh3.googleusercontent.com behind the edge's /photo route. With the `profile`
+                   scope the ID token's `picture` points there, and also carries a `name`, as
+                   Google's does (the grader must ignore it).
 
 Settings come from environment variables:
   FAKE_OIDC_ISSUER         the `iss` of the tokens, e.g. http://127.0.0.1:8099
@@ -23,8 +27,10 @@ import html
 import json
 import os
 import secrets
+import struct
 import threading
 import time
+import zlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -57,7 +63,28 @@ def pkce_challenge(verifier: str) -> str:
     return base64.urlsafe_b64encode(digest).rstrip(b"=").decode("ascii")
 
 
-def id_token(sub: str, nonce: str) -> str:
+PHOTO_HOST = "https://lh3.googleusercontent.com"
+
+
+def photo_png(seed: str, size: int = 64) -> bytes:
+    """A plain square PNG whose colour depends on `seed` (so test users look different)."""
+
+    def chunk(kind: bytes, data: bytes) -> bytes:
+        body = kind + data
+        return struct.pack(">I", len(data)) + body + struct.pack(">I", zlib.crc32(body))
+
+    colour = hashlib.sha256(seed.encode()).digest()[:3]
+    rows = b"".join(b"\x00" + colour * size for _ in range(size))
+    header = struct.pack(">IIBBBBB", size, size, 8, 2, 0, 0, 0)
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", header)
+        + chunk(b"IDAT", zlib.compress(rows))
+        + chunk(b"IEND", b"")
+    )
+
+
+def id_token(sub: str, nonce: str, scope: str = "openid") -> str:
     now = int(time.time())
     claims = {
         "iss": ISSUER,
@@ -68,6 +95,9 @@ def id_token(sub: str, nonce: str) -> str:
         "iat": now,
         "exp": now + TOKEN_LIFETIME_S,
     }
+    if "profile" in scope.split():
+        claims["picture"] = f"{PHOTO_HOST}/a/fake-{sub}=s96-c"
+        claims["name"] = f"Fake Name {sub[-4:]}"
     return jwt.encode({"alg": "RS256", "kid": KEY.kid, "typ": "JWT"}, claims, KEY)
 
 
@@ -112,6 +142,8 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(200, {"keys": [{**KEY.as_dict(private=False), "alg": "RS256"}]})
         elif path == "/authorize":
             self.authorize_page(self.query())
+        elif path.startswith("/a/fake-") and path.endswith("=s256-c"):
+            self.send(200, photo_png(path), "image/png")
         else:
             self.send(404, b"not found", "text/plain")
 
@@ -178,6 +210,7 @@ class Handler(BaseHTTPRequestHandler):
                 "challenge": form["code_challenge"],
                 "nonce": form["nonce"],
                 "sub": sub,
+                "scope": form.get("scope", "openid"),
                 "expires": time.time() + CODE_LIFETIME_S,
             }
         target = form["redirect_uri"] + "?" + urlencode({"code": code, "state": form["state"]})
@@ -216,8 +249,8 @@ class Handler(BaseHTTPRequestHandler):
                 "access_token": secrets.token_urlsafe(24),
                 "token_type": "Bearer",
                 "expires_in": TOKEN_LIFETIME_S,
-                "scope": "openid",
-                "id_token": id_token(grant["sub"], grant["nonce"]),
+                "scope": grant["scope"],
+                "id_token": id_token(grant["sub"], grant["nonce"], grant["scope"]),
             },
         )
 

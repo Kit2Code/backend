@@ -1,15 +1,54 @@
 {% extends "base.html" %}
-{% load i18n problems %}
+{% load i18n problems icons %}
 {% block title %}{% translate "Home" %}{% endblock %}
 {% block content %}
-<h1>{{ site_name }}</h1>
-{% if announcement %}<article><p>{{ announcement|linebreaksbr }}</p></article>{% endif %}
-<p>{% translate "Practice with problems from past contests. Programs are judged like in the contest." %}</p>
+<section class="hero">
+  <div class="hero-text">
+    <h1>
+      <span class="accent">{% translate "Practise contest problems" %}</span>
+      <span>{% translate "judged like the real contest" %}</span>
+    </h1>
+    <p class="hero-sub">{% blocktranslate count counter=problem_count trimmed %}
+      <strong class="problem-count">{{ counter }}</strong> problem to try, from past contests.
+    {% plural %}
+      <strong class="problem-count">{{ counter }}</strong> problems to try, from past contests.
+    {% endblocktranslate %}</p>
+    <a href="{% url 'problems' %}" role="button">{% icon "search" %}{% translate "Find problems" %}</a>
+  </div>
+  {% include "core/_hero_art.svg" %}
+</section>
+<svg class="section-curve" viewBox="0 0 1200 60" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M0 60 C 300 0 900 0 1200 60 Z" fill="#1e293b"/></svg>
+
+<section class="features">
+  <h2>{% blocktranslate trimmed %}Why {{ site_name }}{% endblocktranslate %}</h2>
+  <div class="feature-grid">
+    <article class="feature-card">
+      {% icon "check" %}
+      <h3>{% translate "Judged like CMS" %}</h3>
+      <p>{% translate "The same compilers, time and memory limits, and subtask scores as in the contest." %}</p>
+    </article>
+    <article class="feature-card">
+      {% icon "folder-archive" %}
+      <h3>{% translate "Problems from past contests" %}</h3>
+      <p>{% translate "TOI-style problems from earlier contests, sorted into groups so they are easy to find." %}</p>
+    </article>
+    <article class="feature-card">
+      {% icon "user" %}
+      <h3>{% translate "Free, sign in with Google" %}</h3>
+      <p>{% translate "No forms to fill in and no adverts. Sign in and start solving." %}</p>
+    </article>
+  </div>
+</section>
+
+{% if announcement %}<article class="announcement"><p>{{ announcement|linebreaksbr }}</p></article>{% endif %}
+
 {% if recent_problems %}
-<h2>{% translate "New problems" %}</h2>
-<ul>
-  {% for problem in recent_problems %}<li><a href="{% url 'problem' problem.slug %}">{% problem_title problem %}</a></li>{% endfor %}
-</ul>
+<section class="recent">
+  <h2>{% translate "New problems" %}</h2>
+  <ul class="recent-list">
+    {% for problem in recent_problems %}<li><a href="{% url 'problem' problem.slug %}">{% problem_title problem %}</a></li>{% endfor %}
+  </ul>
+  <p><a href="{% url 'problems' %}">{% translate "See all problems" %}</a></p>
+</section>
 {% endif %}
-<p><a href="{% url 'problems' %}">{% translate "See all problems" %}</a></p>
 {% endblock %}

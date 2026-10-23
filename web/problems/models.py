@@ -1,5 +1,6 @@
 """Problems, their immutable versions in the problem store, and tags."""
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -10,6 +11,50 @@ class Tag(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+
+class ProblemGroup(models.Model):
+    """A folder in the Archive, such as "TOI" or "TOI20" inside it. Two levels at most."""
+
+    # The Archive's URL for problems with no group (/archive/other).
+    UNGROUPED_SLUG = "other"
+
+    slug = models.SlugField(max_length=64)
+    name_th = models.CharField(max_length=200)
+    name_en = models.CharField(max_length=200, blank=True)
+    parent = models.ForeignKey(
+        "self", on_delete=models.PROTECT, null=True, blank=True, related_name="children"
+    )
+    # Smaller first; groups with the same order go by slug.
+    order = models.IntegerField(default=0)
+
+    class Meta:
+        ordering = ["order", "slug"]
+        constraints = [
+            # nulls_distinct=False: top-level groups (no parent) need unique slugs too.
+            models.UniqueConstraint(
+                fields=["parent", "slug"], name="problemgroup_slug_uniq", nulls_distinct=False
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.parent.slug}/{self.slug}" if self.parent else self.slug
+
+    def clean(self) -> None:
+        """Two levels only: a parent must be top-level; a group with children stays top-level."""
+        if self.slug == self.UNGROUPED_SLUG:
+            raise ValidationError({"slug": _("This name is kept for problems with no group.")})
+        if self.parent is None:
+            return
+        if self.parent.parent_id is not None or self.parent.pk == self.pk:
+            raise ValidationError({"parent": _("Groups go two levels deep at most.")})
+        if self.pk is not None and self.children.exists():
+            raise ValidationError({"parent": _("A group with subgroups must stay at the top.")})
+
+    def name_in(self, language: str) -> str:
+        """The name in `language`, or in the other language."""
+        preferred = self.name_en if language == "en" else self.name_th
+        return preferred or self.name_th or self.name_en
 
 
 class Problem(models.Model):
@@ -28,6 +73,15 @@ class Problem(models.Model):
         related_name="+",
     )
     tags = models.ManyToManyField(Tag, blank=True)
+    # Deleting a group moves its problems to "other", it never deletes them.
+    group = models.ForeignKey(
+        ProblemGroup, on_delete=models.SET_NULL, null=True, blank=True, related_name="problems"
+    )
+    # Copied from the current version's problem.yaml (like the titles), so lists never read files.
+    # NULL until a version is made current. "Solved" means a best score of max_score.
+    max_score = models.FloatField(null=True, blank=True)
+    time_limit_ms = models.PositiveIntegerField(null=True, blank=True)
+    memory_limit_mb = models.PositiveIntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

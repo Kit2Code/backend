@@ -2,7 +2,15 @@
 
 from django.urls import URLPattern, URLResolver, include, path
 
-from accounts.views import google_callback, google_start, logout_everywhere, logout_view, welcome
+from accounts.views import (
+    google_callback,
+    google_start,
+    logout_everywhere,
+    logout_view,
+    photo,
+    profile_settings,
+    welcome,
+)
 from core.views import home, privacy
 from judging.views import (
     all_submissions,
@@ -14,7 +22,7 @@ from judging.views import (
     submission_source,
     submit,
 )
-from problems.views import problem_detail, problem_file, problem_list
+from problems.views import archive, archive_group, problem_detail, problem_file, problem_list
 
 urlpatterns: list[URLPattern | URLResolver] = [
     path("", home, name="home"),
@@ -25,8 +33,13 @@ urlpatterns: list[URLPattern | URLResolver] = [
     path("problems/<slug:slug>", problem_detail, name="problem"),
     path("problems/<slug:slug>/files/<path:name>", problem_file, name="problem-file"),
     path("problems/<slug:slug>/submit", submit, name="submit"),
+    path("archive", archive, name="archive"),
+    path("archive/<slug:group_slug>", archive_group, name="archive-group"),
+    path("archive/<slug:group_slug>/<slug:sub_slug>", archive_group, name="archive-subgroup"),
     path("ranking", ranking, name="ranking"),
     path("users/<slug:username>", profile, name="profile"),
+    path("users/<slug:username>/photo", photo, name="photo"),
+    path("settings", profile_settings, name="settings"),
     path("submissions", all_submissions, name="submissions"),
     path("submissions/mine", my_submissions, name="my-submissions"),
     path("submissions/<int:pk>", submission_detail, name="submission"),

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% load i18n icons %}
+{% block title %}{% translate "Settings" %}{% endblock %}
+{% block content %}
+<article>
+  <h1>{% icon "settings" %}{% translate "Settings" %}</h1>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}{% if field.name != "show_photo" %}
+    <div>{{ field.label_tag }}{{ field }}{{ field.errors }}</div>
+    {% endif %}{% endfor %}
+    <fieldset>
+      <label>{{ form.show_photo }} {{ form.show_photo.label }}</label>
+      <small>{{ form.show_photo.help_text }}</small>
+    </fieldset>
+    <button type="submit">{% translate "Save" %}</button>
+  </form>
+</article>
+{% endblock %}

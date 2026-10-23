@@ -108,6 +108,7 @@ def edge() -> Iterator[None]:
         "GRADER_WEB_ADMIN_IP": ADMIN,
         "GRADER_GOOGLE_TOKEN_UPSTREAM": f"http://{GOOGLE}:8000",
         "GRADER_GOOGLE_CERTS_UPSTREAM": f"http://{GOOGLE}:8000",
+        "GRADER_GOOGLE_PHOTO_UPSTREAM": f"http://{GOOGLE}:8000",
     }
     env_args = [arg for key, value in env.items() for arg in ("-e", f"{key}={value}")]
     docker("run", "-d", "--name", PREFIX + "edge", "--network", NETWORK, "--ip", EDGE, *env_args,
@@ -218,6 +219,21 @@ def test_only_the_import_page_takes_big_uploads() -> None:
     assert seen is not None and seen["body_len"] == big
 
 
+def test_the_problem_editor_takes_big_uploads_too() -> None:
+    big = 2 * 1024 * 1024
+    for path in ("/admin/grader/problems/new", "/admin/grader/problems/12/edit"):
+        seen = reached(send("POST", f"http://{EDGE}:8081{path}", size=big))
+        assert seen is not None and seen["body_len"] == big, path
+    for path in (
+        "/admin/grader/problems/12/group",
+        "/admin/grader/problems/12/visibility",
+        "/admin/grader/problems/preview",
+        "/admin/grader/problems/x/y/edit",
+        "/admin/grader/problems/12/edit/more",
+    ):
+        assert too_large(send("POST", f"http://{EDGE}:8081{path}", size=big)), path
+
+
 # ---- headers on both sites ----
 
 
@@ -267,6 +283,43 @@ def test_the_egress_answers_only_its_two_requests() -> None:
 def test_token_request_bodies_are_capped() -> None:
     answer = send("POST", f"http://{EDGE}:8090/token", size=20 * 1024, source="web")
     assert too_large(answer), answer
+
+
+PHOTO = "/photo/a/ACg8ocJxYz_12-ab=s256-c"
+
+
+def test_the_public_web_role_may_fetch_a_profile_photo() -> None:
+    photo = reached(send("GET", f"http://{EDGE}:8090{PHOTO}?sz=999", source="web"))
+    assert photo is not None
+    assert photo["path"] == "/a/ACg8ocJxYz_12-ab=s256-c"  # prefix removed, query string dropped
+    assert photo["headers"]["host"] == f"{GOOGLE}:8000"  # the upstream's own name
+
+
+def test_nobody_else_may_fetch_photos() -> None:
+    for source in ("admin", "other"):
+        answer = send("GET", f"http://{EDGE}:8090{PHOTO}", source=source)
+        assert answer.get("status") == 404, (source, answer)
+
+
+@pytest.mark.parametrize(
+    ("method", "path"),
+    [
+        ("POST", PHOTO),
+        ("GET", "/photo/a/ACg8ocJxYz=s96-c"),  # only the 256 px size
+        ("GET", "/photo/a/ACg8ocJxYz"),
+        ("GET", "/photo/"),
+        ("GET", "/photo/=s256-c"),
+        ("GET", "/photo/a/..%2F..%2Foauth2%2Fv3%2Fcerts=s256-c"),
+        ("GET", "/photo/a/%2e%2e/x=s256-c"),
+        ("GET", "/photo/a/x.y=s256-c"),
+        ("GET", "/photo//a/x=s256-c"),
+        ("GET", "/PHOTO/a/x=s256-c"),
+    ],
+)
+def test_photo_requests_must_look_like_a_google_photo(method: str, path: str) -> None:
+    answer = send(method, f"http://{EDGE}:8090{path}", size=10 if method == "POST" else 0,
+                  source="web")  # fmt: skip
+    assert reached(answer) is None, (method, path, answer)
 
 
 def test_the_edge_health_listener_is_only_inside_the_container() -> None:

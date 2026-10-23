@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: grader\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-22 14:15+0700\n"
+"POT-Creation-Date: 2026-10-23 13:19+0700\n"
 "PO-Revision-Date: 2026-10-21 19:00+0700\n"
 "Last-Translator: grader maintainers\n"
 "Language-Team: English\n"
@@ -39,20 +39,20 @@ msgstr "Unlink their Google accounts"
 msgid "Done."
 msgstr "Done."
 
-#: accounts/forms.py:18 accounts/forms.py:45
+#: accounts/forms.py:18 accounts/forms.py:70
 msgid "Username"
 msgstr "Username"
 
-#: accounts/forms.py:21 accounts/forms.py:48 accounts/models.py:11
+#: accounts/forms.py:21 accounts/forms.py:73 accounts/models.py:11
 #: accounts/models.py:27
 msgid "3 to 20 characters: small letters a-z, digits and _ only."
 msgstr "3 to 20 characters: small letters a-z, digits and _ only."
 
-#: accounts/forms.py:24
+#: accounts/forms.py:24 accounts/forms.py:48
 msgid "Display name"
 msgstr "Display name"
 
-#: accounts/forms.py:27
+#: accounts/forms.py:27 accounts/forms.py:49
 msgid "School (optional)"
 msgstr "School (optional)"
 
@@ -60,19 +60,31 @@ msgstr "School (optional)"
 msgid "I have read the privacy page"
 msgstr "I have read the privacy page"
 
-#: accounts/forms.py:37 accounts/models.py:28 accounts/views.py:151
+#: accounts/forms.py:37 accounts/models.py:28 accounts/views.py:157
 msgid "That username is taken."
 msgstr "That username is taken."
 
 #: accounts/forms.py:50
+msgid "Show my Google profile photo"
+msgstr "Show my Google profile photo"
+
+#: accounts/forms.py:54
+msgid ""
+"Switching this off deletes the photo we keep. Switched on, it is fetched "
+"again the next time you sign in."
+msgstr ""
+"Switching this off deletes the photo we keep. Switched on, it is fetched "
+"again the next time you sign in."
+
+#: accounts/forms.py:75
 msgid "Password"
 msgstr "Password"
 
-#: accounts/forms.py:51
+#: accounts/forms.py:76
 msgid "Password again"
 msgstr "Password again"
 
-#: accounts/forms.py:58
+#: accounts/forms.py:83
 msgid "The two passwords are different."
 msgstr "The two passwords are different."
 
@@ -88,13 +100,30 @@ msgstr "display name"
 msgid "school"
 msgstr "school"
 
-#: accounts/models.py:61
+#: accounts/models.py:34
+msgid "show my Google photo"
+msgstr "show my Google photo"
+
+#: accounts/models.py:65
 msgid "Google identity"
 msgstr "Google identity"
 
-#: accounts/models.py:62
+#: accounts/models.py:66
 msgid "Google identities"
 msgstr "Google identities"
+
+#: accounts/templates/accounts/settings.html:3
+#: accounts/templates/accounts/settings.html:6
+#: judging/templates/judging/profile.html:20
+msgid "Settings"
+msgstr "Settings"
+
+#: accounts/templates/accounts/settings.html:17
+#: core/templates/admin/grader/_problem_row.html:11
+#: core/templates/admin/grader/grading.html:49
+#: core/templates/admin/grader/signin.html:13
+msgid "Save"
+msgstr "Save"
 
 #: accounts/templates/accounts/welcome.html:3
 #: accounts/templates/accounts/welcome.html:6
@@ -113,43 +142,43 @@ msgstr "Read the privacy page"
 msgid "Create my account"
 msgstr "Create my account"
 
-#: accounts/views.py:52
+#: accounts/views.py:54
 msgid "Sign-in is not set up yet"
 msgstr "Sign-in is not set up yet"
 
-#: accounts/views.py:53
+#: accounts/views.py:55
 msgid "You can still read the problems. Sign-in will be available soon."
 msgstr "You can still read the problems. Sign-in will be available soon."
 
-#: accounts/views.py:61
+#: accounts/views.py:63
 msgid "Sign-in failed"
 msgstr "Sign-in failed"
 
-#: accounts/views.py:62
+#: accounts/views.py:64
 msgid "Signing in with Google didn't work. Please try again."
 msgstr "Signing in with Google didn't work. Please try again."
 
-#: accounts/views.py:65
+#: accounts/views.py:67
 msgid "Try again"
 msgstr "Try again"
 
-#: accounts/views.py:72
+#: accounts/views.py:74
 msgid "New accounts are closed"
 msgstr "New accounts are closed"
 
-#: accounts/views.py:73
+#: accounts/views.py:75
 msgid "This site isn't accepting new accounts right now."
 msgstr "This site isn't accepting new accounts right now."
 
-#: accounts/views.py:83
+#: accounts/views.py:88
 msgid "Account disabled"
 msgstr "Account disabled"
 
-#: accounts/views.py:84
+#: accounts/views.py:89
 msgid "This account has been disabled. Ask the person who runs this site."
 msgstr "This account has been disabled. Ask the person who runs this site."
 
-#: config/admin.py:95
+#: config/admin.py:120
 msgid "Too many sign-in attempts. Please wait 15 minutes and try again."
 msgstr "Too many sign-in attempts. Please wait 15 minutes and try again."
 
@@ -158,10 +187,12 @@ msgid "Time scale saved."
 msgstr "Time scale saved."
 
 #: core/admin_views.py:76 core/templates/admin/grader/index.html:8
+#: core/templates/admin/grader/index.html:20
+#: core/templates/admin/grader/index.html:60
 msgid "Grading"
 msgstr "Grading"
 
-#: core/admin_views.py:136 core/templates/admin/grader/index.html:11
+#: core/admin_views.py:136 core/templates/admin/grader/index.html:63
 msgid "Backups"
 msgstr "Backups"
 
@@ -169,7 +200,7 @@ msgstr "Backups"
 msgid "Saved."
 msgstr "Saved."
 
-#: core/admin_views.py:195 core/templates/admin/grader/index.html:12
+#: core/admin_views.py:195 core/templates/admin/grader/index.html:64
 msgid "Sign-in"
 msgstr "Sign-in"
 
@@ -237,13 +268,50 @@ msgstr "done"
 msgid "failed"
 msgstr "failed"
 
+#: core/templates/admin/grader/_problem_row.html:3
+msgid "Edit"
+msgstr "Edit"
+
+#: core/templates/admin/grader/_problem_row.html:7
+#: core/templates/admin/grader/problems.html:12
+#: core/templates/admin/grader/problems.html:30
+#: core/templates/admin/grader/problems.html:43 problems/editor.py:70
+#: problems/templates/problems/list.html:39
+msgid "Group"
+msgstr "Group"
+
+#: core/templates/admin/grader/_problem_row.html:20
+msgid "Close: hide it from the public site"
+msgstr "Close: hide it from the public site"
+
+#: core/templates/admin/grader/_problem_row.html:20
+#: core/templates/admin/grader/problems.html:19
+msgid "Open"
+msgstr "Open"
+
+#: core/templates/admin/grader/_problem_row.html:22
+msgid "Only a version that passed validation can be opened."
+msgstr "Only a version that passed validation can be opened."
+
+#: core/templates/admin/grader/_problem_row.html:22
+msgid "Open: show it on the public site"
+msgstr "Open: show it on the public site"
+
+#: core/templates/admin/grader/_problem_row.html:22
+#: core/templates/admin/grader/problems.html:20
+msgid "Closed"
+msgstr "Closed"
+
 #: core/templates/admin/grader/backups.html:3
 #: core/templates/admin/grader/calibrate.html:4
 #: core/templates/admin/grader/grading.html:3
 #: core/templates/admin/grader/import.html:3
+#: core/templates/admin/grader/problem_form.html:8
+#: core/templates/admin/grader/problems.html:8
 #: core/templates/admin/grader/signin.html:3
 #: core/templates/admin/grader/system.html:4
-#: core/templates/admin/grader/version.html:4 core/templates/core/home.html:3
+#: core/templates/admin/grader/version.html:4
+#: core/templates/core/_nav_links.html:2 core/templates/core/home.html:3
 msgid "Home"
 msgstr "Home"
 
@@ -271,6 +339,7 @@ msgid "By"
 msgstr "By"
 
 #: core/templates/admin/grader/backups.html:12
+#: core/templates/admin/grader/problems.html:17
 #: core/templates/admin/grader/system.html:10
 msgid "State"
 msgstr "State"
@@ -359,12 +428,12 @@ msgid "not accepted in every run: left out"
 msgstr "not accepted in every run: left out"
 
 #: core/templates/admin/grader/calibrate.html:26
-#: core/templates/admin/grader/index.html:10 judging/admin_views.py:161
+#: core/templates/admin/grader/index.html:62 judging/admin_views.py:168
 msgid "Calibrate"
 msgstr "Calibrate"
 
 #: core/templates/admin/grader/calibrate.html:29
-#: problems/templates/problems/list.html:19
+#: problems/templates/problems/archive.html:18
 msgid "No problems yet."
 msgstr "No problems yet."
 
@@ -443,11 +512,6 @@ msgstr "Add a pause window"
 msgid "Add"
 msgstr "Add"
 
-#: core/templates/admin/grader/grading.html:49
-#: core/templates/admin/grader/signin.html:13
-msgid "Save"
-msgstr "Save"
-
 #: core/templates/admin/grader/import.html:5
 msgid ""
 "The problem is imported hidden. Its reference solutions are then run by the "
@@ -461,17 +525,247 @@ msgid "Upload and import"
 msgstr "Upload and import"
 
 #: core/templates/admin/grader/index.html:6
-msgid "Grader"
-msgstr "Grader"
+msgid "Waiting to be judged"
+msgstr "Waiting to be judged"
 
 #: core/templates/admin/grader/index.html:7
+msgid "Workers online"
+msgstr "Workers online"
+
+#: core/templates/admin/grader/index.html:8
+msgid "Paused"
+msgstr "Paused"
+
+#: core/templates/admin/grader/index.html:8
+msgid "Running"
+msgstr "Running"
+
+#: core/templates/admin/grader/index.html:9
+msgid "Submissions today"
+msgstr "Submissions today"
+
+#: core/templates/admin/grader/index.html:10
+msgid "Public problems"
+msgstr "Public problems"
+
+#: core/templates/admin/grader/index.html:11
+msgid "Hidden problems"
+msgstr "Hidden problems"
+
+#: core/templates/admin/grader/index.html:12
+msgid "Validating"
+msgstr "Validating"
+
+#: core/templates/admin/grader/index.html:13
+#: core/templates/admin/grader/problems.html:21
+msgid "Failed validation"
+msgstr "Failed validation"
+
+#: core/templates/admin/grader/index.html:16
+msgid "Quick actions"
+msgstr "Quick actions"
+
+#: core/templates/admin/grader/index.html:17
+#: core/templates/admin/grader/problems.html:24 problems/admin_problems.py:194
+msgid "New problem"
+msgstr "New problem"
+
+#: core/templates/admin/grader/index.html:18
+#: core/templates/admin/grader/problem_form.html:8
+#: problems/admin_problems.py:113
+msgid "Problems"
+msgstr "Problems"
+
+#: core/templates/admin/grader/index.html:19
+#: core/templates/admin/grader/index.html:59
+#: core/templates/admin/grader/problems.html:25
 #: core/templates/admin/grader/version.html:4 problems/admin_views.py:60
 msgid "Import a problem"
 msgstr "Import a problem"
 
-#: core/templates/admin/grader/index.html:9 judging/admin_views.py:77
+#: core/templates/admin/grader/index.html:21
+#: core/templates/admin/grader/index.html:61 judging/admin_views.py:77
 msgid "System"
 msgstr "System"
+
+#: core/templates/admin/grader/index.html:26
+msgid "Latest submissions"
+msgstr "Latest submissions"
+
+#: core/templates/admin/grader/index.html:29 judging/forms.py:62
+#: judging/templates/judging/list.html:19
+#: judging/templates/judging/ranking.html:9
+#: judging/templates/judging/submission.html:13
+msgid "User"
+msgstr "User"
+
+#: core/templates/admin/grader/index.html:29
+#: core/templates/admin/grader/problems.html:30
+#: core/templates/admin/grader/version.html:7 judging/forms.py:61
+#: judging/templates/judging/list.html:19
+#: judging/templates/judging/submission.html:12
+#: problems/templates/problems/_task_results.html:8
+msgid "Problem"
+msgstr "Problem"
+
+#: core/templates/admin/grader/index.html:29 judging/forms.py:64
+#: judging/templates/judging/list.html:19
+#: judging/templates/judging/results.html:5
+#: judging/templates/judging/results.html:30
+msgid "Result"
+msgstr "Result"
+
+#: core/templates/admin/grader/index.html:29
+#: judging/templates/judging/list.html:19
+#: judging/templates/judging/submission.html:15
+msgid "Submitted"
+msgstr "Submitted"
+
+#: core/templates/admin/grader/index.html:42
+#: judging/templates/judging/list.html:39
+msgid "No submissions."
+msgstr "No submissions."
+
+#: core/templates/admin/grader/index.html:45
+msgid "Latest judge errors"
+msgstr "Latest judge errors"
+
+#: core/templates/admin/grader/index.html:50
+msgid "All judge errors"
+msgstr "All judge errors"
+
+#: core/templates/admin/grader/index.html:51
+#: core/templates/admin/grader/system.html:80
+msgid "None."
+msgstr "None."
+
+#: core/templates/admin/grader/index.html:58
+msgid "Grader"
+msgstr "Grader"
+
+#: core/templates/admin/grader/problem_form.html:10
+msgid ""
+"Saving makes a new version of the problem. Files you don't upload again are "
+"kept from the current version. A public problem keeps its current version "
+"until the new one passes validation and is published."
+msgstr ""
+"Saving makes a new version of the problem. Files you don't upload again are "
+"kept from the current version. A public problem keeps its current version "
+"until the new one passes validation and is published."
+
+#: core/templates/admin/grader/problem_form.html:12
+msgid "Please correct the errors below."
+msgstr "Please correct the errors below."
+
+#: core/templates/admin/grader/problem_form.html:18
+msgid "The problem"
+msgstr "The problem"
+
+#: core/templates/admin/grader/problem_form.html:25
+msgid "Statement"
+msgstr "Statement"
+
+#: core/templates/admin/grader/problem_form.html:29
+msgid "Preview the Thai statement"
+msgstr "Preview the Thai statement"
+
+#: core/templates/admin/grader/problem_form.html:30
+msgid "Preview the English statement"
+msgstr "Preview the English statement"
+
+#: core/templates/admin/grader/problem_form.html:38
+msgid "Tests and scoring"
+msgstr "Tests and scoring"
+
+#: core/templates/admin/grader/problem_form.html:39
+msgid "Leave both empty to keep the current tests."
+msgstr "Leave both empty to keep the current tests."
+
+#: core/templates/admin/grader/problem_form.html:46
+#: core/templates/admin/grader/version.html:23
+msgid "Reference solutions"
+msgstr "Reference solutions"
+
+#: core/templates/admin/grader/problem_form.html:47
+msgid "Used to validate the problem before it can be opened."
+msgstr "Used to validate the problem before it can be opened."
+
+#: core/templates/admin/grader/problem_form.html:47
+msgid "Upload none to keep the current ones; upload any to replace them all."
+msgstr "Upload none to keep the current ones; upload any to replace them all."
+
+#: core/templates/admin/grader/problem_form.html:57
+msgid "Save and validate"
+msgstr "Save and validate"
+
+#: core/templates/admin/grader/problems.html:11
+msgid "Search by id or title"
+msgstr "Search by id or title"
+
+#: core/templates/admin/grader/problems.html:11
+#: problems/templates/problems/list.html:25
+#: problems/templates/problems/list.html:47
+msgid "Search"
+msgstr "Search"
+
+#: core/templates/admin/grader/problems.html:13
+msgid "All groups"
+msgstr "All groups"
+
+#: core/templates/admin/grader/problems.html:14
+msgid "No group"
+msgstr "No group"
+
+#: core/templates/admin/grader/problems.html:18
+msgid "Open and closed"
+msgstr "Open and closed"
+
+#: core/templates/admin/grader/problems.html:23
+#: judging/templates/judging/list.html:11
+msgid "Filter"
+msgstr "Filter"
+
+#: core/templates/admin/grader/problems.html:30
+#: core/templates/admin/grader/version.html:9
+msgid "Validation"
+msgstr "Validation"
+
+#: core/templates/admin/grader/problems.html:30
+msgid "Current version"
+msgstr "Current version"
+
+#: core/templates/admin/grader/problems.html:30
+msgid "Public site"
+msgstr "Public site"
+
+#: core/templates/admin/grader/problems.html:33
+#: problems/templates/problems/_task_results.html:42
+msgid "No problems found."
+msgstr "No problems found."
+
+#: core/templates/admin/grader/problems.html:39
+msgid "Groups"
+msgstr "Groups"
+
+#: core/templates/admin/grader/problems.html:43 problems/admin_problems.py:54
+msgid "Short name in the address"
+msgstr "Short name in the address"
+
+#: core/templates/admin/grader/problems.html:43 problems/admin_problems.py:57
+msgid "Order"
+msgstr "Order"
+
+#: core/templates/admin/grader/problems.html:48
+msgid "No groups yet."
+msgstr "No groups yet."
+
+#: core/templates/admin/grader/problems.html:55
+msgid "New group"
+msgstr "New group"
+
+#: core/templates/admin/grader/problems.html:60
+msgid "Add group"
+msgstr "Add group"
 
 #: core/templates/admin/grader/setup.html:3
 msgid "First-run setup"
@@ -499,11 +793,11 @@ msgstr "Google sign-in client"
 
 #: core/templates/admin/grader/signin.html:7
 msgid ""
-"In Google Cloud Console, create an OAuth client of type “Web application” "
-"and register this redirect URI:"
+"In Google Cloud Console, create an OAuth client of type “Web application” and"
+" register this redirect URI:"
 msgstr ""
-"In Google Cloud Console, create an OAuth client of type “Web application” "
-"and register this redirect URI:"
+"In Google Cloud Console, create an OAuth client of type “Web application” and"
+" register this redirect URI:"
 
 #: core/templates/admin/grader/signin.html:10
 msgid "set"
@@ -653,17 +947,6 @@ msgstr "What"
 msgid "Error"
 msgstr "Error"
 
-#: core/templates/admin/grader/system.html:80
-msgid "None."
-msgstr "None."
-
-#: core/templates/admin/grader/version.html:7 judging/forms.py:61
-#: judging/templates/judging/list.html:18
-#: judging/templates/judging/submission.html:8
-#: problems/templates/problems/list.html:8
-msgid "Problem"
-msgstr "Problem"
-
 #: core/templates/admin/grader/version.html:7
 msgid "public"
 msgstr "public"
@@ -679,10 +962,6 @@ msgstr "Version"
 #: core/templates/admin/grader/version.html:8
 msgid "current version"
 msgstr "current version"
-
-#: core/templates/admin/grader/version.html:9
-msgid "Validation"
-msgstr "Validation"
 
 #: core/templates/admin/grader/version.html:12
 msgid "Import report"
@@ -704,21 +983,17 @@ msgstr "Imported at"
 msgid "Warnings"
 msgstr "Warnings"
 
-#: core/templates/admin/grader/version.html:23
-msgid "Reference solutions"
-msgstr "Reference solutions"
-
 #: core/templates/admin/grader/version.html:24
 msgid "The judge could not validate this version"
 msgstr "The judge could not validate this version"
 
 #: core/templates/admin/grader/version.html:28 judging/forms.py:17
-#: judging/templates/judging/list.html:18
-#: judging/templates/judging/submission.html:10
+#: judging/templates/judging/list.html:19
+#: judging/templates/judging/submission.html:14 problems/editor.py:151
 msgid "Language"
 msgstr "Language"
 
-#: core/templates/admin/grader/version.html:28
+#: core/templates/admin/grader/version.html:28 problems/editor.py:154
 msgid "Expected score"
 msgstr "Expected score"
 
@@ -727,9 +1002,9 @@ msgid "Verdict"
 msgstr "Verdict"
 
 #: core/templates/admin/grader/version.html:28
-#: judging/templates/judging/list.html:18
-#: judging/templates/judging/profile.html:9
-#: judging/templates/judging/ranking.html:8
+#: judging/templates/judging/list.html:19
+#: judging/templates/judging/profile.html:12
+#: judging/templates/judging/ranking.html:9
 #: judging/templates/judging/results.html:9
 #: judging/templates/judging/results.html:14
 msgid "Score"
@@ -747,65 +1022,145 @@ msgstr "Publish"
 msgid "Validate again"
 msgstr "Validate again"
 
-#: core/templates/base.html:18 problems/templates/problems/list.html:3
-#: problems/templates/problems/list.html:5
-msgid "Problems"
-msgstr "Problems"
+#: core/templates/base.html:41
+msgid "Account menu"
+msgstr "Account menu"
 
-#: core/templates/base.html:19 judging/templates/judging/profile.html:9
-#: judging/views.py:194
-msgid "Submissions"
-msgstr "Submissions"
+#: core/templates/base.html:43
+msgid "My profile"
+msgstr "My profile"
 
-#: core/templates/base.html:20 judging/templates/judging/ranking.html:3
-#: judging/templates/judging/ranking.html:5
-msgid "Ranking"
-msgstr "Ranking"
-
-#: core/templates/base.html:21 judging/views.py:203
+#: core/templates/base.html:44 judging/views.py:207
 msgid "My submissions"
 msgstr "My submissions"
 
-#: core/templates/base.html:31
+#: core/templates/base.html:48
 msgid "Sign out"
 msgstr "Sign out"
 
-#: core/templates/base.html:35
+#: core/templates/base.html:55
 msgid "Sign in with Google"
 msgstr "Sign in with Google"
 
-#: core/templates/base.html:58 core/templates/core/privacy.html:3
+#: core/templates/base.html:59
+msgid "Menu"
+msgstr "Menu"
+
+#: core/templates/base.html:71 core/templates/core/privacy.html:3
 #: core/templates/core/privacy.html:6
 msgid "Privacy"
 msgstr "Privacy"
 
-#: core/templates/core/home.html:7
-msgid ""
-"Practice with problems from past contests. Programs are judged like in the "
-"contest."
-msgstr ""
-"Practice with problems from past contests. Programs are judged like in the "
-"contest."
+#: core/templates/core/_nav_links.html:3
+#: problems/templates/problems/list.html:3
+#: problems/templates/problems/list.html:10
+msgid "Tasks"
+msgstr "Tasks"
+
+#: core/templates/core/_nav_links.html:4
+#: problems/templates/problems/archive.html:3
+#: problems/templates/problems/archive.html:13 problems/views.py:133
+msgid "Archive"
+msgstr "Archive"
+
+#: core/templates/core/_nav_links.html:5
+#: judging/templates/judging/profile.html:19 judging/views.py:198
+msgid "Submissions"
+msgstr "Submissions"
+
+#: core/templates/core/_nav_links.html:6
+#: judging/templates/judging/ranking.html:3
+#: judging/templates/judging/ranking.html:5
+msgid "Ranking"
+msgstr "Ranking"
+
+#: core/templates/core/home.html:8
+msgid "Practise contest problems"
+msgstr "Practise contest problems"
 
 #: core/templates/core/home.html:9
+msgid "judged like the real contest"
+msgstr "judged like the real contest"
+
+#: core/templates/core/home.html:11
+#, python-format
+msgid ""
+"<strong class=\"problem-count\">%(counter)s</strong> problem to try, from "
+"past contests."
+msgid_plural ""
+"<strong class=\"problem-count\">%(counter)s</strong> problems to try, from "
+"past contests."
+msgstr[0] ""
+"<strong class=\"problem-count\">%(counter)s</strong> problem to try, from "
+"past contests."
+msgstr[1] ""
+"<strong class=\"problem-count\">%(counter)s</strong> problems to try, from "
+"past contests."
+
+#: core/templates/core/home.html:16
+msgid "Find problems"
+msgstr "Find problems"
+
+#: core/templates/core/home.html:23
+#, python-format
+msgid "Why %(site_name)s"
+msgstr "Why %(site_name)s"
+
+#: core/templates/core/home.html:27
+msgid "Judged like CMS"
+msgstr "Judged like CMS"
+
+#: core/templates/core/home.html:28
+msgid ""
+"The same compilers, time and memory limits, and subtask scores as in the "
+"contest."
+msgstr ""
+"The same compilers, time and memory limits, and subtask scores as in the "
+"contest."
+
+#: core/templates/core/home.html:32
+msgid "Problems from past contests"
+msgstr "Problems from past contests"
+
+#: core/templates/core/home.html:33
+msgid ""
+"TOI-style problems from earlier contests, sorted into groups so they are easy"
+" to find."
+msgstr ""
+"TOI-style problems from earlier contests, sorted into groups so they are easy"
+" to find."
+
+#: core/templates/core/home.html:37
+msgid "Free, sign in with Google"
+msgstr "Free, sign in with Google"
+
+#: core/templates/core/home.html:38
+msgid "No forms to fill in and no adverts. Sign in and start solving."
+msgstr "No forms to fill in and no adverts. Sign in and start solving."
+
+#: core/templates/core/home.html:47
 msgid "New problems"
 msgstr "New problems"
 
-#: core/templates/core/home.html:14
+#: core/templates/core/home.html:51
 msgid "See all problems"
 msgstr "See all problems"
 
 #: core/templates/core/privacy.html:7
 msgid ""
-"You sign in with your Google account. From Google we keep only its account "
-"number, which tells us it is the same account next time. We never ask Google "
-"for your email address, name or photo, and we don't store them."
+"You sign in with your Google account. From Google we keep its account number,"
+" which tells us it is the same account next time, and a copy of your profile "
+"photo, which we show next to your name. We never ask Google for your email "
+"address, and we don't keep the name Google sends. You can switch the photo "
+"off in your settings; we then delete our copy at once."
 msgstr ""
-"You sign in with your Google account. From Google we keep only its account "
-"number, which tells us it is the same account next time. We never ask Google "
-"for your email address, name or photo, and we don't store them."
+"You sign in with your Google account. From Google we keep its account number,"
+" which tells us it is the same account next time, and a copy of your profile "
+"photo, which we show next to your name. We never ask Google for your email "
+"address, and we don't keep the name Google sends. You can switch the photo "
+"off in your settings; we then delete our copy at once."
 
-#: core/templates/core/privacy.html:12
+#: core/templates/core/privacy.html:13
 msgid ""
 "We store the username, display name and school you type in, the programs you "
 "submit and their results. Other people can see your username, display name, "
@@ -815,7 +1170,7 @@ msgstr ""
 "submit and their results. Other people can see your username, display name, "
 "school and scores, but never your programs."
 
-#: core/templates/core/privacy.html:17
+#: core/templates/core/privacy.html:18
 msgid ""
 "Google sees that you signed in to this site. Signing out here does not sign "
 "you out of Google."
@@ -823,7 +1178,7 @@ msgstr ""
 "Google sees that you signed in to this site. Signing out here does not sign "
 "you out of Google."
 
-#: core/templates/core/privacy.html:21
+#: core/templates/core/privacy.html:22
 msgid ""
 "To have your account and everything in it deleted, ask the person who runs "
 "this site."
@@ -840,11 +1195,11 @@ msgstr "At most %(limit)d bytes (this is %(size)d)."
 msgid "Control or invisible characters are not allowed."
 msgstr "Control or invisible characters are not allowed."
 
-#: core/views.py:58
+#: core/views.py:54
 msgid "Too many tries"
 msgstr "Too many tries"
 
-#: core/views.py:59
+#: core/views.py:55
 msgid "Please wait a while and try again."
 msgstr "Please wait a while and try again."
 
@@ -888,18 +1243,6 @@ msgstr "The code is longer than 64 KB."
 #: judging/forms.py:53
 msgid "The code contains a NUL character."
 msgstr "The code contains a NUL character."
-
-#: judging/forms.py:62 judging/templates/judging/list.html:18
-#: judging/templates/judging/ranking.html:8
-#: judging/templates/judging/submission.html:9
-msgid "User"
-msgstr "User"
-
-#: judging/forms.py:64 judging/templates/judging/list.html:18
-#: judging/templates/judging/results.html:5
-#: judging/templates/judging/results.html:30
-msgid "Result"
-msgstr "Result"
 
 #: judging/models.py:17
 msgid "Accepted"
@@ -965,7 +1308,7 @@ msgstr "self-test"
 msgid "fresh submission"
 msgstr "fresh submission"
 
-#: judging/models.py:100 problems/admin.py:28
+#: judging/models.py:100 problems/admin.py:30
 msgid "validation"
 msgstr "validation"
 
@@ -977,64 +1320,111 @@ msgstr "rejudge"
 msgid "calibration and self-test"
 msgstr "calibration and self-test"
 
-#: judging/templates/judging/list.html:11
-msgid "Filter"
-msgstr "Filter"
+#: judging/profile.py:26
+msgid "Newbie"
+msgstr "Newbie"
 
-#: judging/templates/judging/list.html:18
-#: judging/templates/judging/submission.html:11
-msgid "Submitted"
-msgstr "Submitted"
+#: judging/profile.py:27
+msgid "Pupil"
+msgstr "Pupil"
 
-#: judging/templates/judging/list.html:18
+#: judging/profile.py:28
+msgid "Specialist"
+msgstr "Specialist"
+
+#: judging/profile.py:29
+msgid "Expert"
+msgstr "Expert"
+
+#: judging/profile.py:30
+msgid "Master"
+msgstr "Master"
+
+#: judging/templates/judging/list.html:19
 #: judging/templates/judging/results.html:30
 msgid "Time"
 msgstr "Time"
 
-#: judging/templates/judging/list.html:18
+#: judging/templates/judging/list.html:19
 #: judging/templates/judging/results.html:30
 msgid "Memory"
 msgstr "Memory"
 
-#: judging/templates/judging/list.html:37
-msgid "No submissions."
-msgstr "No submissions."
-
-#: judging/templates/judging/list.html:43
+#: judging/templates/judging/list.html:45
 msgid "Newer"
 msgstr "Newer"
 
-#: judging/templates/judging/list.html:44
-#: judging/templates/judging/ranking.html:27
+#: judging/templates/judging/list.html:46
+#: judging/templates/judging/ranking.html:29
+#: problems/templates/problems/_task_results.html:36
 #, python-format
 msgid "Page %(number)s of %(total)s"
 msgstr "Page %(number)s of %(total)s"
 
-#: judging/templates/judging/list.html:45
+#: judging/templates/judging/list.html:47
 msgid "Older"
 msgstr "Older"
 
 #: judging/templates/judging/profile.html:11
+msgid "Rank"
+msgstr "Rank"
+
+#: judging/templates/judging/profile.html:13
+#: judging/templates/judging/profile.html:46
+#: problems/templates/problems/_task_results.html:24
+#: problems/templates/problems/list.html:15
+#: problems/templates/problems/list.html:32
+msgctxt "tasks"
 msgid "Solved"
 msgstr "Solved"
 
-#: judging/templates/judging/profile.html:18
+#: judging/templates/judging/profile.html:14
+#: problems/templates/problems/_task_results.html:24
+#: problems/templates/problems/list.html:16
+#: problems/templates/problems/list.html:33
+msgid "Not solved yet"
+msgstr "Not solved yet"
+
+#: judging/templates/judging/profile.html:15
+msgid "Member since"
+msgstr "Member since"
+
+#: judging/templates/judging/profile.html:16
+msgid "Last active"
+msgstr "Last active"
+
+#: judging/templates/judging/profile.html:28
+msgid "Problems solved over time"
+msgstr "Problems solved over time"
+
+#: judging/templates/judging/profile.html:29
+#, python-format
+msgid "%(total)s problems solved from %(first)s to %(last)s"
+msgstr "%(total)s problems solved from %(first)s to %(last)s"
+
+#: judging/templates/judging/profile.html:42
+msgid "Progress by group"
+msgstr "Progress by group"
+
+#: judging/templates/judging/profile.html:53
 msgid "Attempted"
 msgstr "Attempted"
 
-#: judging/templates/judging/ranking.html:8
+#: judging/templates/judging/ranking.html:9
 msgid "School"
 msgstr "School"
 
-#: judging/templates/judging/ranking.html:21
+#: judging/templates/judging/ranking.html:23
 msgid "Nobody has scored yet."
 msgstr "Nobody has scored yet."
 
-#: judging/templates/judging/ranking.html:26
+#: judging/templates/judging/ranking.html:28
+#: problems/templates/problems/_task_results.html:35
 msgid "Previous"
 msgstr "Previous"
 
-#: judging/templates/judging/ranking.html:28
+#: judging/templates/judging/ranking.html:30
+#: problems/templates/problems/_task_results.html:37
 msgid "Next"
 msgstr "Next"
 
@@ -1047,68 +1437,103 @@ msgid "Compiler output"
 msgstr "Compiler output"
 
 #: judging/templates/judging/submission.html:3
-#: judging/templates/judging/submission.html:6
+#: judging/templates/judging/submission.html:10
 msgid "Submission"
 msgstr "Submission"
 
-#: judging/templates/judging/submission.html:17
+#: judging/templates/judging/submission.html:21
 msgid "Your code"
 msgstr "Your code"
 
-#: judging/templates/judging/submission.html:17
+#: judging/templates/judging/submission.html:21
 msgid "plain text"
 msgstr "plain text"
 
 #: judging/templates/judging/submit.html:3
 #: judging/templates/judging/submit.html:5
 #: judging/templates/judging/submit.html:18
-#: problems/templates/problems/detail.html:17
+#: problems/templates/problems/_task_results.html:11
+#: problems/templates/problems/_task_results.html:26
+#: problems/templates/problems/detail.html:18
 msgid "Submit"
 msgstr "Submit"
 
-#: judging/views.py:35
+#: judging/views.py:39
 msgid "Too big"
 msgstr "Too big"
 
-#: judging/views.py:35
+#: judging/views.py:39
 msgid "Submissions can be at most 64 KB."
 msgstr "Submissions can be at most 64 KB."
 
-#: judging/views.py:56
+#: judging/views.py:60
 #, python-format
 msgid "Please wait %(seconds)d seconds between submissions."
 msgstr "Please wait %(seconds)d seconds between submissions."
 
-#: judging/views.py:63
+#: judging/views.py:67
 #, python-format
 msgid "You have %(count)d submissions waiting for the judge. Please wait."
 msgstr "You have %(count)d submissions waiting for the judge. Please wait."
 
-#: judging/views.py:70
+#: judging/views.py:74
 #, python-format
 msgid ""
 "You have reached %(count)d submissions this hour. Please come back later."
 msgstr ""
 "You have reached %(count)d submissions this hour. Please come back later."
 
-#: judging/views.py:75
+#: judging/views.py:79
 msgid "Too many submissions"
 msgstr "Too many submissions"
 
-#: problems/admin.py:33
+#: problems/admin.py:35
 msgid "Publish the selected problems"
 msgstr "Publish the selected problems"
 
-#: problems/admin.py:46
+#: problems/admin.py:43
 #, python-format
 msgid ""
 "Not published (the current version has not passed validation): %(slugs)s"
 msgstr ""
 "Not published (the current version has not passed validation): %(slugs)s"
 
-#: problems/admin.py:49
+#: problems/admin.py:46
 msgid "Hide the selected problems"
 msgstr "Hide the selected problems"
+
+#: problems/admin_problems.py:47
+msgid "Inside group"
+msgstr "Inside group"
+
+#: problems/admin_problems.py:55
+msgid "Name (Thai)"
+msgstr "Name (Thai)"
+
+#: problems/admin_problems.py:56
+msgid "Name (English)"
+msgstr "Name (English)"
+
+#: problems/admin_problems.py:147
+msgid "It can't be opened: its current version has not passed validation."
+msgstr "It can't be opened: its current version has not passed validation."
+
+#: problems/admin_problems.py:184
+msgid "Group added."
+msgstr "Group added."
+
+#: problems/admin_problems.py:194
+#, python-format
+msgid "Edit %(slug)s"
+msgstr "Edit %(slug)s"
+
+#: problems/admin_problems.py:239
+msgid "A problem with this short name exists already: <a href=\"{}\">edit it</a>."
+msgstr "A problem with this short name exists already: <a href=\"{}\">edit it</a>."
+
+#: problems/admin_problems.py:256
+msgid "This problem has no version to start from: import it first."
+msgstr "This problem has no version to start from: import it first."
 
 #: problems/admin_views.py:36
 msgid "Problem zip (native or CMS Italian format)"
@@ -1127,80 +1552,325 @@ msgstr "Only a version that passed validation can be published."
 msgid "Published."
 msgstr "Published."
 
-#: problems/models.py:22
-msgid "visible"
-msgstr "visible"
+#: problems/editor.py:62
+msgid "Short name (slug)"
+msgstr "Short name (slug)"
 
-#: problems/models.py:50
-msgid "imported"
-msgstr "imported"
+#: problems/editor.py:63
+msgid "The web address: a-z, 0-9, _ and -. It can't change later."
+msgstr "The web address: a-z, 0-9, _ and -. It can't change later."
 
-#: problems/models.py:51
-msgid "validating"
-msgstr "validating"
+#: problems/editor.py:65
+msgid "Title (Thai)"
+msgstr "Title (Thai)"
 
-#: problems/models.py:52
-msgid "valid"
-msgstr "valid"
+#: problems/editor.py:67
+msgid "Title (English)"
+msgstr "Title (English)"
 
-#: problems/models.py:53
-msgid "invalid"
-msgstr "invalid"
-
-#: problems/templates/problems/detail.html:10
-msgid "Time limit"
-msgstr "Time limit"
-
-#: problems/templates/problems/detail.html:10
-msgid "ms"
-msgstr "ms"
-
-#: problems/templates/problems/detail.html:11
-msgid "Memory limit"
-msgstr "Memory limit"
-
-#: problems/templates/problems/detail.html:12
-msgid "Languages"
-msgstr "Languages"
-
-#: problems/templates/problems/detail.html:13
-msgid "Input file"
-msgstr "Input file"
-
-#: problems/templates/problems/detail.html:14
-msgid "Output file"
-msgstr "Output file"
-
-#: problems/templates/problems/detail.html:15
-#: problems/templates/problems/list.html:8
+#: problems/editor.py:73 problems/templates/problems/detail.html:16
 msgid "Tags"
 msgstr "Tags"
 
-#: problems/templates/problems/detail.html:20
+#: problems/editor.py:73
+msgid "Separated by commas."
+msgstr "Separated by commas."
+
+#: problems/editor.py:76
+msgid "Time limit (ms)"
+msgstr "Time limit (ms)"
+
+#: problems/editor.py:79
+msgid "Memory limit (MB)"
+msgstr "Memory limit (MB)"
+
+#: problems/editor.py:82 problems/templates/problems/detail.html:13
+msgid "Languages"
+msgstr "Languages"
+
+#: problems/editor.py:87
+msgid "Statement in Markdown (Thai)"
+msgstr "Statement in Markdown (Thai)"
+
+#: problems/editor.py:90
+msgid "Statement in Markdown (English)"
+msgstr "Statement in Markdown (English)"
+
+#: problems/editor.py:94
+msgid "Statement PDF (Thai)"
+msgstr "Statement PDF (Thai)"
+
+#: problems/editor.py:96
+msgid "Statement PDF (English)"
+msgstr "Statement PDF (English)"
+
+#: problems/editor.py:99
+msgid "Test files"
+msgstr "Test files"
+
+#: problems/editor.py:101
+msgid "Pick every <name>.in and <name>.out file at once."
+msgstr "Pick every <name>.in and <name>.out file at once."
+
+#: problems/editor.py:104
+msgid "…or one zip of the tests"
+msgstr "…or one zip of the tests"
+
+#: problems/editor.py:106
+msgid "The .in and .out files, at the top or in a tests/ folder."
+msgstr "The .in and .out files, at the top or in a tests/ folder."
+
+#: problems/editor.py:109
+msgid "Sample tests"
+msgstr "Sample tests"
+
+#: problems/editor.py:111
+msgid "Test names shown on the problem page, separated by commas."
+msgstr "Test names shown on the problem page, separated by commas."
+
+#: problems/editor.py:114
+msgid "Scoring"
+msgstr "Scoring"
+
+#: problems/editor.py:116
+msgid "Sum: every test is worth the same"
+msgstr "Sum: every test is worth the same"
+
+#: problems/editor.py:117
+msgid "Subtasks: each scores its points if all its tests pass"
+msgstr "Subtasks: each scores its points if all its tests pass"
+
+#: problems/editor.py:120
+msgid "Total points"
+msgstr "Total points"
+
+#: problems/editor.py:122
+msgid "Subtasks"
+msgstr "Subtasks"
+
+#: problems/editor.py:126
+msgid ""
+"One subtask per line: its points, then its test names or patterns, for "
+"example \"30 1-*\" or \"70 1-* 2-*\"."
+msgstr ""
+"One subtask per line: its points, then its test names or patterns, for "
+"example \"30 1-*\" or \"70 1-* 2-*\"."
+
+#: problems/editor.py:131
+msgid "Checker"
+msgstr "Checker"
+
+#: problems/editor.py:133
+msgid "Compare the output (CMS white-diff)"
+msgstr "Compare the output (CMS white-diff)"
+
+#: problems/editor.py:134
+msgid "CMS-style checker"
+msgstr "CMS-style checker"
+
+#: problems/editor.py:135
+msgid "testlib checker"
+msgstr "testlib checker"
+
+#: problems/editor.py:138
+msgid "checker.cpp"
+msgstr "checker.cpp"
+
+#: problems/editor.py:148
+#, python-format
+msgid "Reference solution %(n)d"
+msgstr "Reference solution %(n)d"
+
+#: problems/editor.py:155
+msgid "Empty: run it and report the score only."
+msgstr "Empty: run it and report the score only."
+
+#: problems/editor.py:161
+msgid "Give a title in Thai or English."
+msgstr "Give a title in Thai or English."
+
+#: problems/editor.py:163
+msgid "Add the tests: .in and .out files, or a zip."
+msgstr "Add the tests: .in and .out files, or a zip."
+
+#: problems/editor.py:165
+msgid "Give either the test files or a zip, not both."
+msgstr "Give either the test files or a zip, not both."
+
+#: problems/editor.py:167
+msgid "Sum scoring needs the total points."
+msgstr "Sum scoring needs the total points."
+
+#: problems/editor.py:184
+msgid "A solution must be a .c, .cpp or .py file."
+msgstr "A solution must be a .c, .cpp or .py file."
+
+#: problems/editor.py:188
+msgid "This solution's file doesn't match its language."
+msgstr "This solution's file doesn't match its language."
+
+#: problems/editor.py:203
+#, python-format
+msgid "Subtask line %(n)d: write the points, then test names or patterns."
+msgstr "Subtask line %(n)d: write the points, then test names or patterns."
+
+#: problems/editor.py:208
+msgid "Subtask scoring needs at least one subtask line."
+msgstr "Subtask scoring needs at least one subtask line."
+
+#: problems/editor.py:313
+msgid "Write a statement in Markdown, or upload a statement PDF."
+msgstr "Write a statement in Markdown, or upload a statement PDF."
+
+#: problems/editor.py:331
+#, python-format
+msgid "%(name)s is not a test file: use <name>.in and <name>.out."
+msgstr "%(name)s is not a test file: use <name>.in and <name>.out."
+
+#: problems/editor.py:334 problems/editor.py:349
+#, python-format
+msgid "%(name)s is there twice."
+msgstr "%(name)s is there twice."
+
+#: problems/editor.py:352
+msgid "The zip has no .in and .out files."
+msgstr "The zip has no .in and .out files."
+
+#: problems/editor.py:366
+msgid "A cms or testlib checker needs its checker.cpp file."
+msgstr "A cms or testlib checker needs its checker.cpp file."
+
+#: problems/models.py:46
+msgid "This name is kept for problems with no group."
+msgstr "This name is kept for problems with no group."
+
+#: problems/models.py:50
+msgid "Groups go two levels deep at most."
+msgstr "Groups go two levels deep at most."
+
+#: problems/models.py:52
+msgid "A group with subgroups must stay at the top."
+msgstr "A group with subgroups must stay at the top."
+
+#: problems/models.py:67
+msgid "visible"
+msgstr "visible"
+
+#: problems/models.py:104
+msgid "imported"
+msgstr "imported"
+
+#: problems/models.py:105
+msgid "validating"
+msgstr "validating"
+
+#: problems/models.py:106
+msgid "valid"
+msgstr "valid"
+
+#: problems/models.py:107
+msgid "invalid"
+msgstr "invalid"
+
+#: problems/templates/problems/_folders.html:6
+#, python-format
+msgid "%(percent)s%% solved"
+msgstr "%(percent)s%% solved"
+
+#: problems/templates/problems/_folders.html:10
+#, python-format
+msgid "%(counter)s problem"
+msgid_plural "%(counter)s problems"
+msgstr[0] "%(counter)s problem"
+msgstr[1] "%(counter)s problems"
+
+#: problems/templates/problems/_task_results.html:9
+msgid "Passes"
+msgstr "Passes"
+
+#: problems/templates/problems/_task_results.html:10
+#: problems/templates/problems/list.html:29
+msgid "Status"
+msgstr "Status"
+
+#: problems/templates/problems/_task_results.html:20
+#, python-format
+msgid "%(seconds)s s"
+msgstr "%(seconds)s s"
+
+#: problems/templates/problems/_task_results.html:24
+#: problems/templates/problems/list.html:17
+#: problems/templates/problems/list.html:34
+msgid "Not submitted"
+msgstr "Not submitted"
+
+#: problems/templates/problems/_task_results.html:33
+msgid "Pages"
+msgstr "Pages"
+
+#: problems/templates/problems/detail.html:11
+msgid "Time limit"
+msgstr "Time limit"
+
+#: problems/templates/problems/detail.html:11
+msgid "ms"
+msgstr "ms"
+
+#: problems/templates/problems/detail.html:12
+msgid "Memory limit"
+msgstr "Memory limit"
+
+#: problems/templates/problems/detail.html:14
+msgid "Input file"
+msgstr "Input file"
+
+#: problems/templates/problems/detail.html:15
+msgid "Output file"
+msgstr "Output file"
+
+#: problems/templates/problems/detail.html:22
 msgid "Statement (PDF)"
 msgstr "Statement (PDF)"
 
-#: problems/templates/problems/detail.html:28
+#: problems/templates/problems/detail.html:30
 msgid "Files"
 msgstr "Files"
 
-#: problems/templates/problems/detail.html:43
+#: problems/templates/problems/detail.html:45
 msgid "Examples"
 msgstr "Examples"
 
-#: problems/templates/problems/detail.html:47
+#: problems/templates/problems/detail.html:49
 msgid "Input"
 msgstr "Input"
 
-#: problems/templates/problems/detail.html:47
-#: problems/templates/problems/detail.html:51
+#: problems/templates/problems/detail.html:49
+#: problems/templates/problems/detail.html:53
 msgid "download"
 msgstr "download"
 
-#: problems/templates/problems/detail.html:51
+#: problems/templates/problems/detail.html:53
 msgid "Output"
 msgstr "Output"
 
-#: problems/templates/problems/detail.html:55
+#: problems/templates/problems/detail.html:57
 msgid "This example is long; only its beginning is shown."
 msgstr "This example is long; only its beginning is shown."
+
+#: problems/templates/problems/list.html:13
+#: problems/templates/problems/list.html:31
+#: problems/templates/problems/list.html:41
+msgid "All"
+msgstr "All"
+
+#: problems/templates/problems/list.html:18
+msgid "Solved today"
+msgstr "Solved today"
+
+#: problems/templates/problems/list.html:26
+msgid "Name or id of a problem"
+msgstr "Name or id of a problem"
+
+#: problems/views.py:117 problems/views.py:138
+msgid "Other"
+msgstr "Other"

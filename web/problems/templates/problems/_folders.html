@@ -1,0 +1,14 @@
+{% load i18n icons %}<div class="folder-grid">
+  {% for folder in folders %}
+  <a class="folder-card" href="{{ folder.url }}" data-total="{{ folder.total }}"{% if folder.solved is not None %} data-solved="{{ folder.solved }}"{% endif %}>
+    <span class="folder-head">{% icon "folder" %}<strong class="folder-name">{{ folder.name }}</strong></span>
+    {% if folder.solved is not None %}
+      <span class="folder-percent">{% blocktranslate with percent=folder.percent %}{{ percent }}% solved{% endblocktranslate %}</span>
+      <progress value="{{ folder.solved }}" max="{{ folder.total }}"></progress>
+      <span class="folder-count">{{ folder.solved }}/{{ folder.total }}</span>
+    {% else %}
+      <span class="folder-count">{% blocktranslate count counter=folder.total %}{{ counter }} problem{% plural %}{{ counter }} problems{% endblocktranslate %}</span>
+    {% endif %}
+  </a>
+  {% endfor %}
+</div>

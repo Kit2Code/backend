@@ -172,7 +172,7 @@ def test_start_redirects_with_state_nonce_and_pkce(google: FakeGoogle) -> None:
     client = EdgeClient()
     params = start(client)
     assert params["response_type"] == "code"
-    assert params["scope"] == "openid"
+    assert params["scope"] == "openid profile"
     assert params["client_id"] == CLIENT_ID
     assert params["redirect_uri"] == "http://127.0.0.1:8000/auth/google/callback"
     assert params["code_challenge_method"] == "S256"

@@ -1,6 +1,58 @@
 {% extends "admin/index.html" %}
 {% load i18n %}
 {% block content %}
+{% with d=dashboard %}
+<div class="dash-cards">
+  <div class="dash-card" data-card="queue"><span>{% translate "Waiting to be judged" %}</span><strong>{{ d.queue }}</strong></div>
+  <div class="dash-card" data-card="workers"><span>{% translate "Workers online" %}</span><strong>{{ d.workers_online }}</strong></div>
+  <div class="dash-card" data-card="grading" data-grading="{% if d.paused %}paused{% else %}running{% endif %}"><span>{% translate "Grading" %}</span><strong>{% if d.paused %}{% translate "Paused" %}{% else %}{% translate "Running" %}{% endif %}</strong></div>
+  <div class="dash-card" data-card="today"><span>{% translate "Submissions today" %}</span><strong>{{ d.submissions_today }}</strong></div>
+  <div class="dash-card" data-card="public"><span>{% translate "Public problems" %}</span><strong>{{ d.public }}</strong></div>
+  <div class="dash-card" data-card="hidden"><span>{% translate "Hidden problems" %}</span><strong>{{ d.hidden }}</strong></div>
+  <div class="dash-card" data-card="validating"><span>{% translate "Validating" %}</span><strong>{{ d.validating }}</strong></div>
+  <div class="dash-card" data-card="invalid"><span>{% translate "Failed validation" %}</span><strong>{{ d.invalid }}</strong></div>
+</div>
+
+<nav class="quick-actions" aria-label="{% translate "Quick actions" %}">
+  <a class="button" href="{% url 'admin:grader-problem-new' %}">{% translate "New problem" %}</a>
+  <a class="button" href="{% url 'admin:grader-problems' %}">{% translate "Problems" %}</a>
+  <a class="button" href="{% url 'admin:grader-import' %}">{% translate "Import a problem" %}</a>
+  <a class="button" href="{% url 'admin:grader-grading' %}">{% translate "Grading" %}</a>
+  <a class="button" href="{% url 'admin:grader-system' %}">{% translate "System" %}</a>
+</nav>
+
+<div class="dash-columns">
+  <section class="dash-recent">
+    <h2>{% translate "Latest submissions" %}</h2>
+    {% if d.recent %}
+    <table>
+      <thead><tr><th>#</th><th>{% translate "User" %}</th><th>{% translate "Problem" %}</th><th>{% translate "Result" %}</th><th>{% translate "Submitted" %}</th></tr></thead>
+      <tbody>
+      {% for submission in d.recent %}
+        <tr data-submission="{{ submission.pk }}">
+          <td><a href="{% url 'admin:judging_submission_change' submission.pk %}">{{ submission.pk }}</a></td>
+          <td>{{ submission.user.username }}</td>
+          <td>{{ submission.problem.slug }}</td>
+          <td>{% if submission.verdict %}{{ submission.get_verdict_display }}{% else %}{{ submission.get_status_display }}{% endif %}</td>
+          <td>{{ submission.created_at|date:"Y-m-d H:i" }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<p>{% translate "No submissions." %}</p>{% endif %}
+  </section>
+  <section class="dash-errors">
+    <h2>{% translate "Latest judge errors" %}</h2>
+    {% if d.judge_errors %}
+    <ul>
+      {% for error in d.judge_errors %}<li><strong>{{ error.what }}</strong> {{ error.at|date:"Y-m-d H:i" }}<br><small>{{ error.error|truncatechars:160 }}</small></li>{% endfor %}
+    </ul>
+    <p><a href="{% url 'admin:grader-system' %}">{% translate "All judge errors" %}</a></p>
+    {% else %}<p>{% translate "None." %}</p>{% endif %}
+  </section>
+</div>
+{% endwith %}
+
 <div class="module" id="grader-pages">
   <table>
     <caption>{% translate "Grader" %}</caption>

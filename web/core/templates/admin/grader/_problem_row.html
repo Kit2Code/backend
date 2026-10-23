@@ -1,0 +1,27 @@
+{% load i18n problems %}<tr id="problem-{{ problem.pk }}" data-slug="{{ problem.slug }}">
+  <td>{{ problem.pk }}</td>
+  <td><a href="{% url 'admin:problems_problem_change' problem.pk %}"><strong>{{ problem.slug }}</strong></a><br><small>{% problem_title problem %}</small>{% if problem.current_version %} · <a href="{% url 'admin:grader-problem-edit' problem.pk %}"><small>{% translate "Edit" %}</small></a>{% endif %}</td>
+  <td>
+    <form method="post" action="{% url 'admin:grader-problem-group' problem.pk %}" hx-post="{% url 'admin:grader-problem-group' problem.pk %}" hx-trigger="change" hx-target="closest tr" hx-swap="outerHTML">
+      {% csrf_token %}
+      <select name="group" aria-label="{% translate "Group" %}">
+        <option value="">—</option>
+        {% for group in groups %}<option value="{{ group.pk }}"{% if problem.group_id == group.pk %} selected{% endif %}>{% if group.parent %}{{ group.parent.name_th }} / {% endif %}{{ group.name_th }}</option>{% endfor %}
+      </select>
+      <noscript><input type="submit" value="{% translate "Save" %}"></noscript>
+    </form>
+  </td>
+  <td>{% if problem.current_version %}<span class="version-status status-{{ problem.current_version.status }}">{{ problem.current_version.get_status_display }}</span>{% else %}—{% endif %}</td>
+  <td>{% if problem.current_version %}<a href="{% url 'admin:grader-version' problem.current_version.pk %}">{{ problem.current_version.dir_name }}</a>{% else %}—{% endif %}</td>
+  <td data-open="{% if problem.is_visible %}yes{% else %}no{% endif %}">
+    <form method="post" action="{% url 'admin:grader-problem-visibility' problem.pk %}" hx-post="{% url 'admin:grader-problem-visibility' problem.pk %}" hx-target="closest tr" hx-swap="outerHTML">
+      {% csrf_token %}
+      {% if problem.is_visible %}
+        <button type="submit" name="action" value="close" class="switch switch-on" title="{% translate "Close: hide it from the public site" %}">{% translate "Open" %}</button>
+      {% else %}
+        <button type="submit" name="action" value="open" class="switch switch-off"{% if not can_open %} title="{% translate "Only a version that passed validation can be opened." %}"{% else %} title="{% translate "Open: show it on the public site" %}"{% endif %}>{% translate "Closed" %}</button>
+      {% endif %}
+    </form>
+    {% if error %}<p class="switch-error">{{ error }}</p>{% endif %}
+  </td>
+</tr>

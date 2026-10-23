@@ -10,7 +10,7 @@ How to install it on ZimaOS is in [DEPLOY.md](DEPLOY.md).
 ```
  Internet ─► Cloudflare ─► tunnel ─► edge :8080 ─► web        (GRADER_ROLE=public)
                                        blocks /admin* /internal* /setup*   │
-            Google ◄── edge :8090 (two fixed paths) ◄── web (sign-in)     │
+            Google ◄── edge :8090 (three fixed paths) ◄── web (sign-in)     │
  Home LAN ───────────────────────────► edge :8081 ─► web-admin (GRADER_ROLE=admin)
                                        blocks /internal*                  │   ▲
                                                                           │   │ /internal/* (token)
@@ -73,13 +73,15 @@ and the edge on `127.0.0.1` (`:8000` public, `:8001` admin). The web roles and t
 on it, so, as in production, the only way to them is through the edge.
 
 **The one way out: Google sign-in.** The edge has a third listener, `:8090`, on `app_net` only. It
-forwards exactly `POST /token` and `GET /certs` to Google (in dev: to `fake-oidc`), caps request
-bodies at 16 KB, and answers 404 to anything else. It listens on the edge's `app_net` address only
+forwards exactly `POST /token` and `GET /certs` to Google, and `GET /photo/<path>=s256-c` to
+Google's photo server `lh3.googleusercontent.com` (in dev: all to `fake-oidc`). It caps request
+bodies at 16 KB, checks the photo path's shape on both the cleaned and the raw request line, drops
+query strings, and answers 404 to anything else. It listens on the edge's `app_net` address only
 and serves the public web role's address (the dev compose gives `app_net` a fixed subnet and the
 web roles fixed addresses for this). web-admin may only `GET /certs` (Google's public keys, for the
 Sign-in page's test button); the worker and the host can't use it at all. An SSRF bug in the public
-site could reach nothing but Google's token endpoint. Caddy can't cap response sizes, so the web side reads
-those two responses with a 64 KB limit. In dev, `fake-oidc` sits on its own normal network
+site could reach nothing but Google's token endpoint and its photo server. Caddy can't cap response
+sizes, so the web side reads the token and key responses with a 64 KB limit and photos with 256 KB. In dev, `fake-oidc` sits on its own normal network
 (`fake_google_net`, standing in for the internet) that only the edge joins.
 
 ## Secrets
@@ -142,7 +144,8 @@ covering index on the per-user best scores).
 - **Students** sign in on the public site with Google only (`accounts/google.py`), using the OpenID
   Connect authorization-code flow:
   1. `/auth/google/start` makes a random `state`, `nonce` and PKCE verifier, keeps them in the
-     session, and redirects the browser to Google's sign-in page asking for the `openid` scope only.
+     session, and redirects the browser to Google's sign-in page asking for the `openid profile`
+     scopes (`profile` is what puts a `picture` in the ID token).
   2. Google sends the browser back to `/auth/google/callback` with `state` and a one-time `code`.
      The attempt is taken out of the session (so it works once), its `state` must match, and it must
      be under 10 minutes old.
@@ -150,7 +153,14 @@ covering index on the per-user best scores).
      The token must be signed (RS256 only) by one of Google's keys (fetched through `:8090`), with
      the right issuer, audience (our client ID), expiry, issue time and nonce.
   4. The account is identified by Google's issuer and account id (`sub`) only, stored in
-     `GoogleIdentity`. We never ask for email, name or photo.
+     `GoogleIdentity`. We never ask for email, and the name in the token is ignored.
+  4a. **Profile photo** (`accounts/avatars.py`): at each sign-in, unless the user switched photos
+     off in `/settings`, the `picture` address is checked (https, exactly
+     `lh3.googleusercontent.com`, a plain path), asked for at 256 px through edge `:8090/photo`
+     with no redirects, read with a 256 KB cap, and kept only if its first bytes are a JPEG or PNG.
+     It is stored in the `Avatar` table and served by `/users/<name>/photo`, so visitors' browsers
+     never contact Google and the CSP stays `img-src 'self'`. Any failure keeps the old photo and
+     never stops the sign-in. Without a photo, pages show the username's initial.
   5. A new Google account first sees `/auth/welcome` to choose a username, display name and
      optional school (while it waits, the identity lives only in the session, for 10 minutes).
      `login()` gives the session a new key, and only a path on our own site is accepted as `next`.
@@ -169,8 +179,29 @@ covering index on the per-user best scores).
 ## Pages, languages and static files
 
 - Templates: `core/templates/base.html` (Pico CSS, classless, plus `core/static/site.css`) and one
-  folder per app. Static files, including the vendored Pico CSS and Thai font
+  folder per app. Static files, including the vendored Pico CSS, Thai font and Lucide icons
   (`core/static/vendor/README.md` lists versions and licences), are served by WhiteNoise.
+- **Look:** dark only (`<html data-theme="dark">`). `site.css` retunes Pico's colour variables to a
+  navy palette and adds a few small classes (`.card`, `.badge`, `.avatar`, …). The header's nav
+  links (`core/templates/core/_nav_links.html`) show in a row on wide screens and inside a
+  `<details>` menu on phones; the account menu is a `<details>` too, so neither needs JavaScript.
+  `{% icon "name" %}` (`core/templatetags/icons.py`) inlines a vendored icon so it takes the text
+  colour. The CSP allows no inline styles, so templates use classes, never `style=`.
+- **Tasks page** (`/problems`, `problems/tasks.py`): stat cards (all, solved, not solved yet, not
+  submitted, solved today), a search box, status and group filters and sortable columns, 50 per
+  page. It runs
+  a fixed number of queries whatever the number of problems: titles, limits and the maximum score
+  are copied onto `Problem` when a version is made current, the user's own best score is joined in
+  (`FilteredRelation`) and "passes" is one `COUNT`. The search form is a plain GET form; with
+  JavaScript, htmx sends the same GET with an `HX-Request` header and the view returns only the
+  results part (`problems/_task_results.html`), which htmx swaps in.
+- **Archive** (`/archive`, `problems/archive.py`): problems sit in groups, at most two levels deep
+  (`ProblemGroup`, for example "TOI" → "TOI20"; `Problem.group` is optional and set in the admin).
+  The top page shows a folder card per top-level group with how many of its problems (subgroups
+  included) the user solved, plus "Other" for problems with no group. A group's page shows its
+  subgroups as cards, then its own problems in the same table as the Tasks page. Groups with no
+  visible problems are not shown. Two queries count every card: all groups, and the visible
+  problems grouped by group with the user's best score joined in.
 - **Languages:** Thai is the default and English is one click away (Django's `set_language`, POST
   with CSRF; the choice is a cookie). The browser's own language preference is ignored on purpose
   (`ThaiByDefaultMiddleware`). Every user-visible string goes through Django's translation
@@ -343,6 +374,27 @@ the admin, so they are staff-only and look the same. Each page also needs a mode
   (titles and tags; publish and hide as actions, publish only when the current version passed
   validation), submissions (read-only with their code; rejudge), site settings, pause windows,
   and the audit log (read-only).
+- **Look and home page:** one dark theme in the public site's colours and font
+  (`core/static/admin-theme.css` sets Django admin's own colour variables;
+  `templates/admin/base_site.html` drops Django's light/dark switch). The home page is a dashboard
+  (`judging/dashboard.py`): queue length, workers online, grading paused or running, problems
+  open/closed/validating/failed, today's submissions, quick-action buttons, the last 10 submissions
+  and the last 5 judge errors, with Django's model list below.
+- **Problems** (`problems/admin_problems.py`): every problem in one table with its group,
+  validation status and current version, search and filters, and an **open/close switch** per row.
+  Opening needs a current version that passed validation (`problems/publishing.py`, the same rule
+  as the Django admin's Publish action); both are audit-logged. The row forms are plain POST forms
+  with a CSRF token; htmx sends them and swaps in the returned row. The same page adds Archive
+  groups and puts a problem in a group.
+- **New problem / Edit** (`problems/editor.py`): a form for everything in `problem.yaml` plus the
+  files: Markdown statements (with a preview rendered by the problem page's own renderer) or PDFs,
+  tests as many `.in`/`.out` files at once or one zip, sum or subtask scoring, the checker, and up
+  to three reference solutions. Saving writes a native problem folder in a private temporary folder
+  and imports it with the **same importer** as a zip, then registers it and queues validation, so
+  every safety check, version and report is the same. Editing starts from a copy of the current
+  version's folder, so files not uploaded again are kept, and saving makes a new version (a public
+  problem keeps its old one until the new one is published). The edge allows large bodies on these
+  two pages, as on the Import page; the admin role allows up to 2,100 files in one request.
 - **Import:** upload a zip → import report → validation by the worker → Publish (see Problems).
 - **Grading:** pause or resume now, pause windows (contest days), and the time scale.
 - **System:** workers (online if they claimed in the last 30 s; ones not seen for a week are left
@@ -393,7 +445,7 @@ The production edge refuses to start when a Google upstream isn't `https://`
 | Path | Contents |
 |---|---|
 | `pyproject.toml`, `uv.lock` | uv workspace root: ties the three Python packages together; one lockfile; ruff, mypy and pytest settings |
-| `web/` | Django project: `config/` (settings, the two URL configurations, the admin site), `accounts/` (users, Google sign-in), `core/` (zones, rate limits, site settings, audit log, first-run setup, base template, the Grading/Backups/Sign-in pages), `problems/` (pages, files, store, the Import page), `judging/` (submissions, queue, internal API, lists, ranking, the System/Calibrate pages), `locale/` (translations), `tests/` (`e2e/`: browser tests, including real judging, worker crashes and the admin flow), `Dockerfile` |
+| `web/` | Django project: `config/` (settings, the two URL configurations, the admin site), `accounts/` (users, Google sign-in), `core/` (zones, rate limits, site settings, audit log, first-run setup, base template, the Grading/Backups/Sign-in pages), `problems/` (pages, Tasks and Archive, files, store, the Import, Problems and editor pages), `judging/` (submissions, queue, internal API, lists, ranking, the System/Calibrate pages), `locale/` (translations), `tests/` (`e2e/`: browser tests, including real judging, worker crashes and the admin flow), `Dockerfile` |
 | `judge/worker/` | the worker package (`client.py`: the job loop; `judge.py`: one submission; `tasks.py`: validation and calibration; `selftest.py`: the self-test), its `Dockerfile`, `isolate.conf` and entrypoint |
 | `common/grader_common/` | code shared by web and worker: problem format, scoring, importer (`grader-import`) |
 | `fixtures/` | small made-up problems for tests (native and CMS Italian format) |

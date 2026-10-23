@@ -39,6 +39,8 @@ class Limit:
 STAFF_LOGIN = Limit("staff-login", max_hits=10, window=timedelta(minutes=15))
 GOOGLE_START = Limit("google-start", max_hits=20, window=timedelta(minutes=15))
 FIRST_SIGN_IN = Limit("first-sign-in", max_hits=5, window=timedelta(hours=1))
+# Per user: saving the profile settings.
+PROFILE_SETTINGS = Limit("profile-settings", max_hits=20, window=timedelta(minutes=15))
 # First-run setup form, per IP. The token itself is unguessable; this only slows down noise.
 SETUP = Limit("setup", max_hits=10, window=timedelta(minutes=15))
 
