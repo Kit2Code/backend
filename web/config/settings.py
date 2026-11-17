@@ -58,6 +58,8 @@ INSTALLED_APPS = [
     "core",
     "problems",
     "judging",
+    "rest_framework",
+    "api",
 ]
 
 MIDDLEWARE = [
@@ -96,6 +98,16 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "config.wsgi.application"
+
+# The JSON API (PLAN.md §5.4). JSON only: no browsable API, no form parsing.
+# No authentication classes yet: every endpoint so far is a public GET. The CSRF-strict session
+# class (StrictSessionAuthentication) must land before the first unsafe-method endpoint.
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [],
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.AllowAny"],
+    "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
+}
 
 _DB_USER, _DB_PASSWORD_SECRET = env.database_login(env.optional("GRADER_DB_USER", ""))
 DATABASES = {
