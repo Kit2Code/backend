@@ -197,6 +197,8 @@ GOOGLE_ISSUERS = env.optional(
     "GRADER_GOOGLE_ISSUERS", "https://accounts.google.com,accounts.google.com"
 ).split(",")
 GOOGLE_REDIRECT_URI = env.require("PUBLIC_BASE_URL").rstrip("/") + "/auth/google/callback"
+# The SPA's sign-in comes back here instead; Google (and fake-oidc) must list both URIs.
+GOOGLE_API_REDIRECT_URI = env.require("PUBLIC_BASE_URL").rstrip("/") + "/api/auth/google/callback"
 
 # Thai first; English when the visitor picks it (the choice is kept in a cookie).
 LANGUAGE_CODE = "th"

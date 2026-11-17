@@ -91,12 +91,12 @@ def safe_next(value: str | None) -> str:
     return value
 
 
-def _oauth_session(config: GoogleConfig) -> OAuth2Session:
+def _oauth_session(config: GoogleConfig, redirect_uri: str) -> OAuth2Session:
     session = OAuth2Session(
         client_id=config.client_id,
         client_secret=config.client_secret,
         scope="openid profile",
-        redirect_uri=settings.GOOGLE_REDIRECT_URI,
+        redirect_uri=redirect_uri,
         code_challenge_method="S256",
     )
     # Ignore proxy settings and ~/.netrc from the environment: talk to the edge directly.
@@ -104,12 +104,22 @@ def _oauth_session(config: GoogleConfig) -> OAuth2Session:
     return session
 
 
-def begin(config: GoogleConfig, session: SessionBase, next_url: str | None) -> str:
-    """Start an attempt: remember its secrets in the session and return Google's sign-in URL."""
+def begin(
+    config: GoogleConfig,
+    session: SessionBase,
+    next_url: str | None,
+    redirect_uri: str | None = None,
+) -> str:
+    """Start an attempt: remember its secrets in the session and return Google's sign-in URL.
+
+    `redirect_uri` is the callback (the old pages' by default, or the API's); the token request
+    must send the same one, so it is kept with the attempt.
+    """
+    redirect_uri = redirect_uri or settings.GOOGLE_REDIRECT_URI
     state = secrets.token_urlsafe(32)
     nonce = secrets.token_urlsafe(32)
     verifier = secrets.token_urlsafe(64)  # 86 characters; PKCE allows 43 to 128
-    url, _state = _oauth_session(config).create_authorization_url(
+    url, _state = _oauth_session(config, redirect_uri).create_authorization_url(
         settings.GOOGLE_AUTHORIZE_URL, state=state, code_verifier=verifier, nonce=nonce
     )
     session[SIGNIN_SESSION_KEY] = {
@@ -117,6 +127,7 @@ def begin(config: GoogleConfig, session: SessionBase, next_url: str | None) -> s
         "nonce": nonce,
         "verifier": verifier,
         "next": safe_next(next_url),
+        "redirect_uri": redirect_uri,
         "started": time.time(),
     }
     return str(url)
@@ -151,9 +162,11 @@ def _cap_token_response(response: requests.Response) -> requests.Response:
     return response
 
 
-def fetch_id_token(config: GoogleConfig, code: str, verifier: str) -> str:
+def fetch_id_token(
+    config: GoogleConfig, code: str, verifier: str, redirect_uri: str | None = None
+) -> str:
     """Swap the authorization code for tokens (through the edge) and return the ID token."""
-    oauth = _oauth_session(config)
+    oauth = _oauth_session(config, redirect_uri or settings.GOOGLE_REDIRECT_URI)
     oauth.register_compliance_hook("access_token_response", _cap_token_response)
     try:
         token = oauth.fetch_token(
@@ -238,7 +251,8 @@ def finish(
     code = query.get("code", "")
     if not code:
         raise SignInError("no code in callback")
-    id_token = fetch_id_token(config, code, str(attempt["verifier"]))
+    redirect_uri = str(attempt.get("redirect_uri") or settings.GOOGLE_REDIRECT_URI)
+    id_token = fetch_id_token(config, code, str(attempt["verifier"]), redirect_uri)
     account = verify_id_token(config, id_token, str(attempt["nonce"]), fetch_signing_keys())
     return account, str(attempt["next"])
 

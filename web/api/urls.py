@@ -7,6 +7,14 @@ from api.views.archive import GroupDetailView, GroupListView
 from api.views.auth import MeView
 from api.views.problem_detail import ProblemDetailView
 from api.views.problems import ProblemListView
+from api.views.signin import (
+    LogoutEverywhereView,
+    LogoutView,
+    MyAccountView,
+    RegisterView,
+    google_callback,
+    google_start,
+)
 from api.views.site import SiteView
 from api.views.submissions import MySubmissionListView, SubmissionDetailView, SubmissionListView
 from api.views.users import ProfileView, RankingView
@@ -21,6 +29,12 @@ urlpatterns: list[URLPattern] = [
     path("submissions/<int:pk>/source", submission_source, name="api-submission-source"),
     path("site", SiteView.as_view(), name="api-site"),
     path("auth/me", MeView.as_view(), name="api-me"),
+    path("auth/google/start", google_start, name="api-google-start"),
+    path("auth/google/callback", google_callback, name="api-google-callback"),
+    path("auth/register", RegisterView.as_view(), name="api-register"),
+    path("auth/logout", LogoutView.as_view(), name="api-logout"),
+    path("auth/logout-everywhere", LogoutEverywhereView.as_view(), name="api-logout-everywhere"),
+    path("me", MyAccountView.as_view(), name="api-my-account"),
     path("groups", GroupListView.as_view(), name="api-groups"),
     path("groups/<slug:slug>", GroupDetailView.as_view(), name="api-group"),
     path("groups/<slug:slug>/<slug:sub_slug>", GroupDetailView.as_view(), name="api-subgroup"),

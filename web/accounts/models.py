@@ -11,6 +11,9 @@ USERNAME_RULE = RegexValidator(
     _("3 to 20 characters: small letters a-z, digits and _ only."),
 )
 
+# Raise when the privacy page changes in a way people must agree to again (PLAN.md §19, F-15).
+PRIVACY_VERSION = 1
+
 
 class User(AbstractUser):
     """A site user.
@@ -35,6 +38,9 @@ class User(AbstractUser):
     photo_updated_at = models.DateTimeField(null=True, blank=True, editable=False)
     # Raised by "log out everywhere": every existing session of this user stops being valid.
     session_version = models.PositiveIntegerField(default=0, editable=False)
+    # When the user accepted the privacy page, and which version of it (null: never on record).
+    privacy_accepted_at = models.DateTimeField(null=True, blank=True, editable=False)
+    privacy_version = models.PositiveSmallIntegerField(null=True, blank=True, editable=False)
 
     def _get_session_auth_hash(self, secret: str | None = None) -> str:
         """Django's session hash, plus `session_version`.

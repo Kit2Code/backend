@@ -145,7 +145,7 @@ services:
       FAKE_OIDC_ISSUER: "http://127.0.0.1:8099"
       FAKE_OIDC_CLIENT_ID: "grader-dev.apps.example"
       FAKE_OIDC_SECRET_FILE: /run/secrets/fake-oidc/client_secret
-      FAKE_OIDC_REDIRECT_URIS: "http://127.0.0.1:8000/auth/google/callback,http://localhost:8000/auth/google/callback"
+      FAKE_OIDC_REDIRECT_URIS: "http://127.0.0.1:8000/auth/google/callback,http://localhost:8000/auth/google/callback,http://127.0.0.1:8000/api/auth/google/callback,http://localhost:8000/api/auth/google/callback"
       FAKE_OIDC_ACCESS_TEAM: "dev-team.cloudflareaccess.com"
       FAKE_OIDC_ACCESS_AUD: "dev-access-application"
     volumes:
