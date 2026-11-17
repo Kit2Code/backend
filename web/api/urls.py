@@ -8,9 +8,16 @@ from api.views.auth import MeView
 from api.views.problem_detail import ProblemDetailView
 from api.views.problems import ProblemListView
 from api.views.site import SiteView
+from api.views.submissions import MySubmissionListView, SubmissionDetailView, SubmissionListView
+from judging.views import submission_source
 from problems.views import problem_file
 
 urlpatterns: list[URLPattern] = [
+    path("submissions", SubmissionListView.as_view(), name="api-submissions"),
+    path("submissions/mine", MySubmissionListView.as_view(), name="api-my-submissions"),
+    path("submissions/<int:pk>", SubmissionDetailView.as_view(), name="api-submission"),
+    # The old pages' source view: the author only, 404 for anyone else.
+    path("submissions/<int:pk>/source", submission_source, name="api-submission-source"),
     path("site", SiteView.as_view(), name="api-site"),
     path("auth/me", MeView.as_view(), name="api-me"),
     path("groups", GroupListView.as_view(), name="api-groups"),

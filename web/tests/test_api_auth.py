@@ -14,6 +14,7 @@ import api.urls
 from accounts.models import Avatar, User
 from accounts.views import photo
 from api.auth import StrictSessionAuthentication
+from judging.views import submission_source
 from problems.views import problem_file
 from tests.conftest import EdgeClient, use_role
 
@@ -126,7 +127,7 @@ def test_inactive_user_counts_as_signed_out() -> None:
 
 
 # Function views allowed in the API: each must answer safe methods only.
-SAFE_FUNCTION_VIEWS = {photo, problem_file}
+SAFE_FUNCTION_VIEWS = {photo, problem_file, submission_source}
 
 
 def test_every_api_view_uses_strict_session_auth() -> None:
