@@ -57,15 +57,15 @@ class GroupDetailView(APIView):
         language = get_language()
         problems = visible_problems()
         if slug == ProblemGroup.UNGROUPED_SLUG and not sub_slug:
-            own = problems.filter(group__isnull=True)
-            if not own.exists():
+            ungrouped = problems.filter(group__isnull=True)
+            if not ungrouped.exists():
                 raise Http404
             return Response(
                 {
                     "group": {"id": None, "slug": slug, "name": _("Other")},
                     "crumbs": [],
                     "folders": [],
-                    "problems": problem_page(request, own),
+                    "problems": problem_page(request, ungrouped),
                 }
             )
         top = get_object_or_404(ProblemGroup, slug=slug, parent__isnull=True)
