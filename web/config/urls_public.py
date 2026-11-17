@@ -26,6 +26,7 @@ from problems.views import archive, archive_group, problem_detail, problem_file,
 
 urlpatterns: list[URLPattern | URLResolver] = [
     path("", home, name="home"),
+    path("api/", include("api.urls")),
     # Django's language switch (set_language): POST with a CSRF token.
     path("i18n/", include("django.conf.urls.i18n")),
     path("privacy", privacy, name="privacy"),

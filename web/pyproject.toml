@@ -9,6 +9,7 @@ dependencies = [
     "authlib>=1.9,<2",
     "cryptography>=45",
     "django>=5.2,<5.3",
+    "djangorestframework>=3.16,<4",
     "grader-common",
     "gunicorn>=26.2,<27",
     "joserfc>=1.7,<2",
