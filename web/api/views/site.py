@@ -1,10 +1,10 @@
 """`GET /api/site`: the home page's summary."""
 
+from django.utils.translation import get_language
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from api.language import api_language
 from api.serializers.site import SiteSerializer
 from core.models import SiteSetting
 from judging.internal import grading_paused
@@ -21,5 +21,5 @@ class SiteView(APIView):
             "grading_paused": grading_paused(),
             "recent_problems": recent_problems(),
         }
-        context = {"language": api_language(request)}
+        context = {"language": get_language()}
         return Response(SiteSerializer(data, context=context).data)

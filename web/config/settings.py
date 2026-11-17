@@ -72,6 +72,7 @@ MIDDLEWARE = [
     "core.middleware.RoleSessionMiddleware",
     "core.middleware.ThaiByDefaultMiddleware",
     "django.middleware.locale.LocaleMiddleware",
+    "api.middleware.ApiMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
