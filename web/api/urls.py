@@ -3,7 +3,7 @@
 from django.urls import URLPattern, path
 
 from accounts.views import photo
-from api.views.archive import GroupDetailView, GroupListView
+from api.views.archive import GroupDetailView, GroupListView, SubgroupDetailView
 from api.views.auth import MeView
 from api.views.problem_detail import ProblemDetailView
 from api.views.problems import ProblemListView
@@ -38,7 +38,7 @@ urlpatterns: list[URLPattern] = [
     path("me", MyAccountView.as_view(), name="api-my-account"),
     path("groups", GroupListView.as_view(), name="api-groups"),
     path("groups/<slug:slug>", GroupDetailView.as_view(), name="api-group"),
-    path("groups/<slug:slug>/<slug:sub_slug>", GroupDetailView.as_view(), name="api-subgroup"),
+    path("groups/<slug:slug>/<slug:sub_slug>", SubgroupDetailView.as_view(), name="api-subgroup"),
     path("problems", ProblemListView.as_view(), name="api-problems"),
     path("problems/<slug:slug>", ProblemDetailView.as_view(), name="api-problem"),
     path("problems/<slug:slug>/submissions", SubmitView.as_view(), name="api-submit"),

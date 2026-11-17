@@ -7,10 +7,12 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils.translation import get_language
 from django.utils.translation import gettext as _
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from api import schema
 from api.views.problems import problem_page, signed_in_user
 from problems import archive
 from problems.models import ProblemGroup
@@ -25,6 +27,7 @@ def _folders(cards: list[archive.Folder]) -> list[dict[str, Any]]:
 
 
 class GroupListView(APIView):
+    @extend_schema(operation_id="groups_list", parameters=[schema.LANG], responses=schema.GroupList)
     def get(self, request: Request) -> Response:
         user = signed_in_user(request)
         groups = list(ProblemGroup.objects.all())
@@ -53,6 +56,16 @@ class GroupListView(APIView):
 
 
 class GroupDetailView(APIView):
+    @extend_schema(
+        operation_id="group_detail",
+        parameters=[
+            schema.LANG,
+            schema.PAGE,
+            OpenApiParameter("status", str),
+            OpenApiParameter("sort", str),
+        ],
+        responses=schema.GroupDetail,
+    )
     def get(self, request: Request, slug: str, sub_slug: str = "") -> Response:
         language = get_language()
         problems = visible_problems()
@@ -92,3 +105,20 @@ class GroupDetailView(APIView):
                 "problems": problem_page(request, own) if own is not None else None,
             }
         )
+
+
+class SubgroupDetailView(GroupDetailView):
+    """The same view under its own name, so the schema has one operation per URL."""
+
+    @extend_schema(
+        operation_id="subgroup_detail",
+        parameters=[
+            schema.LANG,
+            schema.PAGE,
+            OpenApiParameter("status", str),
+            OpenApiParameter("sort", str),
+        ],
+        responses=schema.GroupDetail,
+    )
+    def get(self, request: Request, slug: str, sub_slug: str = "") -> Response:
+        return super().get(request, slug, sub_slug)

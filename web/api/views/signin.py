@@ -14,6 +14,7 @@ from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.utils.translation import gettext as _
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_safe
+from drf_spectacular.utils import extend_schema
 from rest_framework.exceptions import (
     APIException,
     NotAuthenticated,
@@ -28,6 +29,7 @@ from accounts import avatars, google
 from accounts.forms import FirstSignInForm, ProfileSettingsForm
 from accounts.models import User
 from accounts.views import create_account, find_identity, log_in
+from api import schema
 from api.serializers.users import UserSerializer
 from api.views.problems import signed_in_user
 from core import ratelimit
@@ -92,6 +94,9 @@ def _form_data(data: Any, fields: tuple[str, ...]) -> dict[str, Any]:
 
 
 class RegisterView(APIView):
+    @extend_schema(
+        operation_id="auth_register", request=schema.Register, responses={201: schema.UserEnvelope}
+    )
     def post(self, request: Request) -> Response:
         pending = google.pending_account(request.session)
         if pending is None:
@@ -118,12 +123,14 @@ class RegisterView(APIView):
 
 
 class LogoutView(APIView):
+    @extend_schema(operation_id="auth_logout", request=None, responses={204: None})
     def post(self, request: Request) -> Response:
         logout(request._request)
         return Response(status=204)
 
 
 class LogoutEverywhereView(APIView):
+    @extend_schema(operation_id="auth_logout_everywhere", request=None, responses={204: None})
     def post(self, request: Request) -> Response:
         """Raising `session_version` ends every other session too (accounts.models.User)."""
         user = signed_in_user(request)
@@ -134,6 +141,7 @@ class LogoutEverywhereView(APIView):
 
 
 class MyAccountView(APIView):
+    @extend_schema(operation_id="me_update", request=schema.MyAccount, responses=UserSerializer)
     def patch(self, request: Request) -> Response:
         user = signed_in_user(request)
         if user is None:

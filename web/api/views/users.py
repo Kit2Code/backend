@@ -2,12 +2,14 @@
 
 from django.shortcuts import get_object_or_404
 from django.utils.translation import get_language
+from drf_spectacular.utils import extend_schema
 from rest_framework import serializers
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import User
+from api import schema
 from api.pagination import RankingPage
 from api.serializers.users import photo_url
 from api.views.archive import _folders
@@ -20,6 +22,9 @@ from problems.views import visible_problems
 
 
 class RankingView(APIView):
+    @extend_schema(
+        operation_id="ranking", parameters=[schema.LANG, schema.PAGE], responses=schema.RankingPage
+    )
     def get(self, request: Request) -> Response:
         paginator = RankingPage()
         rows = paginator.paginate_queryset(ranking_rows(), request)
@@ -53,6 +58,7 @@ def _bests(rows: list[UserProblemBest], language: str) -> list[dict[str, object]
 
 
 class ProfileView(APIView):
+    @extend_schema(operation_id="user_profile", parameters=[schema.LANG], responses=schema.Profile)
     def get(self, request: Request, username: str) -> Response:
         person = get_object_or_404(User, username=username, is_active=True)
         language = get_language()
