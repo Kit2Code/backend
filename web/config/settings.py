@@ -100,10 +100,10 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 # The JSON API (PLAN.md §5.4). JSON only: no browsable API, no form parsing.
-# No authentication classes yet: every endpoint so far is a public GET. The CSRF-strict session
-# class (StrictSessionAuthentication) must land before the first unsafe-method endpoint.
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [],
+    # CSRF on every unsafe request, 401 when signed out; web/tests/test_api_auth.py walks every
+    # API view to make sure none overrides it.
+    "DEFAULT_AUTHENTICATION_CLASSES": ["api.auth.StrictSessionAuthentication"],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.AllowAny"],
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],

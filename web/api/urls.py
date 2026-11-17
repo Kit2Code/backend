@@ -2,8 +2,13 @@
 
 from django.urls import URLPattern, path
 
+from accounts.views import photo
+from api.views.auth import MeView
 from api.views.site import SiteView
 
 urlpatterns: list[URLPattern] = [
     path("site", SiteView.as_view(), name="api-site"),
+    path("auth/me", MeView.as_view(), name="api-me"),
+    # The old pages' photo view: same rules and caching (contract §10, "Photos").
+    path("users/<slug:username>/photo", photo, name="api-user-photo"),
 ]
