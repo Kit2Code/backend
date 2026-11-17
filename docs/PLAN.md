@@ -498,7 +498,7 @@ REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],  # no browsable API
     "DEFAULT_PARSER_CLASSES": [
         "rest_framework.parsers.JSONParser",
-        "rest_framework.parsers.MultiPartParser",   # only the submit view needs it; others JSON only
+        "rest_framework.parsers.MultiPartParser",  # only the submit view needs it; others JSON only
     ],
     "EXCEPTION_HANDLER": "api.errors.handler",
     "DEFAULT_PAGINATION_CLASS": "api.pagination.Page",
@@ -506,8 +506,8 @@ REST_FRAMEWORK = {
     # Rev. 1 had "UNAUTHENTICATED_USER": None here. Removed: reused service code calls
     # request.user.is_authenticated, which crashes on None.
 }
-CSRF_COOKIE_HTTPONLY = False      # Axios must read g_csrf (Django's default; keep it explicit)
-SESSION_COOKIE_SAMESITE = "Lax"   # NOT Strict: the OAuth callback is a cross-site top-level GET
+CSRF_COOKIE_HTTPONLY = False  # Axios must read g_csrf (Django's default; keep it explicit)
+SESSION_COOKIE_SAMESITE = "Lax"  # NOT Strict: the OAuth callback is a cross-site top-level GET
 ```
 
 **Two DRF defaults that break the contract (found in review).** Stock `SessionAuthentication`:
@@ -527,8 +527,10 @@ from rest_framework.authentication import SessionAuthentication
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import SAFE_METHODS
 
+
 class CsrfFailed(PermissionDenied):
     default_code = "csrf_failed"
+
 
 class StrictSessionAuthentication(SessionAuthentication):
     """Session auth that checks CSRF on every unsafe request and answers 401 when signed out."""
@@ -536,7 +538,7 @@ class StrictSessionAuthentication(SessionAuthentication):
     def authenticate(self, request):
         if request.method not in SAFE_METHODS:
             try:
-                self.enforce_csrf(request)          # signed in or not
+                self.enforce_csrf(request)  # signed in or not
             except PermissionDenied as exc:
                 # A plain CsrfFailed(exc.detail) would keep the code 'permission_denied' (review S-9).
                 raise CsrfFailed(str(exc.detail), code="csrf_failed") from exc
@@ -546,7 +548,7 @@ class StrictSessionAuthentication(SessionAuthentication):
         return (user, None)
 
     def authenticate_header(self, request):
-        return "Session"                           # makes DRF send 401 for NotAuthenticated
+        return "Session"  # makes DRF send 401 for NotAuthenticated
 ```
 
 Tests (M0, must fail before this class exists): `POST /api/auth/register` without a token →
@@ -1695,7 +1697,8 @@ own tests; re-applied deliberately before any CMS upgrade.
 
 ```python
 # cms/server/contest/handlers/k2c_sso.py  (sketch)
-COOKIE_FLAGS = dict(httponly=True, secure=True, samesite="Lax")   # Tornado 4.5 sets none by default
+COOKIE_FLAGS = dict(httponly=True, secure=True, samesite="Lax")  # Tornado 4.5 sets none by default
+
 
 class K2cStartHandler(ContestHandler):
     @multi_contest
@@ -1704,29 +1707,46 @@ class K2cStartHandler(ContestHandler):
         self.set_cookie("k2c_state", state, expires_days=None, max_age=300, **COOKIE_FLAGS)
         self.redirect(config.k2c_enter_url.format(contest=self.contest.name, state=state))
 
+
 class K2cSsoHandler(ContestHandler):
     @multi_contest
     def get(self):
         state = self.get_cookie("k2c_state")
         self.clear_cookie("k2c_state")
-        claims = k2c_tokens.verify(self.get_argument("token", ""),
-                                   public_keys=config.k2c_sso_public_keys, audience="cms-sso",
-                                   contest=self.contest.name, now=self.timestamp,
-                                   state=state, seen_jti=_SEEN_JTI)
+        claims = k2c_tokens.verify(
+            self.get_argument("token", ""),
+            public_keys=config.k2c_sso_public_keys,
+            audience="cms-sso",
+            contest=self.contest.name,
+            now=self.timestamp,
+            state=state,
+            seen_jti=_SEEN_JTI,
+        )
         if claims is None or not self.contest.allow_password_authentication:
             return self.redirect(self.contest_url(login_error="true"))
-        current = self.current_user            # participation from an existing login cookie, if any
+        current = self.current_user  # participation from an existing login cookie, if any
         if current is not None and current.user.username != claims["sub"]:
             return self.redirect(self.contest_url(k2c_error="signed_in_as_other"))
-        participation = (self.sql_session.query(Participation).join(Participation.user)
-                         .filter(Participation.contest == self.contest)
-                         .filter(User.username == claims["sub"]).first())
+        participation = (
+            self.sql_session.query(Participation)
+            .join(Participation.user)
+            .filter(Participation.contest == self.contest)
+            .filter(User.username == claims["sub"])
+            .first()
+        )
         if participation is None:
             return self.redirect(self.contest_url(login_error="true"))
-        cookie = json.dumps([participation.user.username, get_password(participation),
-                             make_timestamp(self.timestamp)]).encode("utf-8")
-        self.set_secure_cookie(self.contest.name + "_login", cookie, expires_days=None, **COOKIE_FLAGS)
-        self.redirect(self.contest_url())       # never a URL from the request
+        cookie = json.dumps(
+            [
+                participation.user.username,
+                get_password(participation),
+                make_timestamp(self.timestamp),
+            ]
+        ).encode("utf-8")
+        self.set_secure_cookie(
+            self.contest.name + "_login", cookie, expires_days=None, **COOKIE_FLAGS
+        )
+        self.redirect(self.contest_url())  # never a URL from the request
 ```
 
 The patch also:
