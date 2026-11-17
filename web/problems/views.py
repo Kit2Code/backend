@@ -113,6 +113,8 @@ def archive(request: HttpRequest) -> HttpResponse:
     if ungrouped_total:
         cards.append(
             archive_counts.Folder(
+                id=None,
+                slug=ProblemGroup.UNGROUPED_SLUG,
                 url=f"/archive/{ProblemGroup.UNGROUPED_SLUG}",
                 name=_("Other"),
                 total=ungrouped_total,
