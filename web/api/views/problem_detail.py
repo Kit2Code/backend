@@ -4,10 +4,12 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.translation import get_language
+from drf_spectacular.utils import extend_schema
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from api import schema
 from grader_common.problem_format import LANGUAGE_NAMES, GroupMinScoring
 from problems import files, store
 from problems.statements import statement
@@ -15,6 +17,9 @@ from problems.views import _samples, visible_problems
 
 
 class ProblemDetailView(APIView):
+    @extend_schema(
+        operation_id="problem_detail", parameters=[schema.LANG], responses=schema.ProblemDetail
+    )
     def get(self, request: Request, slug: str) -> Response:
         problem = get_object_or_404(visible_problems().select_related("current_version"), slug=slug)
         version = problem.current_version

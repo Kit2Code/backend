@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     "problems",
     "judging",
     "rest_framework",
+    "drf_spectacular",
     "api",
 ]
 
@@ -110,6 +111,17 @@ REST_FRAMEWORK = {
     "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
     "EXCEPTION_HANDLER": "api.errors.handler",
     "DEFAULT_PAGINATION_CLASS": "api.pagination.Page",
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+# docs/openapi.yaml is generated from the code (see web/tests/test_openapi.py) and never served:
+# no schema view is mounted on either role (PLAN.md §5.2).
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Kit2Code grader API",
+    "DESCRIPTION": "Generated from the code. The rules in docs/API-CONTRACT.md still apply.",
+    "VERSION": "1",
+    "SERVERS": [{"url": "/api"}],
+    "SERVE_INCLUDE_SCHEMA": False,
+    "OAS_VERSION": "3.1.0",  # nullable as JSON Schema `null`, so tests can validate answers
 }
 
 _DB_USER, _DB_PASSWORD_SECRET = env.database_login(env.optional("GRADER_DB_USER", ""))

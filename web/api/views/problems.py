@@ -5,11 +5,13 @@ from typing import Any
 
 from django.db.models import QuerySet
 from django.utils.translation import get_language
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import User
+from api import schema
 from api.pagination import Page
 from api.serializers.problems import ProblemRowSerializer
 from problems import tasks
@@ -51,6 +53,18 @@ def problem_page(
 
 
 class ProblemListView(APIView):
+    @extend_schema(
+        operation_id="problems_list",
+        parameters=[
+            schema.LANG,
+            schema.PAGE,
+            OpenApiParameter("q", str),
+            OpenApiParameter("group", int),
+            OpenApiParameter("status", str, enum=["solved", "tried", "untried"]),
+            OpenApiParameter("sort", str, description="id, title or passes; - for descending"),
+        ],
+        responses=schema.ProblemList,
+    )
     def get(self, request: Request) -> Response:
         user = signed_in_user(request)
         group_text = request.query_params.get("group", "")

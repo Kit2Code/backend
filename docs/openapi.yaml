@@ -1,0 +1,1256 @@
+openapi: 3.1.0
+info:
+  title: Kit2Code grader API
+  version: '1'
+  description: Generated from the code. The rules in docs/API-CONTRACT.md still apply.
+paths:
+  /auth/logout:
+    post:
+      operationId: auth_logout
+      tags:
+      - auth
+      security:
+      - session: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /auth/logout-everywhere:
+    post:
+      operationId: auth_logout_everywhere
+      description: Raising `session_version` ends every other session too (accounts.models.User).
+      tags:
+      - auth
+      security:
+      - session: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /auth/me:
+    get:
+      operationId: auth_me
+      tags:
+      - auth
+      security:
+      - session: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+          description: ''
+  /auth/register:
+    post:
+      operationId: auth_register
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Register'
+        required: true
+      security:
+      - session: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserEnvelope'
+          description: ''
+  /groups:
+    get:
+      operationId: groups_list
+      parameters:
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - en
+          - th
+        description: Default th.
+      tags:
+      - groups
+      security:
+      - session: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupList'
+          description: ''
+  /groups/{slug}:
+    get:
+      operationId: group_detail
+      parameters:
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - en
+          - th
+        description: Default th.
+      - in: query
+        name: page
+        schema:
+          type: integer
+        description: Positive integer; default 1.
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: sort
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+      tags:
+      - groups
+      security:
+      - session: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupDetail'
+          description: ''
+  /groups/{slug}/{sub_slug}:
+    get:
+      operationId: subgroup_detail
+      description: The same view under its own name, so the schema has one operation
+        per URL.
+      parameters:
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - en
+          - th
+        description: Default th.
+      - in: query
+        name: page
+        schema:
+          type: integer
+        description: Positive integer; default 1.
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: sort
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+      - in: path
+        name: sub_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - groups
+      security:
+      - session: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupDetail'
+          description: ''
+  /me:
+    patch:
+      operationId: me_update
+      tags:
+      - me
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMyAccount'
+      security:
+      - session: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /problems:
+    get:
+      operationId: problems_list
+      parameters:
+      - in: query
+        name: group
+        schema:
+          type: integer
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - en
+          - th
+        description: Default th.
+      - in: query
+        name: page
+        schema:
+          type: integer
+        description: Positive integer; default 1.
+      - in: query
+        name: q
+        schema:
+          type: string
+      - in: query
+        name: sort
+        schema:
+          type: string
+        description: id, title or passes; - for descending
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - solved
+          - tried
+          - untried
+      tags:
+      - problems
+      security:
+      - session: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemList'
+          description: ''
+  /problems/{slug}:
+    get:
+      operationId: problem_detail
+      parameters:
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - en
+          - th
+        description: Default th.
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - problems
+      security:
+      - session: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+          description: ''
+  /problems/{slug}/submissions:
+    post:
+      operationId: submit
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - problems
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitJson'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SubmitFile'
+        required: true
+      security:
+      - session: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Submitted'
+          description: ''
+  /ranking:
+    get:
+      operationId: ranking
+      parameters:
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - en
+          - th
+        description: Default th.
+      - in: query
+        name: page
+        schema:
+          type: integer
+        description: Positive integer; default 1.
+      tags:
+      - ranking
+      security:
+      - session: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RankingPage'
+          description: ''
+  /site:
+    get:
+      operationId: site
+      parameters:
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - en
+          - th
+        description: Default th.
+      tags:
+      - site
+      security:
+      - session: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Site'
+          description: ''
+  /submissions:
+    get:
+      operationId: submissions_list
+      parameters:
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - en
+          - th
+        description: Default th.
+      - in: query
+        name: page
+        schema:
+          type: integer
+        description: Positive integer; default 1.
+      - in: query
+        name: problem
+        schema:
+          type: string
+      - in: query
+        name: user
+        schema:
+          type: string
+      - in: query
+        name: verdict
+        schema:
+          type: string
+      tags:
+      - submissions
+      security:
+      - session: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmissionPage'
+          description: ''
+  /submissions/{id}:
+    get:
+      operationId: submission_detail
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - en
+          - th
+        description: Default th.
+      tags:
+      - submissions
+      security:
+      - session: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Submission'
+          description: ''
+  /submissions/mine:
+    get:
+      operationId: submissions_mine
+      parameters:
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - en
+          - th
+        description: Default th.
+      - in: query
+        name: page
+        schema:
+          type: integer
+        description: Positive integer; default 1.
+      - in: query
+        name: problem
+        schema:
+          type: string
+      tags:
+      - submissions
+      security:
+      - session: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmissionPage'
+          description: ''
+  /users/{username}:
+    get:
+      operationId: user_profile
+      parameters:
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - en
+          - th
+        description: Default th.
+      - in: path
+        name: username
+        schema:
+          type: string
+        required: true
+      tags:
+      - users
+      security:
+      - session: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+components:
+  schemas:
+    Attachment:
+      type: object
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+      required:
+      - name
+      - url
+    Best:
+      type: object
+      properties:
+        slug:
+          type: string
+        title:
+          type: string
+        best_score:
+          type: number
+          format: double
+        reached_at:
+          type: string
+          format: date-time
+      required:
+      - best_score
+      - reached_at
+      - slug
+      - title
+    Counts:
+      type: object
+      properties:
+        all:
+          type: integer
+        solved:
+          type:
+          - integer
+          - 'null'
+        tried:
+          type:
+          - integer
+          - 'null'
+        untried:
+          type:
+          - integer
+          - 'null'
+        today:
+          type:
+          - integer
+          - 'null'
+      required:
+      - all
+      - solved
+      - today
+      - tried
+      - untried
+    Crumb:
+      type: object
+      properties:
+        slug:
+          type: string
+        name:
+          type: string
+      required:
+      - name
+      - slug
+    Folder:
+      type: object
+      properties:
+        id:
+          type:
+          - integer
+          - 'null'
+          description: null for `other`.
+        slug:
+          type: string
+        name:
+          type: string
+        total:
+          type: integer
+        solved:
+          type:
+          - integer
+          - 'null'
+          description: null when signed out.
+      required:
+      - id
+      - name
+      - slug
+      - solved
+      - total
+    GroupDetail:
+      type: object
+      properties:
+        group:
+          $ref: '#/components/schemas/GroupRef'
+        crumbs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Crumb'
+        folders:
+          type: array
+          items:
+            $ref: '#/components/schemas/Folder'
+        problems:
+          oneOf:
+          - $ref: '#/components/schemas/ProblemPage'
+          - type: 'null'
+      required:
+      - crumbs
+      - folders
+      - group
+      - problems
+    GroupList:
+      type: object
+      properties:
+        folders:
+          type: array
+          items:
+            $ref: '#/components/schemas/Folder'
+      required:
+      - folders
+    GroupRef:
+      type: object
+      properties:
+        id:
+          type:
+          - integer
+          - 'null'
+        slug:
+          type: string
+        name:
+          type: string
+      required:
+      - id
+      - name
+      - slug
+    KeyEnum:
+      enum:
+      - newbie
+      - pupil
+      - specialist
+      - expert
+      - master
+      type: string
+      description: |-
+        * `newbie` - newbie
+        * `pupil` - pupil
+        * `specialist` - specialist
+        * `expert` - expert
+        * `master` - master
+    Language:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+      required:
+      - code
+      - name
+    LanguageEnum:
+      enum:
+      - th
+      - en
+      type: string
+      description: |-
+        * `th` - th
+        * `en` - en
+    Me:
+      type: object
+      properties:
+        user:
+          oneOf:
+          - $ref: '#/components/schemas/User'
+          - type: 'null'
+        csrf_token:
+          type: string
+          description: Send it back as X-CSRFToken on unsafe requests.
+      required:
+      - csrf_token
+      - user
+    PatchedMyAccount:
+      type: object
+      properties:
+        display_name:
+          type: string
+          maxLength: 100
+        show_photo:
+          type: boolean
+    ProblemDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        slug:
+          type: string
+        title:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        max_score:
+          type: number
+          format: double
+        time_limit_ms:
+          type: integer
+        memory_limit_mb:
+          type: integer
+        languages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Language'
+        subtasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Subtask'
+        statement:
+          $ref: '#/components/schemas/Statement'
+        samples:
+          type: array
+          items:
+            $ref: '#/components/schemas/Sample'
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attachment'
+      required:
+      - attachments
+      - id
+      - languages
+      - max_score
+      - memory_limit_mb
+      - samples
+      - slug
+      - statement
+      - subtasks
+      - tags
+      - time_limit_ms
+      - title
+    ProblemList:
+      type: object
+      properties:
+        count:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+          description: 50; ranking 100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProblemRow'
+        counts:
+          allOf:
+          - $ref: '#/components/schemas/Counts'
+          description: 'Signed out: only `all` is set.'
+      required:
+      - count
+      - counts
+      - page
+      - page_size
+      - results
+    ProblemPage:
+      type: object
+      properties:
+        count:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+          description: 50; ranking 100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProblemRow'
+      required:
+      - count
+      - page
+      - page_size
+      - results
+    ProblemRow:
+      type: object
+      description: '`my_best` and `status` only when the context has `signed_in`.'
+      properties:
+        id:
+          type: integer
+        slug:
+          type: string
+        title:
+          type: string
+          readOnly: true
+        max_score:
+          type: number
+          format: double
+        time_limit_ms:
+          type: integer
+        memory_limit_mb:
+          type: integer
+        passes:
+          type: integer
+        my_best:
+          type:
+          - number
+          - 'null'
+          format: double
+          description: Signed in only.
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          description: |-
+            Signed in only.
+
+            * `solved` - solved
+            * `tried` - tried
+            * `untried` - untried
+      required:
+      - id
+      - max_score
+      - memory_limit_mb
+      - passes
+      - slug
+      - time_limit_ms
+      - title
+    Profile:
+      type: object
+      properties:
+        username:
+          type: string
+        display_name:
+          type: string
+        photo_url:
+          type:
+          - string
+          - 'null'
+        title:
+          $ref: '#/components/schemas/Title'
+        standing:
+          $ref: '#/components/schemas/Standing'
+        solved:
+          type: array
+          items:
+            $ref: '#/components/schemas/Best'
+        attempted:
+          type: array
+          items:
+            $ref: '#/components/schemas/Best'
+        folders:
+          type: array
+          items:
+            $ref: '#/components/schemas/Folder'
+        is_self:
+          type: boolean
+      required:
+      - attempted
+      - display_name
+      - folders
+      - is_self
+      - photo_url
+      - solved
+      - standing
+      - title
+      - username
+    RankingPage:
+      type: object
+      properties:
+        count:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+          description: 50; ranking 100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RankingRow'
+      required:
+      - count
+      - page
+      - page_size
+      - results
+    RankingRow:
+      type: object
+      properties:
+        rank:
+          type: integer
+        username:
+          type: string
+        display_name:
+          type: string
+        photo_url:
+          type:
+          - string
+          - 'null'
+        total:
+          type: number
+          format: double
+      required:
+      - display_name
+      - photo_url
+      - rank
+      - total
+      - username
+    RecentProblem:
+      type: object
+      properties:
+        slug:
+          type: string
+        title:
+          type: string
+          readOnly: true
+      required:
+      - slug
+      - title
+    Register:
+      type: object
+      properties:
+        username:
+          type: string
+          description: 3–20 of a-z, 0-9, _.
+        display_name:
+          type: string
+          maxLength: 100
+        accept_privacy:
+          type: boolean
+      required:
+      - accept_privacy
+      - display_name
+      - username
+    Sample:
+      type: object
+      properties:
+        name:
+          type: string
+        input:
+          type: string
+        output:
+          type: string
+        cut_short:
+          type: boolean
+      required:
+      - cut_short
+      - input
+      - name
+      - output
+    Site:
+      type: object
+      properties:
+        announcement:
+          type: string
+        problem_count:
+          type: integer
+        registration_open:
+          type: boolean
+        grading_paused:
+          type: boolean
+        recent_problems:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecentProblem'
+      required:
+      - announcement
+      - grading_paused
+      - problem_count
+      - recent_problems
+      - registration_open
+    Standing:
+      type: object
+      properties:
+        total:
+          type: number
+          format: double
+        rank:
+          type:
+          - integer
+          - 'null'
+      required:
+      - rank
+      - total
+    Statement:
+      type: object
+      properties:
+        language:
+          $ref: '#/components/schemas/LanguageEnum'
+        html:
+          type: string
+          description: Sanitized HTML; empty when only PDFs exist.
+        pdfs:
+          type: object
+          additionalProperties:
+            type: string
+          description: Language → URL with ?v=.
+      required:
+      - html
+      - language
+      - pdfs
+    StatusEnum:
+      enum:
+      - solved
+      - tried
+      - untried
+      type: string
+      description: |-
+        * `solved` - solved
+        * `tried` - tried
+        * `untried` - untried
+    Submission:
+      type: object
+      description: 'The detail. Context: `language`, `viewer_id` (the signed-in user''s
+        id or None).'
+      properties:
+        id:
+          type: integer
+        problem:
+          type: object
+          additionalProperties:
+            type: string
+          readOnly: true
+        user:
+          type: object
+          additionalProperties:
+            type: string
+          readOnly: true
+        language:
+          type: string
+        status:
+          type: string
+        verdict:
+          type: string
+          readOnly: true
+        score:
+          type:
+          - number
+          - 'null'
+          format: double
+          readOnly: true
+        max_time_ms:
+          type:
+          - integer
+          - 'null'
+          readOnly: true
+        max_memory_mb:
+          type:
+          - number
+          - 'null'
+          format: double
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+        judged_at:
+          type:
+          - string
+          - 'null'
+          readOnly: true
+        max_score:
+          type:
+          - number
+          - 'null'
+          format: double
+          readOnly: true
+        subtasks:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          readOnly: true
+        tests:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          readOnly: true
+        compile_log:
+          type:
+          - string
+          - 'null'
+          readOnly: true
+        is_author:
+          type: boolean
+          readOnly: true
+      required:
+      - compile_log
+      - created_at
+      - id
+      - is_author
+      - judged_at
+      - language
+      - max_memory_mb
+      - max_score
+      - max_time_ms
+      - problem
+      - score
+      - status
+      - subtasks
+      - tests
+      - user
+      - verdict
+    SubmissionPage:
+      type: object
+      properties:
+        count:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+          description: 50; ranking 100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubmissionRow'
+      required:
+      - count
+      - page
+      - page_size
+      - results
+    SubmissionRow:
+      type: object
+      description: 'A list row: never the source or the compiler output.'
+      properties:
+        id:
+          type: integer
+        problem:
+          type: object
+          additionalProperties:
+            type: string
+          readOnly: true
+        user:
+          type: object
+          additionalProperties:
+            type: string
+          readOnly: true
+        language:
+          type: string
+        status:
+          type: string
+        verdict:
+          type: string
+          readOnly: true
+        score:
+          type:
+          - number
+          - 'null'
+          format: double
+          readOnly: true
+        max_time_ms:
+          type:
+          - integer
+          - 'null'
+          readOnly: true
+        max_memory_mb:
+          type:
+          - number
+          - 'null'
+          format: double
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - created_at
+      - id
+      - language
+      - max_memory_mb
+      - max_time_ms
+      - problem
+      - score
+      - status
+      - user
+      - verdict
+    SubmitFile:
+      type: object
+      properties:
+        language:
+          type: string
+        file:
+          type: string
+          format: uri
+          description: Wins over `source`.
+      required:
+      - file
+      - language
+    SubmitJson:
+      type: object
+      properties:
+        language:
+          type: string
+        source:
+          type: string
+      required:
+      - language
+      - source
+    Submitted:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+      required:
+      - id
+      - status
+    Subtask:
+      type: object
+      properties:
+        name:
+          type: string
+        points:
+          type: number
+          format: double
+      required:
+      - name
+      - points
+    Title:
+      type: object
+      properties:
+        key:
+          $ref: '#/components/schemas/KeyEnum'
+        name:
+          type: string
+      required:
+      - key
+      - name
+    User:
+      type: object
+      properties:
+        username:
+          type: string
+        display_name:
+          type: string
+        show_photo:
+          type: boolean
+        photo_url:
+          type:
+          - string
+          - 'null'
+          readOnly: true
+      required:
+      - display_name
+      - photo_url
+      - show_photo
+      - username
+    UserEnvelope:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+      required:
+      - user
+  securitySchemes:
+    session:
+      type: apiKey
+      in: cookie
+      name: g_sess
+servers:
+- url: /api

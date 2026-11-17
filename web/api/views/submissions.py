@@ -2,11 +2,13 @@
 
 from django.db.models import QuerySet
 from django.utils.translation import get_language
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.exceptions import NotAuthenticated, ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from api import schema
 from api.pagination import Page
 from api.serializers.submissions import SubmissionRowSerializer, SubmissionSerializer
 from api.views.problems import signed_in_user
@@ -16,6 +18,11 @@ from judging.views import _listed, _visible_submission
 
 
 class SubmissionDetailView(APIView):
+    @extend_schema(
+        operation_id="submission_detail",
+        parameters=[schema.LANG],
+        responses=SubmissionSerializer,
+    )
     def get(self, request: Request, pk: int) -> Response:
         submission = _visible_submission(pk)  # 404 unless the problem is visible
         user = signed_in_user(request)
@@ -50,11 +57,27 @@ def _page(request: Request, submissions: QuerySet[Submission]) -> Response:
 
 
 class SubmissionListView(APIView):
+    @extend_schema(
+        operation_id="submissions_list",
+        parameters=[
+            schema.LANG,
+            schema.PAGE,
+            OpenApiParameter("problem", str),
+            OpenApiParameter("user", str),
+            OpenApiParameter("verdict", str),
+        ],
+        responses=schema.SubmissionPage,
+    )
     def get(self, request: Request) -> Response:
         return _page(request, _filtered(request, _listed(), "problem", "user", "verdict"))
 
 
 class MySubmissionListView(APIView):
+    @extend_schema(
+        operation_id="submissions_mine",
+        parameters=[schema.LANG, schema.PAGE, OpenApiParameter("problem", str)],
+        responses=schema.SubmissionPage,
+    )
     def get(self, request: Request) -> Response:
         user = signed_in_user(request)
         if user is None:

@@ -59,7 +59,7 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 # shortcut: DRF ships no type hints, so its classes are Any here; add djangorestframework-stubs if API typing bugs show up.
-module = ["rest_framework.*"]
+module = ["rest_framework.*", "jsonschema.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
