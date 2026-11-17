@@ -107,6 +107,8 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.AllowAny"],
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
+    "EXCEPTION_HANDLER": "api.errors.handler",
+    "DEFAULT_PAGINATION_CLASS": "api.pagination.Page",
 }
 
 _DB_USER, _DB_PASSWORD_SECRET = env.database_login(env.optional("GRADER_DB_USER", ""))

@@ -24,6 +24,10 @@ from judging.views import (
 )
 from problems.views import archive, archive_group, problem_detail, problem_file, problem_list
 
+# JSON errors under /api/, the old HTML pages elsewhere (used only with DEBUG off).
+handler404 = "api.errors.not_found"
+handler500 = "api.errors.server_error"
+
 urlpatterns: list[URLPattern | URLResolver] = [
     path("", home, name="home"),
     path("api/", include("api.urls")),
