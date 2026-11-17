@@ -32,3 +32,7 @@ class Page(BasePagination):
         return Response(
             {"count": self.count, "page": self.page, "page_size": self.page_size, "results": data}
         )
+
+
+class RankingPage(Page):
+    page_size = 100

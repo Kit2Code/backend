@@ -9,6 +9,7 @@ from api.views.problem_detail import ProblemDetailView
 from api.views.problems import ProblemListView
 from api.views.site import SiteView
 from api.views.submissions import MySubmissionListView, SubmissionDetailView, SubmissionListView
+from api.views.users import ProfileView, RankingView
 from judging.views import submission_source
 from problems.views import problem_file
 
@@ -29,4 +30,6 @@ urlpatterns: list[URLPattern] = [
     path("problems/<slug:slug>/files/<path:name>", problem_file, name="api-problem-file"),
     # The old pages' photo view: same rules and caching (contract §10, "Photos").
     path("users/<slug:username>/photo", photo, name="api-user-photo"),
+    path("users/<slug:username>", ProfileView.as_view(), name="api-user"),
+    path("ranking", RankingView.as_view(), name="api-ranking"),
 ]
