@@ -320,7 +320,7 @@ def test_complete_stores_the_result() -> None:
     assert response.status_code == 204
     submission.refresh_from_db()
     assert submission.status == "done"
-    assert (submission.verdict, submission.score) == ("PA", 40)
+    assert (submission.verdict, submission.score, submission.max_score) == ("PA", 40, 100)
     assert submission.subtask_scores == [{"name": "1", "points": 100, "score": 40}]
     assert (submission.max_time_ms, submission.max_memory_kb) == (12, 2048)
     assert submission.compile_log == "warning: x"

@@ -323,6 +323,7 @@ def complete(message: api.Complete) -> HttpResponse:
         submission.status = Submission.Status.DONE
         submission.verdict = result.verdict
         submission.score = result.score
+        submission.max_score = result.max_score
         submission.subtask_scores = [s.model_dump(mode="json") for s in result.subtasks]
         submission.max_time_ms = round(result.max_time * 1000)
         submission.max_memory_kb = result.max_memory_kb

@@ -39,6 +39,8 @@ class Submission(models.Model):
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.QUEUED)
     verdict = models.CharField(max_length=3, choices=Verdict.choices, blank=True)
     score = models.FloatField(null=True, blank=True)
+    # What `score` is out of, from the version it was judged on (contract §14). Null until judged.
+    max_score = models.FloatField(null=True, blank=True)
     subtask_scores = models.JSONField(default=list, blank=True)
     max_time_ms = models.PositiveIntegerField(null=True, blank=True)
     max_memory_kb = models.PositiveIntegerField(null=True, blank=True)

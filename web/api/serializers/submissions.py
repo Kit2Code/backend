@@ -77,6 +77,9 @@ class SubmissionSerializer(SubmissionRowSerializer):
         return serializers.DateTimeField().to_representation(submission.judged_at)  # type: ignore[no-any-return]
 
     def get_max_score(self, submission: Submission) -> float | None:
+        # Until it is judged, the problem's current maximum is the best guess.
+        if submission.max_score is not None:
+            return submission.max_score
         return submission.problem.max_score
 
     def get_subtasks(self, submission: Submission) -> list[dict[str, Any]]:
