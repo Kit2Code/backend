@@ -17,6 +17,7 @@ from api.views.signin import (
 )
 from api.views.site import SiteView
 from api.views.submissions import MySubmissionListView, SubmissionDetailView, SubmissionListView
+from api.views.submit import SubmitView
 from api.views.users import ProfileView, RankingView
 from judging.views import submission_source
 from problems.views import problem_file
@@ -40,6 +41,7 @@ urlpatterns: list[URLPattern] = [
     path("groups/<slug:slug>/<slug:sub_slug>", GroupDetailView.as_view(), name="api-subgroup"),
     path("problems", ProblemListView.as_view(), name="api-problems"),
     path("problems/<slug:slug>", ProblemDetailView.as_view(), name="api-problem"),
+    path("problems/<slug:slug>/submissions", SubmitView.as_view(), name="api-submit"),
     # The old pages' file view: the same allow-list (problems/files.py).
     path("problems/<slug:slug>/files/<path:name>", problem_file, name="api-problem-file"),
     # The old pages' photo view: same rules and caching (contract §10, "Photos").
