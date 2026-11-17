@@ -63,7 +63,7 @@ module = ["rest_framework.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-module = ["api.*"]
+module = ["api.*", "tests.test_api_auth", "tests.test_api_middleware"]
 disallow_subclassing_any = false
 
 [tool.django-stubs]

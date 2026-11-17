@@ -87,6 +87,9 @@ class WorkerHello(_Model):
     worker_id: WorkerId
     slots: int = Field(ge=1, le=10)
     env_report: dict[str, Any] = {}
+    # True on the first hello after the worker (re)started: jobs still leased to this worker_id
+    # were cut off (a crash or reboot) and go back to the queue without counting a try.
+    starting: bool = False
 
 
 class ClaimRequest(_Model):
@@ -241,6 +244,14 @@ class Report(_Model):
     worker_id: WorkerId
     job_id: JobId
     report: AnyReport
+
+
+class Release(_Model):
+    """POST /internal/judge/release: a stopping worker gives these jobs back unjudged; they are
+    queued again without counting a try."""
+
+    worker_id: WorkerId
+    job_ids: list[JobId] = Field(max_length=10)
 
 
 class Fail(_Model):

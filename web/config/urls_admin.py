@@ -20,5 +20,6 @@ urlpatterns: list[URLPattern | URLResolver] = [
     path("internal/judge/progress", internal.progress),
     path("internal/judge/complete", internal.complete),
     path("internal/judge/fail", internal.fail),
+    path("internal/judge/release", internal.release),
     path("internal/judge/report", internal.report),
 ]

@@ -1,5 +1,6 @@
-"""The queue survives crashes: a killed worker's job comes back after its lease, and restarting both
-web roles loses nothing (the queue lives in Postgres)."""
+"""The queue survives crashes and restarts: a killed worker gets its cut-off job back when it starts
+again, a stopped worker finishes its job first (PLAN.md §10 #11: never a judge error), and
+restarting both web roles loses nothing (the queue lives in Postgres)."""
 
 import re
 import subprocess
@@ -73,17 +74,25 @@ def wait_until_up(url: str, timeout: float = 120) -> None:
     raise AssertionError(f"{url} didn't come back within {timeout} s")
 
 
-def test_a_killed_workers_job_is_judged_after_its_lease_runs_out(page: Page) -> None:
+def test_a_killed_workers_job_is_judged_again_when_it_restarts(page: Page) -> None:
     results = submit(page, SLOW)
     wait_for(results, "judging", timeout=30)
     compose("kill", "worker")
     killed_at = time.monotonic()
     assert "กำลังตรวจ" in fragment(results)  # still marked as judging: nobody knows yet
     compose("start", "worker")
-    wait_for(results, "done", timeout=LEASE_SECONDS + 90)
-    # It came back only through the expired lease (the last heartbeat was at most 10 s before
-    # the kill), not because something finished the old run.
-    assert time.monotonic() - killed_at >= LEASE_SECONDS - 15
+    wait_for(results, "done", timeout=90)
+    # Its start-up hello gave the job back at once, without waiting for the lease or counting a
+    # try (a lost lease would make it a judge error).
+    assert time.monotonic() - killed_at < LEASE_SECONDS
+    assert "เกินเวลา" in fragment(results)
+
+
+def test_a_stopped_worker_finishes_its_job_first(page: Page) -> None:
+    results = submit(page, SLOW)
+    wait_for(results, "judging", timeout=30)
+    compose("stop", "worker")  # SIGTERM, then the worker drains (stop_grace_period 150 s)
+    assert "hx-get" not in fragment(results)  # done before the worker exited
     assert "เกินเวลา" in fragment(results)
 
 

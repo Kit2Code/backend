@@ -90,8 +90,12 @@ class ApiClient:
             raise ApiUnavailable(f"{path} answered {status}")
         return status
 
-    def hello(self, worker_id: str, slots: int, env_report: dict[str, Any]) -> None:
-        message = api.WorkerHello(worker_id=worker_id, slots=slots, env_report=env_report)
+    def hello(
+        self, worker_id: str, slots: int, env_report: dict[str, Any], *, starting: bool = False
+    ) -> None:
+        message = api.WorkerHello(
+            worker_id=worker_id, slots=slots, env_report=env_report, starting=starting
+        )
         status, _ = self._post("/internal/worker/hello", message)
         self._expect("hello", status, 204)
 
@@ -137,6 +141,13 @@ class ApiClient:
         message = api.Report(worker_id=worker_id, job_id=job_id, report=report)
         status, _ = self._post("/internal/judge/report", message)
         return self._expect("report", status, 204, 409) == 204
+
+    def release(self, worker_id: str, job_ids: list[int]) -> None:
+        """Give jobs back unjudged; web-admin queues them again without counting a try."""
+        status, _ = self._post(
+            "/internal/judge/release", api.Release(worker_id=worker_id, job_ids=job_ids)
+        )
+        self._expect("release", status, 204)
 
     def fail(self, worker_id: str, job_id: int, error: str) -> bool:
         message = api.Fail(worker_id=worker_id, job_id=job_id, error=error[:MAX_MESSAGE_CHARS])
@@ -192,6 +203,7 @@ class JudgeLoop:
         heartbeat_seconds: float = 10,
         hello_seconds: float = 600,
         retry_seconds: Sequence[float] = (1, 2, 4, 8, 16, 30),
+        drain_seconds: float = 120,
     ) -> None:
         self.api = api
         self.pool = pool
@@ -208,23 +220,50 @@ class JudgeLoop:
         self.heartbeat_seconds = heartbeat_seconds
         self.hello_seconds = hello_seconds
         self.retry_seconds = tuple(retry_seconds)
+        self.drain_seconds = drain_seconds
         self._running: set[int] = set()
         self._lost: set[int] = set()
         self._lock = threading.Lock()
-        self._stop = threading.Event()
+        self._draining = threading.Event()  # stop claiming; heartbeats go on
+        self._stop = threading.Event()  # everything stops (set after the drain)
         self._wake = threading.Event()  # set when a job finishes, to claim again at once
 
     def stop(self) -> None:
-        """Stop claiming. Jobs already running finish in their threads (or their leases lapse)."""
-        self._stop.set()
+        """Stop claiming. `run_forever` then lets running jobs finish (heartbeats keep their
+        leases), gives back any still running after `drain_seconds`, and returns (PLAN.md §10
+        #11): a planned stop must never turn a submission into a judge error."""
+        self._draining.set()
         self._wake.set()
 
     def run_forever(self) -> None:
         self._say_hello_until_it_works()
         threading.Thread(target=self._send_heartbeats, name="heartbeat", daemon=True).start()
+        try:
+            self._claim_until_draining()
+            self._drain()
+        finally:
+            self._stop.set()
+
+    def _drain(self) -> None:
+        deadline = time.monotonic() + self.drain_seconds
+        while self._running_count() and time.monotonic() < deadline:
+            self._alive()
+            self._wake.wait(min(1.0, max(deadline - time.monotonic(), 0)))
+            self._wake.clear()
+        with self._lock:
+            left = sorted(self._running - self._lost)
+        if not left:
+            return
+        logger.warning("stopping: giving back unfinished jobs %s", left)
+        try:
+            self.api.release(self.worker_id, left)
+        except ApiUnavailable as error:  # the next start's hello gives them back instead
+            logger.warning("release failed: %s", error)
+
+    def _claim_until_draining(self) -> None:
         last_hello = time.monotonic()
         failures = 0
-        while not self._stop.is_set():
+        while not self._draining.is_set():
             self._alive()
             if time.monotonic() - last_hello > self.hello_seconds:
                 last_hello = time.monotonic()
@@ -235,7 +274,7 @@ class JudgeLoop:
                     job = self.api.claim(self.worker_id, free_slots=free)
                 except ApiUnavailable as error:
                     logger.warning("web-admin unavailable: %s", error)
-                    self._stop.wait(self._backoff(failures))
+                    self._draining.wait(self._backoff(failures))
                     failures += 1
                     continue
                 failures = 0
@@ -261,9 +300,11 @@ class JudgeLoop:
         with self._lock:
             return len(self._running)
 
-    def _try_hello(self) -> bool:
+    def _try_hello(self, *, starting: bool = False) -> bool:
         try:
-            self.api.hello(self.worker_id, self.settings.slots, self.env_report())
+            self.api.hello(
+                self.worker_id, self.settings.slots, self.env_report(), starting=starting
+            )
         except ApiUnavailable as error:
             logger.warning("hello failed: %s", error)
             return False
@@ -271,11 +312,11 @@ class JudgeLoop:
 
     def _say_hello_until_it_works(self) -> None:
         failures = 0
-        while not self._stop.is_set() and not self._try_hello():
+        while not self._draining.is_set() and not self._try_hello(starting=True):
             self._alive()
-            self._stop.wait(self._backoff(failures))
+            self._draining.wait(self._backoff(failures))
             failures += 1
-        if not self._stop.is_set():
+        if not self._draining.is_set():
             logger.info("registered with web-admin")
 
     def _send_heartbeats(self) -> None:

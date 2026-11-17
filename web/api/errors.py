@@ -16,6 +16,7 @@ CONTRACT_CODES = {
     "not_authenticated",
     "csrf_failed",
     "registration_closed",
+    "account_disabled",
     "not_found",
     "method_not_allowed",
     "payload_too_large",

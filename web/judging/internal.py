@@ -6,7 +6,9 @@ checked with the shared pydantic models in grader_common.api.
 
 The queue is the JudgeJob table. A claimed job is "leased" to one worker for LEASE; heartbeats
 extend it. If a worker disappears, the lease runs out and the next claim puts the job back in the
-queue; after MAX_ATTEMPTS tries it becomes a judge error instead. See docs/ARCHITECTURE.md.
+queue; a submission becomes a judge error at once (JUDGE_LEASE_ATTEMPTS), other jobs after
+MAX_ATTEMPTS tries. A worker that stops on purpose, or starts again after a crash, gives its jobs
+back without counting a try (`release`, `hello`). See docs/ARCHITECTURE.md.
 """
 
 from collections.abc import Callable
@@ -14,7 +16,7 @@ from datetime import timedelta
 from functools import wraps
 
 from django.db import IntegrityError, transaction
-from django.db.models import F, Value
+from django.db.models import F, QuerySet, Value
 from django.db.models.functions import Greatest
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.utils import timezone
@@ -38,6 +40,10 @@ from problems.models import ProblemVersion
 
 LEASE = timedelta(seconds=60)
 MAX_ATTEMPTS = 3
+# A submission whose worker vanished mid-judge is not tried again: it may be the submission that
+# crashed the worker. Planned stops release their jobs instead (see `release`), so they never
+# count. Validate, calibrate and self-test jobs keep MAX_ATTEMPTS (PLAN.md §10 #2, B-4).
+JUDGE_LEASE_ATTEMPTS = 1
 
 
 def _endpoint[Message: BaseModel](
@@ -114,10 +120,18 @@ def _release_expired_leases() -> None:
         status=JudgeJob.Status.RUNNING, lease_until__lt=timezone.now()
     )
     for job in expired:
-        if job.attempts >= MAX_ATTEMPTS:
+        limit = JUDGE_LEASE_ATTEMPTS if job.kind == JudgeJob.Kind.JUDGE else MAX_ATTEMPTS
+        if job.attempts >= limit:
             _give_up(job, f"the worker stopped answering, {job.attempts} times")
         else:
             _requeue(job)
+
+
+def _requeue_without_a_try(jobs: QuerySet[JudgeJob]) -> None:
+    """Give running jobs back to the queue as if they were never claimed."""
+    for job in jobs.select_for_update(of=("self",)).filter(status=JudgeJob.Status.RUNNING):
+        job.attempts = max(job.attempts - 1, 0)
+        _requeue(job)
 
 
 def _held_job(worker_id: str, job_id: int) -> JudgeJob | None:
@@ -132,6 +146,9 @@ def _held_job(worker_id: str, job_id: int) -> JudgeJob | None:
 
 @_endpoint(api.WorkerHello)
 def hello(message: api.WorkerHello) -> HttpResponse:
+    if message.starting:  # the worker id is the fixed host name, so this covers a crash too
+        with transaction.atomic():
+            _requeue_without_a_try(JudgeJob.objects.filter(worker_id=message.worker_id))
     Worker.objects.update_or_create(
         worker_id=message.worker_id,
         defaults={
@@ -323,6 +340,7 @@ def complete(message: api.Complete) -> HttpResponse:
         submission.status = Submission.Status.DONE
         submission.verdict = result.verdict
         submission.score = result.score
+        submission.max_score = result.max_score
         submission.subtask_scores = [s.model_dump(mode="json") for s in result.subtasks]
         submission.max_time_ms = round(result.max_time * 1000)
         submission.max_memory_kb = result.max_memory_kb
@@ -360,6 +378,16 @@ def report(message: api.Report) -> HttpResponse:
             ProblemVersion.objects.filter(judgejob=job).update(
                 status=ProblemVersion.Status.VALID if valid else ProblemVersion.Status.INVALID
             )
+    return _no_content()
+
+
+@_endpoint(api.Release)
+def release(message: api.Release) -> HttpResponse:
+    """A worker that is stopping gives back the jobs it could not finish in time."""
+    with transaction.atomic():
+        _requeue_without_a_try(
+            JudgeJob.objects.filter(pk__in=message.job_ids, worker_id=message.worker_id)
+        )
     return _no_content()
 
 

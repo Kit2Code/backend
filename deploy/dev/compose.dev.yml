@@ -145,7 +145,7 @@ services:
       FAKE_OIDC_ISSUER: "http://127.0.0.1:8099"
       FAKE_OIDC_CLIENT_ID: "grader-dev.apps.example"
       FAKE_OIDC_SECRET_FILE: /run/secrets/fake-oidc/client_secret
-      FAKE_OIDC_REDIRECT_URIS: "http://127.0.0.1:8000/auth/google/callback,http://localhost:8000/auth/google/callback"
+      FAKE_OIDC_REDIRECT_URIS: "http://127.0.0.1:8000/auth/google/callback,http://localhost:8000/auth/google/callback,http://127.0.0.1:8000/api/auth/google/callback,http://localhost:8000/api/auth/google/callback"
       FAKE_OIDC_ACCESS_TEAM: "dev-team.cloudflareaccess.com"
       FAKE_OIDC_ACCESS_AUD: "dev-access-application"
     volumes:
@@ -176,6 +176,9 @@ services:
     # Like production: the worker on one CPU, the boxes on JUDGE_BOX_CPUS, one memory limit for both.
     cpuset: "9,10,11"
     mem_limit: 1408m
+    hostname: grader-worker  # the worker id: a restart gets its cut-off jobs back
+    # SIGTERM lets running jobs finish (up to 120 s) before the worker gives them back.
+    stop_grace_period: 150s
     init: true
     restart: unless-stopped
     environment:

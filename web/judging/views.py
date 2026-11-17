@@ -1,11 +1,8 @@
 """Public judging pages: submit, and the submission page."""
 
-from datetime import timedelta
-
 from django.conf import settings
 from django.contrib.auth.views import redirect_to_login
 from django.core.paginator import Paginator
-from django.db import transaction
 from django.db.models import QuerySet
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -16,11 +13,10 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_safe
 
 from accounts.models import User
-from core import ratelimit
 from core.views import message_page
-from judging import charts
+from judging import charts, services
 from judging.forms import SubmissionFilterForm, SubmitForm
-from judging.models import JudgeJob, Submission
+from judging.models import Submission
 from judging.profile import ranking_rows, solved_and_tried, standing, title_for
 from problems import archive as archive_counts
 from problems import store
@@ -47,35 +43,20 @@ def _body_too_big(request: HttpRequest) -> bool:
     return length > MAX_SUBMIT_BODY_BYTES
 
 
-def _limit_reached(request: HttpRequest, user: User) -> HttpResponse | None:
-    """The 429 page if `user` may not submit right now, else None.
-
-    Call it inside the transaction that holds the user's row lock, so two submits sent at the
-    same moment are checked one after the other. The cooldown and the waiting count come from
-    the user's Submission rows; the hourly count from core.ratelimit (see docs/DECISIONS.md).
-    """
-    mine = Submission.objects.filter(user=user)
-    cooldown = timedelta(seconds=settings.GRADER_SUBMIT_COOLDOWN_SECONDS)
-    if mine.filter(created_at__gt=timezone.now() - cooldown).exists():
+def _refused_page(request: HttpRequest, refused: services.Refused) -> HttpResponse:
+    """The 429 page for a refused submission."""
+    if refused.code == "cooldown":
         message = _("Please wait %(seconds)d seconds between submissions.") % {
             "seconds": settings.GRADER_SUBMIT_COOLDOWN_SECONDS
         }
-    elif (
-        mine.filter(status__in=[Submission.Status.QUEUED, Submission.Status.JUDGING]).count()
-        >= settings.GRADER_SUBMIT_MAX_WAITING
-    ):
+    elif refused.code == "too_many_waiting":
         message = _("You have %(count)d submissions waiting for the judge. Please wait.") % {
             "count": settings.GRADER_SUBMIT_MAX_WAITING
         }
-    elif not ratelimit.hit(
-        ratelimit.Limit("submit-hour", settings.GRADER_SUBMIT_PER_HOUR, timedelta(hours=1)),
-        str(user.pk),
-    ):
+    else:
         message = _("You have reached %(count)d submissions this hour. Please come back later.") % {
             "count": settings.GRADER_SUBMIT_PER_HOUR
         }
-    else:
-        return None
     return message_page(request, _("Too many submissions"), message, status=429)
 
 
@@ -97,22 +78,12 @@ def submit(request: HttpRequest, slug: str) -> HttpResponse:
     form = SubmitForm(request.POST, request.FILES, languages=languages)
     if not form.is_valid():
         return render(request, "judging/submit.html", {"problem": problem, "form": form})
-    with transaction.atomic():
-        user = User.objects.select_for_update().get(pk=request.user.pk)
-        refused = _limit_reached(request, user)
-        if refused is not None:
-            return refused
-        submission = Submission.objects.create(
-            user=user,
-            problem=problem,
-            problem_version=version,
-            language=form.cleaned_data["language"],
-            source=form.cleaned_data["code"],
-        )
-        JudgeJob.objects.create(
-            kind=JudgeJob.Kind.JUDGE, priority=JudgeJob.Priority.FRESH, submission=submission
-        )
-    return redirect("submission", submission.pk)
+    result = services.create_submission(
+        request.user.pk, problem, version, form.cleaned_data["language"], form.cleaned_data["code"]
+    )
+    if isinstance(result, services.Refused):
+        return _refused_page(request, result)
+    return redirect("submission", result.pk)
 
 
 def _visible_submission(pk: int) -> Submission:

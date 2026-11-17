@@ -157,6 +157,8 @@ services:
     # Docker's default seccomp filter for the worker; every box adds our own (box-exec).
     security_opt: ["apparmor=unconfined", "no-new-privileges:true"]
     pids_limit: 512
+    # SIGTERM lets running jobs finish (up to 120 s) before the worker gives them back.
+    stop_grace_period: 150s
     init: true
     environment:
       JUDGE_SLOTS: "2"

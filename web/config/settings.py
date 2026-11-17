@@ -72,6 +72,7 @@ MIDDLEWARE = [
     "core.middleware.RoleSessionMiddleware",
     "core.middleware.ThaiByDefaultMiddleware",
     "django.middleware.locale.LocaleMiddleware",
+    "api.middleware.ApiMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -100,10 +101,10 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 # The JSON API (PLAN.md §5.4). JSON only: no browsable API, no form parsing.
-# No authentication classes yet: every endpoint so far is a public GET. The CSRF-strict session
-# class (StrictSessionAuthentication) must land before the first unsafe-method endpoint.
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [],
+    # CSRF on every unsafe request, 401 when signed out; web/tests/test_api_auth.py walks every
+    # API view to make sure none overrides it.
+    "DEFAULT_AUTHENTICATION_CLASSES": ["api.auth.StrictSessionAuthentication"],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.AllowAny"],
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
@@ -196,6 +197,8 @@ GOOGLE_ISSUERS = env.optional(
     "GRADER_GOOGLE_ISSUERS", "https://accounts.google.com,accounts.google.com"
 ).split(",")
 GOOGLE_REDIRECT_URI = env.require("PUBLIC_BASE_URL").rstrip("/") + "/auth/google/callback"
+# The SPA's sign-in comes back here instead; Google (and fake-oidc) must list both URIs.
+GOOGLE_API_REDIRECT_URI = env.require("PUBLIC_BASE_URL").rstrip("/") + "/api/auth/google/callback"
 
 # Thai first; English when the visitor picks it (the choice is kept in a cookie).
 LANGUAGE_CODE = "th"

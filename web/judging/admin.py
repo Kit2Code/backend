@@ -47,10 +47,22 @@ class SubmissionAdmin(AuditedModelAdmin):
                 submission__in=queryset,
             ).values_list("submission_id", flat=True)
             for submission in queryset.exclude(pk__in=list(waiting)).select_for_update():
+                # Clear the whole old result, so nothing stale shows while it is judged again.
                 submission.status = Submission.Status.QUEUED
                 submission.verdict = ""
                 submission.score = None
-                submission.save(update_fields=["status", "verdict", "score"])
+                submission.judged_at = None
+                submission.max_time_ms = None
+                submission.max_memory_kb = None
+                submission.subtask_scores = []
+                submission.compile_log = ""
+                submission.save(
+                    update_fields=[
+                        "status", "verdict", "score", "judged_at", "max_time_ms",
+                        "max_memory_kb", "subtask_scores", "compile_log",
+                    ]
+                )  # fmt: skip
+                submission.tests.all().delete()
                 JudgeJob.objects.create(
                     kind=JudgeJob.Kind.JUDGE,
                     priority=JudgeJob.Priority.REJUDGE,

@@ -20,7 +20,7 @@ SETTINGS = Settings(slots=2, box_cpus=[4, 5], mem_total=1 << 30)
 class IdleApi:
     """web-admin with nothing to judge."""
 
-    def hello(self, *args: Any) -> None:
+    def hello(self, *args: Any, **kwargs: Any) -> None:
         pass
 
     def claim(self, *args: Any, **kwargs: Any) -> None:

@@ -16,7 +16,7 @@ from accounts.models import User
 from config.admin import AuditedModelAdmin
 from core.models import AuditLog, PauseWindow
 from judging.internal import refresh_best
-from judging.models import JudgeJob, Submission, UserProblemBest
+from judging.models import JudgeJob, Submission, TestResult, UserProblemBest
 from problems.models import Problem, ProblemVersion
 from tests.conftest import EdgeClient
 
@@ -201,6 +201,30 @@ def test_rejudge_queues_the_submission_again_and_is_audited(staff: Client, boss:
     # Already waiting for the judge: no second job.
     assert JudgeJob.objects.filter(submission=waiting).count() == 1
     assert only_row("submission.rejudge").details == {"ids": [done.pk]}
+
+
+def test_rejudge_clears_the_old_result(staff: Client, boss: User) -> None:
+    """PLAN.md B-5: nothing of the old result may show while the submission is judged again."""
+    done = make_submission(
+        boss,
+        make_problem(),
+        status=Submission.Status.DONE,
+        verdict="CE",
+        score=0,
+        judged_at=timezone.now(),
+        max_time_ms=10,
+        max_memory_kb=100,
+        subtask_scores=[{"name": "1", "points": 100, "score": 0}],
+        compile_log="error",
+    )
+    TestResult.objects.create(
+        submission=done, name="01", verdict="WA", outcome=0, time_ms=1, memory_kb=1
+    )
+    run_action(staff, "judging/submission", "rejudge", done.pk)
+    done.refresh_from_db()
+    assert (done.judged_at, done.max_time_ms, done.max_memory_kb) == (None, None, None)
+    assert (done.subtask_scores, done.compile_log) == ([], "")
+    assert not done.tests.exists()
 
 
 def test_disable_and_enable_users_are_audited(staff: Client) -> None:

@@ -17,7 +17,7 @@ from django.views.decorators.http import require_POST, require_safe
 
 from accounts import avatars, google
 from accounts.forms import FirstSignInForm, ProfileSettingsForm
-from accounts.models import Avatar, GoogleIdentity, User
+from accounts.models import PRIVACY_VERSION, Avatar, GoogleIdentity, User
 from core import ratelimit
 from core.models import SiteSetting
 from core.views import message_page, too_many_requests
@@ -89,14 +89,19 @@ def _sign_in_member(
             _("This account has been disabled. Ask the person who runs this site."),
             status=403,
         )
+    log_in(request, identity, picture)
+    return redirect(next_url)
+
+
+def log_in(request: HttpRequest, identity: GoogleIdentity, picture: str) -> None:
+    """Start a session for an active user's Google identity and refresh their photo."""
     # login() gives the session a new key, so a session id seen before sign-in is worthless.
     login(request, identity.user, backend="django.contrib.auth.backends.ModelBackend")
     GoogleIdentity.objects.filter(pk=identity.pk).update(last_login_at=timezone.now())
     avatars.refresh(identity.user, picture)
-    return redirect(next_url)
 
 
-def _find_identity(account: google.GoogleAccount) -> GoogleIdentity | None:
+def find_identity(account: google.GoogleAccount) -> GoogleIdentity | None:
     return (
         GoogleIdentity.objects.select_related("user")
         .filter(issuer=account.issuer, subject=account.subject)
@@ -124,7 +129,7 @@ def google_callback(request: HttpRequest) -> HttpResponse:
     except google.SignInError as error:
         logger.info("Google sign-in failed: %s", error)
         return _sign_in_failed(request)
-    identity = _find_identity(account)
+    identity = find_identity(account)
     if identity is not None:
         return _sign_in_member(request, identity, next_url, account.picture)
     if not SiteSetting.get().registration_open:
@@ -148,9 +153,11 @@ def welcome(request: HttpRequest) -> HttpResponse:
         return too_many_requests(request)
     form = FirstSignInForm(request.POST)
     if form.is_valid():
-        identity = _find_identity(account)
+        identity = find_identity(account)
         if identity is None:
-            identity = _create_account(form, account)
+            identity = create_account(
+                form.cleaned_data["username"], form.cleaned_data["display_name"], account
+            )
         if identity is not None:
             del request.session[google.PENDING_SESSION_KEY]
             return _sign_in_member(request, identity, next_url, account.picture)
@@ -158,16 +165,21 @@ def welcome(request: HttpRequest) -> HttpResponse:
     return render(request, "accounts/welcome.html", {"form": form})
 
 
-def _create_account(form: FirstSignInForm, account: google.GoogleAccount) -> GoogleIdentity | None:
-    """Create the user and link the Google account, or return None if the username got taken.
+def create_account(
+    username: str, display_name: str, account: google.GoogleAccount
+) -> GoogleIdentity | None:
+    """Create the user (who has accepted the privacy page) and link the Google account, or return
+    None if the username got taken.
 
     If the same Google account was linked in the meantime (another tab), return that link.
     """
     try:
         with transaction.atomic():
             user = User(
-                username=form.cleaned_data["username"],
-                display_name=form.cleaned_data["display_name"],
+                username=username,
+                display_name=display_name,
+                privacy_accepted_at=timezone.now(),
+                privacy_version=PRIVACY_VERSION,
             )
             user.set_unusable_password()
             user.save()
@@ -175,7 +187,7 @@ def _create_account(form: FirstSignInForm, account: google.GoogleAccount) -> Goo
                 user=user, issuer=account.issuer, subject=account.subject
             )
     except IntegrityError:
-        return _find_identity(account)
+        return find_identity(account)
 
 
 # ---- profile photo and settings (public role) ----

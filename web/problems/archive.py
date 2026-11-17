@@ -18,6 +18,8 @@ from problems.models import Problem, ProblemGroup
 class Folder:
     """One card: where it leads, its name, and its counts (`solved` is None when signed out)."""
 
+    id: int | None  # None for "other" (problems with no group)
+    slug: str
     url: str
     name: str
     total: int
@@ -75,6 +77,8 @@ def folders(
         if total:
             cards.append(
                 Folder(
+                    id=group.pk,
+                    slug=group.slug,
                     url=f"{url_prefix}/{group.slug}",
                     name=group.name_in(language),
                     total=total,

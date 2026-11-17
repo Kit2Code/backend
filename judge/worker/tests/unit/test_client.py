@@ -134,6 +134,7 @@ def make_loop(
         heartbeat_seconds=0.05,
         hello_seconds=3600,
         retry_seconds=(0.01, 0.02),
+        drain_seconds=0.5,
     )
 
 
@@ -233,7 +234,12 @@ def test_a_job_is_judged_and_reported(
         "box": 100,
     }
     hello = fake.bodies("/internal/worker/hello")[0]
-    assert hello == {"worker_id": "test-worker", "slots": 2, "env_report": {"isolate": "2.7"}}
+    assert hello == {
+        "worker_id": "test-worker",
+        "slots": 2,
+        "env_report": {"isolate": "2.7"},
+        "starting": True,
+    }
     progress = fake.bodies("/internal/judge/progress")
     assert [p["tests"][0]["name"] for p in progress] == ["01", "02"]
     (done,) = fake.bodies("/internal/judge/complete")
@@ -564,3 +570,58 @@ def test_a_calibration_job_is_run_and_its_report_sent(
     assert seen == {"problem_dir": store / "aplusb" / "v001-0123abcd", "box": 100}
     (sent,) = fake.bodies("/internal/judge/report")
     assert sent["job_id"] == 7 and sent["report"]["kind"] == "calibrate"
+
+
+# ---- stopping (PLAN.md §10 #11) ----
+
+
+def blocking_judge(
+    release: threading.Event, started: threading.Event
+) -> Callable[..., JudgeResult]:
+    def fake_judge(*args: Any, **kwargs: Any) -> JudgeResult:
+        started.set()
+        release.wait(10)
+        return ac_result()
+
+    return fake_judge
+
+
+def test_stop_lets_a_running_job_finish_with_heartbeats(
+    web: tuple[FakeWeb, str], store: Path, tmp_path: Path
+) -> None:
+    fake, url = web
+    fake.jobs.append(job(1))
+    release, started = threading.Event(), threading.Event()
+    loop = make_loop(url, store, tmp_path, blocking_judge(release, started))
+    loop.drain_seconds = 5
+    thread = threading.Thread(target=loop.run_forever, daemon=True)
+    thread.start()
+    assert started.wait(5)
+    loop.stop()
+    beats = len(fake.bodies("/internal/judge/heartbeat"))
+    time.sleep(0.3)
+    assert len(fake.bodies("/internal/judge/heartbeat")) > beats  # leases kept while draining
+    claims = len(fake.bodies("/internal/judge/claim"))
+    release.set()
+    thread.join(5)
+    assert not thread.is_alive()
+    assert [c["job_id"] for c in fake.bodies("/internal/judge/complete")] == [1]
+    assert not fake.bodies("/internal/judge/release")
+    assert len(fake.bodies("/internal/judge/claim")) == claims  # no new job after stop()
+
+
+def test_stop_gives_back_a_job_that_runs_too_long(
+    web: tuple[FakeWeb, str], store: Path, tmp_path: Path
+) -> None:
+    fake, url = web
+    fake.jobs.append(job(1))
+    release, started = threading.Event(), threading.Event()
+    loop = make_loop(url, store, tmp_path, blocking_judge(release, started))
+    thread = threading.Thread(target=loop.run_forever, daemon=True)
+    thread.start()
+    assert started.wait(5)
+    loop.stop()
+    thread.join(5)  # drain_seconds is 0.5 in make_loop
+    assert not thread.is_alive()
+    assert fake.bodies("/internal/judge/release") == [{"worker_id": "test-worker", "job_ids": [1]}]
+    release.set()

@@ -225,27 +225,67 @@ def test_nothing_is_handed_out_inside_a_pause_window() -> None:
     assert claim().status_code == 200
 
 
-def test_an_expired_lease_is_handed_out_again() -> None:
-    make_submission()
-    first = claim("w1").json()["job_id"]
-    JudgeJob.objects.filter(pk=first).update(lease_until=timezone.now() - timedelta(seconds=1))
-    response = claim("w2")
-    assert response.status_code == 200
-    assert response.json()["job_id"] == first
-    job = JudgeJob.objects.get()
-    assert (job.worker_id, job.attempts) == ("w2", 2)
+def expire(job_id: int) -> None:
+    JudgeJob.objects.filter(pk=job_id).update(lease_until=timezone.now() - timedelta(seconds=1))
 
 
-def test_after_three_tries_an_expired_job_is_a_judge_error() -> None:
+def test_a_lost_submission_is_a_judge_error_at_once() -> None:
+    """JUDGE_LEASE_ATTEMPTS = 1: the submission may be what killed the worker (PLAN.md §10 #2)."""
     submission = make_submission()
-    for _ in range(3):
-        job_id = claim().json()["job_id"]
-        JudgeJob.objects.filter(pk=job_id).update(lease_until=timezone.now() - timedelta(seconds=1))
-    assert claim().status_code == 204
+    expire(claim("w1").json()["job_id"])
+    assert claim("w2").status_code == 204
     job = JudgeJob.objects.get()
-    assert job.status == JudgeJob.Status.FAILED
+    assert (job.status, job.attempts) == (JudgeJob.Status.FAILED, 1)
     submission.refresh_from_db()
     assert (submission.status, submission.verdict) == ("done", "JE")
+
+
+def test_other_jobs_keep_three_tries_when_lost() -> None:
+    version = make_submission().problem_version
+    JudgeJob.objects.all().delete()
+    job = JudgeJob.objects.create(
+        kind=JudgeJob.Kind.VALIDATE, priority=JudgeJob.Priority.FRESH, problem_version=version
+    )
+    for _ in range(3):
+        response = claim()
+        assert response.json()["job_id"] == job.pk
+        expire(job.pk)
+    assert claim().status_code == 204
+    job.refresh_from_db()
+    assert (job.status, job.attempts) == (JudgeJob.Status.FAILED, 3)
+
+
+def release(job_ids: list[int], worker_id: str = "w1") -> Any:
+    return post("/internal/judge/release", {"worker_id": worker_id, "job_ids": job_ids})
+
+
+def test_release_requeues_without_counting_a_try() -> None:
+    make_submission()
+    job_id = claim("w1").json()["job_id"]
+    assert release([job_id], worker_id="w2").status_code == 204  # not w2's: ignored
+    assert JudgeJob.objects.get().status == JudgeJob.Status.RUNNING
+    assert release([job_id]).status_code == 204
+    job = JudgeJob.objects.get()
+    assert (job.status, job.attempts, job.worker_id) == (JudgeJob.Status.QUEUED, 0, "")
+    assert claim("w2").json()["job_id"] == job_id  # judged normally afterwards
+
+
+def hello(worker_id: str, *, starting: bool) -> Any:
+    body = {"worker_id": worker_id, "slots": 1, "starting": starting}
+    return post("/internal/worker/hello", body)
+
+
+def test_a_restarted_worker_gets_its_cut_off_jobs_requeued() -> None:
+    make_submission("alice")
+    make_submission("bob")
+    mine = claim("w1").json()["job_id"]
+    theirs = claim("w2").json()["job_id"]
+    assert hello("w1", starting=False).status_code == 204  # the 10-minute hello: nothing changes
+    assert JudgeJob.objects.get(pk=mine).status == JudgeJob.Status.RUNNING
+    assert hello("w1", starting=True).status_code == 204
+    assert JudgeJob.objects.get(pk=mine).status == JudgeJob.Status.QUEUED
+    assert JudgeJob.objects.get(pk=mine).attempts == 0
+    assert JudgeJob.objects.get(pk=theirs).status == JudgeJob.Status.RUNNING
 
 
 @pytest.mark.django_db(transaction=True)
@@ -320,7 +360,7 @@ def test_complete_stores_the_result() -> None:
     assert response.status_code == 204
     submission.refresh_from_db()
     assert submission.status == "done"
-    assert (submission.verdict, submission.score) == ("PA", 40)
+    assert (submission.verdict, submission.score, submission.max_score) == ("PA", 40, 100)
     assert submission.subtask_scores == [{"name": "1", "points": 100, "score": 40}]
     assert (submission.max_time_ms, submission.max_memory_kb) == (12, 2048)
     assert submission.compile_log == "warning: x"
