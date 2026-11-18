@@ -35,6 +35,8 @@ x-web: &web
 
 x-web-env: &web-env
   PUBLIC_BASE_URL: "http://127.0.0.1:8000"
+  # The React dev server (frontend repo, `npm run dev`), which proxies /api to the edge.
+  GRADER_SPA_BASE_URL: "http://localhost:5173"
   ADMIN_BASE_URL: "http://127.0.0.1:8001"
   GRADER_SECRETS_DIR: /run/secrets/web
   GRADER_WORKER_SECRETS_DIR: /run/secrets/worker
@@ -145,7 +147,7 @@ services:
       FAKE_OIDC_ISSUER: "http://127.0.0.1:8099"
       FAKE_OIDC_CLIENT_ID: "grader-dev.apps.example"
       FAKE_OIDC_SECRET_FILE: /run/secrets/fake-oidc/client_secret
-      FAKE_OIDC_REDIRECT_URIS: "http://127.0.0.1:8000/auth/google/callback,http://localhost:8000/auth/google/callback,http://127.0.0.1:8000/api/auth/google/callback,http://localhost:8000/api/auth/google/callback"
+      FAKE_OIDC_REDIRECT_URIS: "http://127.0.0.1:8000/auth/google/callback,http://localhost:8000/auth/google/callback,http://127.0.0.1:8000/api/auth/google/callback,http://localhost:8000/api/auth/google/callback,http://localhost:5173/api/auth/google/callback"
       FAKE_OIDC_ACCESS_TEAM: "dev-team.cloudflareaccess.com"
       FAKE_OIDC_ACCESS_AUD: "dev-access-application"
     volumes:

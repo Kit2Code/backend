@@ -22,6 +22,14 @@ PUBLIC_BASE_URL = (
 ).rstrip("/")
 ALLOWED_HOSTS = [_HOSTNAME]
 CSRF_TRUSTED_ORIGINS = [_ORIGIN]
+# Development only: the React dev server (Vite, e.g. http://localhost:5173) proxies /api here and
+# keeps its Host header, so the public role accepts that address too and the SPA's sign-in comes
+# back to it. Unset in production, where the SPA and the API share PUBLIC_BASE_URL.
+SPA_BASE_URL = env.optional("GRADER_SPA_BASE_URL", "").rstrip("/")
+if GRADER_ROLE == "public" and SPA_BASE_URL:
+    for _host, _origin in env.extra_base_urls(SPA_BASE_URL):
+        ALLOWED_HOSTS.append(_host)
+        CSRF_TRUSTED_ORIGINS.append(_origin)
 if GRADER_ROLE == "admin":
     # Other addresses the admin site is opened at, besides ADMIN_BASE_URL: say, the NAS's Tailscale
     # IP or name, "http://100.x.y.z:8081,http://nas.tailnet.ts.net:8081" (docs/DEPLOY.md).
@@ -210,7 +218,7 @@ GOOGLE_ISSUERS = env.optional(
 ).split(",")
 GOOGLE_REDIRECT_URI = env.require("PUBLIC_BASE_URL").rstrip("/") + "/auth/google/callback"
 # The SPA's sign-in comes back here instead; Google (and fake-oidc) must list both URIs.
-GOOGLE_API_REDIRECT_URI = env.require("PUBLIC_BASE_URL").rstrip("/") + "/api/auth/google/callback"
+GOOGLE_API_REDIRECT_URI = (SPA_BASE_URL or PUBLIC_BASE_URL) + "/api/auth/google/callback"
 
 # Thai first; English when the visitor picks it (the choice is kept in a cookie).
 LANGUAGE_CODE = "th"
